@@ -22,7 +22,7 @@ import {
   electronOpenChat,
   electronOpenSettings,
   electronStartDraggingWindow,
-  electronWindowClose,
+  electronWindowHide,
   electronWindowSetAlwaysOnTop,
 } from '../../../../shared/eventa'
 
@@ -51,7 +51,7 @@ watch(activeCard, (card) => {
 const openSettings = useElectronEventaInvoke(electronOpenSettings)
 const openChat = useElectronEventaInvoke(electronOpenChat)
 const isLinux = ref(false)
-const closeWindow = useElectronEventaInvoke(electronWindowClose)
+const hideWindow = useElectronEventaInvoke(electronWindowHide)
 const setAlwaysOnTop = useElectronEventaInvoke(electronWindowSetAlwaysOnTop)
 
 const expanded = ref(false)
@@ -346,11 +346,11 @@ function cycleAnimation() {
               </ControlButtonTooltip>
 
               <ControlButtonTooltip>
-                <ControlButton :button-style="adjustStyleClasses.button" hover:bg-red-500 hover:text-white @click="closeWindow()">
+                <ControlButton :button-style="adjustStyleClasses.button" hover:bg-red-500 hover:text-white @click="hideWindow()">
                   <div i-solar:close-circle-outline :class="adjustStyleClasses.icon" />
                 </ControlButton>
                 <template #tooltip>
-                  {{ t('tamagotchi.stage.controls-island.close') }}
+                  {{ t('tamagotchi.stage.controls-island.hide') }}
                 </template>
               </ControlButtonTooltip>
             </div>

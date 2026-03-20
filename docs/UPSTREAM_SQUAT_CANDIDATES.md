@@ -1,6 +1,11 @@
-# Upstream Squat Candidates
+## Recent Integrations
 
-This note tracks open upstream PRs that look worth integrating into `dasilva333/airi`, plus the current decision on each one.
+- **PR #851**: `feat(stage-tamagotchi): add option for chat area send key`
+  - **Status**: ✅ **Squatted**. Added UI to General Settings.
+- **PR #1302**: `feat: add OpenRouter as a speech (TTS) provider`
+  - **Status**: ✅ **Squatted**. Integrated into fork.
+- **PR #1256**: `feat(providers): add Amazon Bedrock provider`
+  - **Status**: ✅ **Squatted**. Integrated into fork.
 
 ## Current Priorities
 
@@ -10,31 +15,28 @@ This note tracks open upstream PRs that look worth integrating into `dasilva333/
     - keep manual entry fallback
     - remove the misleading truncated provider experience
     - surface the full supported provider set cleanly
-  - **Priority**: Highest
+  - **Priority**: High (Under consideration)
 
-- **PR #1237**: `feat(stage-ui): add chat settings with stream idle timeout`
-  - **Why it matters**: Looks benign and potentially useful for chat robustness.
-  - **Risk**: Chat has already been heavily modified in the fork, especially around persistence, stream handling, and session stability. This must be merged carefully and reviewed against the recent local chat fixes.
-  - **Priority**: High
-
-- **PR #851**: `feat(stage-tamagotchi): add option for chat area send key`
-  - **Why it matters**: Straightforward Tamagotchi UX improvement.
-  - **Fork direction**: Good bundle candidate alongside `#1237` because both touch chat UX rather than deep provider/runtime internals.
-  - **Priority**: High
-
-- **PR #1190**: `fix(stage-pages): add missing local provider settings routes`
-  - **Why it matters**: Practical settings/page routing paper-cut fix.
-  - **Fork direction**: Low-risk squat candidate. Worth checking for overlap with existing fork changes, but likely easy to absorb.
-  - **Priority**: Medium
+- **PR #917**: `feat(stage-tamagotchi): vision`
+  - **Why it matters**: Vision support / Screenshare API. Essential for "seeing" the screen (Minecraft/Factorio/etc).
+  - **Status**: Active discussion (Mar 20). Blocking on `electron-audio-loopback` historically but core API is maturing.
+  - **Priority**: High (Watch/Research)
 
 ## Maybe, But Not Yet
 
+- **PR #1190**: `fix(stage-pages): add missing local provider settings routes`
+  - **Status**: Merged upstream (Mar 17).
+  - **Decision**: Worth checking for overlap with existing fork changes, likely easy to absorb if not already covered.
+
 - **PR #1148**: `feat(ui,stage-ui,stage-pages,i18n): transcription confidence filter`
   - **Current read**: Lower priority because the fork already has a useful STT toast that shows what the server heard.
-  - **Best argument in favor**: A confidence filter is not the same as a toast. A toast is post-hoc visibility; a confidence filter can actively suppress or flag low-confidence transcript segments before they become chat input.
   - **Decision**: Do not prioritize right now.
 
-## Explicitly Deferred / Avoid
+## Explicitly Deferred / Pass (Avoid)
+
+- **PR #1237**: `feat(stage-ui): add chat settings with stream idle timeout`
+  - **User Feedback**: "dont' touch it with a 10ft poll im so divergent any attempts would just nuke our code"
+  - **Priority**: N/A (**PASS**)
 
 - **PR #1033**: `feat(stage-ui-live2d): exp3 expression system + auto-blink rework`
   - Too large and too far from the current fork state. Integration cost is high.
@@ -42,12 +44,8 @@ This note tracks open upstream PRs that look worth integrating into `dasilva333/
 - **PR #1222**: `fix(llm): flatten content array for OpenAI-compatible providers`
   - Looks risky relative to the current fork because nothing is obviously broken there right now. Avoid speculative provider churn unless a real bug appears.
 
-- **Provider churn in general**
-  - Examples: `#1378`, `#1314`, `#1221`
-  - These are not priority squat targets unless they unblock a real user need in the fork.
+## Operational Notes / Follow-ups
 
-## Operational Notes
-
-- Use `airi-clean-pr` and isolated worktrees for all upstream squat work.
-- Do not use `airi-rebase-scratch` as the PR rebasing / merge-conflict sandbox.
-- When pulling upstream PRs that touch chat, stage, model selection, or Discord, compare them against fork-local fixes first. Those surfaces have diverged significantly.
+- **PR #1295**: Re-open candidate. The actual fix for "crackly" audio was identified as the `mediabunny` library, not the previous stability attempts.
+- **PR #1289**: Needs a comment explaining the "Snapshot Restore" necessity: It allows users to snap back to their favorite position after moving the window willingly.
+- **PR #1298**: Needs updating to current state before posting new screenshots.

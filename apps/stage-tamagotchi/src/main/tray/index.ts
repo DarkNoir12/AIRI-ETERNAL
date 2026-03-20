@@ -202,8 +202,11 @@ export function setupTray(params: {
               },
             },
             {
+              // Snapshot the current window position as 'Home'
+              // Allows users to snap back to their favorite position after moving the window consciously (e.g. for a temporary task) without manual repositioning.
               label: t('tamagotchi.electron.tray.menu.labels.label.snapshot'),
               click: () => {
+                // Save the current window bounds as the "Home" position for future restoration.
                 const config = params.getConfig()
                 if (!config.windows)
                   config.windows = []
@@ -224,9 +227,11 @@ export function setupTray(params: {
               },
             },
             {
+              // Restore the window to the previously saved 'Home' position.
               label: t('tamagotchi.electron.tray.menu.labels.label.restore'),
               enabled: !!mainWindowConfig?.snapshot,
               click: () => {
+                // Return the window to its previously saved "Home" position.
                 const config = params.getConfig()
                 const mainWindow = config.windows?.find((w: any) => w.title === 'AIRI' && w.tag === 'main')
                 if (mainWindow?.snapshot) {

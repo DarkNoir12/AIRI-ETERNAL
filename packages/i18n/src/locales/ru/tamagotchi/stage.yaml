@@ -22,7 +22,8 @@ docs:
   'pin-on-top': Pin on top
   'unpin-from-top': Unpin from top
   'switch-profile': Switch Profile
-  'close': Close
+  'close': Закрыть
+  'hide': Скрыть
   'expand': Expand
   'collapse': Collapse
 'status-island':

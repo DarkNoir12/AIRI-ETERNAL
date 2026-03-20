@@ -10,8 +10,8 @@ menu:
       align_to: Align to
       position: Position
       lock: Lock
-      snapshot: Snapshot
-      restore: Restore
+      snapshot: Set As Home
+      restore: Restore Home
       center: Center
       top_left: Top Left
       top_right: Top Right

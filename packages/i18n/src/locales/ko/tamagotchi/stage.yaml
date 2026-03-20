@@ -23,6 +23,7 @@ docs:
   'unpin-from-top': 맨 위 고정 해제
   'switch-profile': Switch Profile
   'close': 닫기
+  'hide': 숨기기
   'expand': 확장
   'collapse': 접기
 'status-island':

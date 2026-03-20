@@ -5,7 +5,7 @@ import { defineInvokeHandler } from '@moeru/eventa'
 import { bounds, startLoopGetBounds } from '@proj-airi/electron-eventa'
 import { createRendererLoop } from '@proj-airi/electron-vueuse/main'
 
-import { electron, electronWindowClose, electronWindowSetAlwaysOnTop } from '../../../shared/eventa'
+import { electron, electronWindowClose, electronWindowHide, electronWindowSetAlwaysOnTop } from '../../../shared/eventa'
 import { onAppBeforeQuit, onAppWindowAllClosed } from '../../libs/bootkit/lifecycle'
 import { resizeWindowByDelta } from '../../windows/shared/window'
 
@@ -116,6 +116,15 @@ export function createWindowService(params: { context: ReturnType<typeof createC
 
     if (params.window.webContents.id === options?.raw.ipcMainEvent.sender.id) {
       params.window.close()
+    }
+  })
+
+  defineInvokeHandler(params.context, electronWindowHide, (_, options) => {
+    if (params.window.isDestroyed())
+      return
+
+    if (params.window.webContents.id === options?.raw.ipcMainEvent.sender.id) {
+      params.window.hide()
     }
   })
 

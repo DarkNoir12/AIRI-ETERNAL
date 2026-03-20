@@ -13,6 +13,12 @@ const { isDark: dark } = useTheme()
 const languages = computed(() => {
   return Object.entries(all).map(([value, label]) => ({ value, label }))
 })
+
+const sendModes = computed(() => [
+  { value: 'enter', label: t('settings.pages.chat.send-mode.options.enter') },
+  { value: 'ctrl-enter', label: t('settings.pages.chat.send-mode.options.ctrl-enter') },
+  { value: 'double-enter', label: t('settings.pages.chat.send-mode.options.double-enter') },
+])
 </script>
 
 <template>
@@ -42,13 +48,26 @@ const languages = computed(() => {
       :options="languages"
     />
 
-    <FieldCheckbox
-      v-model="settings.remoteSyncEnabled"
+    <FieldSelect
+      v-model="settings.sendMode"
       v-motion
       :initial="{ opacity: 0, y: 10 }"
       :enter="{ opacity: 1, y: 0 }"
       :duration="250 + (4 * 10)"
       :delay="4 * 50"
+      :class="['transition-all', 'ease-in-out', 'duration-250']"
+      :label="t('settings.pages.chat.send-mode.title')"
+      :description="t('settings.pages.chat.send-mode.description')"
+      :options="sendModes"
+    />
+
+    <FieldCheckbox
+      v-model="settings.remoteSyncEnabled"
+      v-motion
+      :initial="{ opacity: 0, y: 10 }"
+      :enter="{ opacity: 1, y: 0 }"
+      :duration="250 + (5 * 10)"
+      :delay="5 * 50"
       :label="t('settings.privacy.remote-sync.title')"
       :description="t('settings.privacy.remote-sync.description')"
     />

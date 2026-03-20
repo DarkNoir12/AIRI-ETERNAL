@@ -68,6 +68,8 @@ This fork now has the beginning of a real character-centric memory system instea
 
 **Long-term memory** now has a working append-only journal path through the new `text_journal` tool. Characters can create journal entries and search them later by keyword, and the Memory settings area now has a real long-term archive view instead of a `WIP` shell. This is designed as a lightweight memory layer that is useful right now, without requiring a separate memory server or a heavyweight external stack just to get durable recall.
 
+**Unified memory lookup** already works across both layers: a search checks the active character's long-term journal first and falls back into short-term memory blocks when the journal has no relevant hit, so retrieval feels like one memory system even though storage remains split.
+
 The broader plan for semantic retrieval, short-term automation, and future compaction is documented in [`docs/memory-architecture.md`](./docs/memory-architecture.md), [`docs/short-term-memory.md`](./docs/short-term-memory.md), and [`docs/long-term-memory.md`](./docs/long-term-memory.md).
 
 ### Scene System Is New In This Fork
@@ -97,6 +99,22 @@ The model selector itself is also significantly improved. This fork adds a dense
 One of the biggest quality-of-life fixes in this fork is speech quality. A major problem in the original stack was the audio degradation introduced by a library choice in the speech path; this fork replaced that weak point so TTS playback quality is materially better.
 
 On top of that, OpenAI-compatible speech providers that expose a voices endpoint can now surface selectable voices in the UI instead of making users guess IDs manually. There is also broader provider work throughout the fork, including Chatterbox integration, local-server quality-of-life improvements, and other compatibility hardening so the app is easier to run with real-world backends.
+
+Streaming support for **DeepSeek** and **GLM-4** models is also hardened in this fork, including proper handling of `reasoning-delta` events and tolerance for malformed ACT tag typos that previously caused prompt stalls.
+
+### Widget System Lets AIRI Compose Desktop Views
+
+The `stage_widgets` tool gives AIRI the ability to spawn, update, and remove floating desktop widgets during conversation. Pre-built widget components exist for weather and map views, and a generic JSON fallback renders any unknown component name as a styled info-card, so the model can "compose" a view for stocks, notes, or anything else without requiring a bespoke UI component.
+
+Widgets are managed through a Tool → IPC → Main Process → Renderer pipeline, with each widget identified by a human-readable id so AIRI can update or remove it later. The system is documented in [`docs/widget-system-report.md`](./docs/widget-system-report.md).
+
+### Per-Character LLM Generation Settings
+
+A planned **Generation** tab in the AIRI card editor will let each character carry its own chat-generation tuning — provider, model, max tokens, temperature, and top-p — instead of relying solely on global defaults. The schema is designed to grow toward SillyTavern preset import and advanced provider-specific JSON later. Design details are in [`docs/Character Configurable LLM.md`](./docs/Character%20Configurable%20LLM.md).
+
+### All Interaction Pipelines Share One Toolchain
+
+In this fork, typed chat, STT-triggered chat, and proactivity heartbeats all consume the same shared `builtinTools` surface. That means new builtin tools like `text_journal` or `stage_widgets` are automatically available across every interaction pipeline without per-surface wiring. The pipeline architecture and common failure-mode documentation lives in [`docs/Chat-STT-Proactive-Pipelines-Design.md`](./docs/Chat-STT-Proactive-Pipelines-Design.md).
 
 ### Privacy And Daily-Driver Defaults
 
@@ -294,6 +312,7 @@ Capable of
     - [x] Short-term continuity injection into new/reset sessions
     - [x] Long-term `text_journal` create/search tools
     - [x] Long-term per-character journal archive UI
+    - [x] Unified memory lookup fallback (long-term → short-term)
     - [ ] Memory Alaya (WIP)
   - [ ] Pure in-browser local (WebGPU) inference
 - [x] Ears
@@ -316,6 +335,12 @@ Capable of
     - [x] Auto blink
     - [x] Auto look at
     - [x] Idle eye movement
+- [x] Desktop widgets
+  - [x] `stage_widgets` tool (spawn / update / remove)
+  - [x] Pre-built weather and map widgets
+  - [x] Generic JSON fallback for arbitrary data
+  - [x] Artistry / image generation via widget pipeline
+- [x] Shared builtin toolchain across chat, STT, and proactivity pipelines
 
 ## Development
 

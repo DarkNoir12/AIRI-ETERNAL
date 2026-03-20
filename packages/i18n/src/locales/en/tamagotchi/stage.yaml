@@ -23,6 +23,7 @@ docs:
   'unpin-from-top': Unpin from top
   'switch-profile': Switch Profile
   'close': Close
+  'hide': Hide
   'expand': Expand
   'collapse': Collapse
   'cycle-animation': Cycle Animation

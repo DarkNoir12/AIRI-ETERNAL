@@ -23,6 +23,7 @@ docs:
   'unpin-from-top': ピン留めを解除
   'switch-profile': プロファイルを切替
   'close': Close
+  'hide': 非表示
   'expand': Expand
   'collapse': Collapse
 notice:
