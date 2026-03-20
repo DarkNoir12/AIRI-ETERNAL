@@ -66,11 +66,11 @@ This fork now has the beginning of a real character-centric memory system instea
 
 **Short-term memory** now supports rebuilding daily continuity blocks from existing chat history. Those blocks are stored durably and injected back into new or reset sessions so a character can recover recent continuity without replaying the full raw logs. The current implementation is intentionally simple: rebuild from chat history first, store one summary block per day, and keep the prompt-side injection bounded and understandable.
 
-**Long-term memory** now has a working append-only journal path through the new `text_journal` tool. Characters can create journal entries and search them later by keyword, and the Memory settings area now has a real long-term archive view instead of a `WIP` shell. This is designed as a lightweight memory layer that is useful right now, without requiring a separate memory server or a heavyweight external stack just to get durable recall.
+**Long-term memory** now has a working append-only journal path through the new `text_journal` tool. Characters can create journal entries and search them later by keyword, and the Memory settings area now has a real long-term archive view instead of a `WIP` shell. This is designed as a lightweight memory layer that is useful right now, without requiring a separate memory server or a heavyweight external stack just to get durable recall. A sibling **image_journal** feature is also in development to provide similar durable storage for AI-generated art.
 
 **Unified memory lookup** already works across both layers: a search checks the active character's long-term journal first and falls back into short-term memory blocks when the journal has no relevant hit, so retrieval feels like one memory system even though storage remains split.
 
-The broader plan for semantic retrieval, short-term automation, and future compaction is documented in [`docs/memory-architecture.md`](./docs/memory-architecture.md), [`docs/short-term-memory.md`](./docs/short-term-memory.md), and [`docs/long-term-memory.md`](./docs/long-term-memory.md).
+The broader plan for semantic retrieval, short-term automation, and future image journaling is documented in [`docs/memory-architecture.md`](./docs/memory-architecture.md), [`docs/short-term-memory.md`](./docs/short-term-memory.md), [`docs/long-term-memory.md`](./docs/long-term-memory.md), and [`docs/image-journal-proposal.md`](./docs/image-journal-proposal.md).
 
 ### Scene System Is New In This Fork
 

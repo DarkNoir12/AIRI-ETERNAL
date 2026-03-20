@@ -3,15 +3,18 @@ import type { ChatMessage } from '../../../types/chat'
 
 import { computed } from 'vue'
 
+import { useChatSessionStore } from '../../../stores/chat/session-store'
 import { MarkdownRenderer } from '../../markdown'
 
 const props = withDefaults(defineProps<{
-  message: Extract<ChatMessage, { role: 'user' }>
+  message: Extract<ChatMessage, { role: 'user' }> & { id?: string }
   label: string
   variant?: 'desktop' | 'mobile'
 }>(), {
   variant: 'desktop',
 })
+
+const chatSession = useChatSessionStore()
 
 const content = computed(() => {
   const raw = props.message.content
@@ -37,13 +40,19 @@ const containerClasses = computed(() => [
 const boxClasses = computed(() => [
   props.variant === 'mobile' ? 'px-2 py-2 text-sm bg-neutral-100/90 dark:bg-neutral-800/90' : 'px-3 py-3 bg-neutral-100/80 dark:bg-neutral-800/80',
 ])
+
+function deleteSelf() {
+  if (props.message.id)
+    chatSession.deleteMessage(props.message.id)
+}
 </script>
 
 <template>
-  <div v-if="message.role === 'user'" :class="containerClasses" class="ph-no-capture">
+  <div v-if="message.role === 'user'" :class="containerClasses" class="ph-no-capture group">
     <div
       flex="~ col" shadow="sm neutral-200/50 dark:none"
-      min-w-20 rounded-xl h="unset <sm:fit"
+      h="unset <sm:fit"
+      relative min-w-20 rounded-xl
       :class="boxClasses"
     >
       <div>
@@ -53,6 +62,14 @@ const boxClasses = computed(() => [
         :content="content as string"
         class="break-words"
       />
+
+      <button
+        v-if="message.id"
+        class="absolute z-10 p-1 text-black/30 opacity-0 transition-opacity -right-1 -top-1 dark:text-white/30 group-hover:opacity-100 hover:text-red-500!"
+        @click="deleteSelf"
+      >
+        <div i-ph:trash-duotone />
+      </button>
     </div>
   </div>
 </template>
