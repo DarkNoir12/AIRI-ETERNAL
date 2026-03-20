@@ -58,6 +58,14 @@ interface QueuedSend {
   }
 }
 
+// NOTICE: The hooks event bus is intentionally a module-level singleton, NOT created
+// inside the defineStore setup function. During Vite HMR, Pinia re-runs the store's
+// setup function which would create a new hooks instance. Long-lived components like
+// Stage.vue that subscribed to the old hooks would be stranded on a defunct event bus,
+// causing LLM responses to stop reaching the TTS pipeline ("chat text visible, no audio").
+// Keeping hooks at module scope ensures listeners survive store re-instantiation.
+const hooks = createChatHooks()
+
 export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
   const llmStore = useLLM()
   const consciousnessStore = useConsciousnessStore()
@@ -75,7 +83,6 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
 
   const sending = ref(false)
   const pendingQueuedSends = ref<QueuedSend[]>([])
-  const hooks = createChatHooks()
 
   const sendQueue = createQueue<QueuedSend>({
     handlers: [

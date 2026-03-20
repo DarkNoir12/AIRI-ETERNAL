@@ -206,3 +206,21 @@ Fix direction:
 - treat `stream-end` as a flush hook only for remote replay
 - keep replay guard and `remoteStreamReceivedLiteral` alive until `assistant-end`
 - only finalize the remote stream and clear replay state in `assistant-end`
+
+Another failure pattern is stale hook closures during HMR (Hot Module Replacement).
+
+Failure mode:
+- the `hooks` event bus in `chat.ts` is initialized inside the `defineStore` setup function
+- when `chat.ts` is edited, Vite/Pinia replaces the store by re-running the setup function, creating a NEW `hooks` instance
+- `Stage.vue` (the TTS host) is long-lived and remains bound to the listener registration functions of the OLD store instance
+- the New Store emits tokens to its New Hooks, but `Stage.vue` is still "listening" to the defunct Old Hooks
+
+Observed symptom:
+- user-typed chat messages appear in the UI but trigger no audio
+- proactivity (heartbeats) can intermittently remain audible if the proactivity store is still holding a reference to the old `chatStore` instance
+- full app restart or renderer refresh restores the connection
+
+Fix direction:
+- hoist the `hooks` object to module-level scope in `chat.ts`
+- this ensures the singleton event bus instance persists even when the Pinia store is re-instantiated during HMR
+- components remain bound to the same stable event bus regardless of store replacement
