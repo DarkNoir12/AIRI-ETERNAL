@@ -255,7 +255,7 @@ export const electronOpenOnboarding = defineInvokeEventa('eventa:invoke:electron
 export const i18nSetLocale = defineInvokeEventa<void, Locale>('eventa:invoke:electron:i18n:set-locale')
 export const i18nGetLocale = defineInvokeEventa<Locale>('eventa:invoke:electron:i18n:get-locale')
 
-export const artistryGenerateHeadless = defineInvokeEventa<{ imageUrl?: string, error?: string }, { prompt: string, model?: string, provider?: string, options?: Record<string, any> }>('eventa:invoke:electron:artistry:generate-headless')
+export const artistryGenerateHeadless = defineInvokeEventa<{ imageUrl?: string, error?: string }, { prompt: string, model?: string, provider?: string, options?: Record<string, any>, globals?: Record<string, any> }>('eventa:invoke:electron:artistry:generate-headless')
 
 export { electron } from '@proj-airi/electron-eventa'
 

@@ -21,6 +21,7 @@ function getArtistryConfig() {
         comfyuiWslNodePath: store.comfyuiWslNodePath,
         comfyuiHostUrl: store.comfyuiHostUrl,
         comfyuiDefaultCheckpoint: store.comfyuiDefaultCheckpoint,
+        comfyuiDefaultRemixId: store.comfyuiDefaultRemixId,
         replicateApiKey: store.replicateApiKey,
         replicateDefaultModel: store.replicateDefaultModel,
         replicateAspectRatio: store.replicateAspectRatio,
@@ -76,6 +77,7 @@ async function executeCreateImageJournalEntry(params: { prompt?: string, title?:
       title,
       params.prompt,
       cardStore.activeCardId,
+      artistryConfig.Globals?.comfyuiDefaultRemixId as string,
     )
 
     // Optionally spawn a widget to show the result (best effort)

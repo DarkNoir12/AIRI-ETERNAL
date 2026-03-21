@@ -149,6 +149,10 @@ export default defineConfig({
       fs: {
         strict: true,
       },
+      // Prefer a dedicated renderer dev port override so unrelated services
+      // like the AIRI channel server do not accidentally inherit it.
+      port: Number.parseInt(process.env.AIRI_RENDERER_PORT || process.env.PORT || '5173'),
+      strictPort: true,
       warmup: {
         clientFiles: [
           `${resolve(join(import.meta.dirname, '..', '..', 'packages', 'stage-ui', 'src'))}/*.vue`,

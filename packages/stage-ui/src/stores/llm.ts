@@ -73,7 +73,7 @@ function sanitizeMessages(messages: unknown[]): Message[] {
 }
 
 function streamOptionsToolsCompatibilityOk(model: string, chatProvider: ChatProvider, _: Message[], options?: StreamOptions): boolean {
-  return !!(options?.supportsTools || options?.toolsCompatibility?.[`${chatProvider.chat(model).baseURL}-${model}`])
+  return !!(options?.supportsTools || options?.tools || options?.toolsCompatibility?.[`${chatProvider.chat(model).baseURL}-${model}`])
 }
 
 async function streamFrom(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {

@@ -18,6 +18,7 @@ export interface BackgroundEntry {
   blob: Blob
   url?: string
   prompt?: string // only for journal
+  remixId?: string // only for ComfyUI journal entries
   createdAt: number
 }
 
@@ -260,6 +261,7 @@ export const useBackgroundStore = defineStore('background', () => {
     title: string,
     prompt?: string,
     characterId?: string | null,
+    remixId?: string,
   ) {
     const airiCardStore = useAiriCardStore()
     const id = `${STORAGE_PREFIX}${nanoid()}`
@@ -276,6 +278,7 @@ export const useBackgroundStore = defineStore('background', () => {
       title: title.trim() || 'Untitled Background',
       blob,
       prompt,
+      remixId,
       createdAt: Date.now(),
     }
 

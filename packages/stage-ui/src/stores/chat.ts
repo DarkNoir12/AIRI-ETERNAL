@@ -218,6 +218,14 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
           const speechOnly = categorizer.filterToSpeech(text, streamPosition)
           streamPosition += text.length
 
+          const current = categorizer.getCurrent()
+          if (current) {
+            buildingMessage.categorization = {
+              speech: current.speech,
+              reasoning: current.reasoning,
+            }
+          }
+
           if (speechOnly.trim()) {
             buildingMessage.content += speechOnly
 
@@ -233,8 +241,8 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
                 text: speechOnly,
               })
             }
-            updateUI()
           }
+          updateUI()
         },
         onJson: async (json) => {
           if (shouldAbort())
@@ -244,17 +252,107 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
         },
       })
 
+      async function tryBridgeMarker(marker: string): Promise<boolean> {
+        // Supports: <|tool:args|>, [call_tool:tool, args], and [call_tool:tool(args)]
+        // Using non-greedy match to avoid swallowing multiple tags if they are adjacent
+        const match = marker.match(/^<\|([\w-]+):([^|]*)\|>/) || marker.match(/^\[call_tool:([\w-]+),\s*([^\]]*)\]/)
+        if (!match)
+          return false
+
+        const [, toolName, argsRaw] = match
+        const resolvedTools = typeof options.tools === 'function' ? await options.tools() : options.tools
+        const tool = resolvedTools?.find(t => (t.function?.name || (t as any).name) === toolName)
+
+        if (!tool)
+          return false
+
+        console.log(`[ChatDebug] Bridging marker to tool call: ${toolName}`)
+        try {
+          const args: Record<string, any> = {}
+          // Use a non-capturing group for the optional separator (start of string or comma/space)
+          // followed by the key, the separator (colon or equals), and then the various value types.
+          const kvRegex = /(?:^|[, \n\t]+)\s*([\w-]+)\s*[:=]\s*(?:"([^"]*)"|'([^']*)'|(\d+(?:\.\d+)?)|(true|false)|(\{.*\}|\[.*\]))/g
+          let kvMatch
+
+          while ((kvMatch = kvRegex.exec(argsRaw)) !== null) {
+            const [, key, valDouble, valSingle, valNum, valBool, valComplex] = kvMatch
+            if (valDouble !== undefined) {
+              args[key] = valDouble
+            }
+            else if (valSingle !== undefined) {
+              args[key] = valSingle
+            }
+            else if (valNum !== undefined) {
+              args[key] = Number.parseFloat(valNum)
+            }
+            else if (valBool !== undefined) {
+              args[key] = valBool === 'true'
+            }
+            else if (valComplex !== undefined) {
+              try {
+                args[key] = JSON.parse(valComplex.replace(/'/g, '"'))
+              }
+              catch {
+                args[key] = valComplex
+              }
+            }
+          }
+
+          if (Object.keys(args).length === 0) {
+            try {
+              const cleaned = argsRaw.trim().replace(/^\{/, '').replace(/\}$/, '').replace(/(\w+):/g, '"$1":').replace(/'/g, '"')
+              Object.assign(args, JSON.parse(`{${cleaned}}`))
+            }
+            catch {}
+          }
+
+          if (Object.keys(args).length > 0) {
+            toolCallQueue.enqueue({
+              type: 'tool-call',
+              toolCall: {
+                id: `bridge-${nanoid()}`,
+                function: {
+                  name: toolName,
+                  arguments: JSON.stringify(args),
+                },
+              } as any,
+            })
+            return true
+          }
+        }
+        catch (err) {
+          console.error('[ChatDebug] Failed to bridge marker:', err)
+        }
+        return false
+      }
+
       const parser = useLlmmarkerParser({
         onLiteral: async (text) => {
           console.log('[ChatDebug] onLiteral:', text)
           if (shouldAbort())
             return
 
-          await literalInterceptor.consume(text)
+          // Catch hallucinated markers that come through as literals (not wrapped in <|...|>)
+          // regex looks for [call_tool:...] pattern
+          const literalMarkerMatch = text.match(/\[call_tool:[\w-]+,[^\]]+\]/)
+          if (literalMarkerMatch) {
+            const marker = literalMarkerMatch[0]
+            if (await tryBridgeMarker(marker)) {
+              // If perfectly bridged, remove it from the text so it doesn't leak into speech/TTS
+              text = text.replace(marker, '')
+            }
+          }
+
+          if (text.trim()) {
+            await literalInterceptor.consume(text)
+          }
         },
         onSpecial: async (special) => {
           console.log('[ChatDebug] onSpecial:', special)
           if (shouldAbort())
+            return
+
+          if (await tryBridgeMarker(special))
             return
 
           await hooks.emitTokenSpecialHooks(special, streamingMessageContext)
