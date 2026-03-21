@@ -18,11 +18,11 @@ import VueDevTools from 'vite-plugin-vue-devtools'
 import Layouts from 'vite-plugin-vue-layouts'
 import VueMacros from 'vue-macros/vite'
 
+import { resilient } from '@proj-airi/stage-shared/vite'
 import { Download } from '@proj-airi/unplugin-fetch/vite'
 import { DownloadLive2DSDK } from '@proj-airi/unplugin-live2d-sdk/vite'
 import { defineConfig } from 'vite'
 
-// import { isEnvTruthy } from '@proj-airi/stage-shared'
 function isEnvTruthy(value: string | undefined | null): boolean {
   if (value == null)
     return false
