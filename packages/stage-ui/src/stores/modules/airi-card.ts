@@ -40,6 +40,7 @@ export interface ActingConfig {
   modelExpressionPrompt: string
   speechExpressionPrompt: string
   speechMannerismPrompt: string
+  idleAnimations?: string[]
 }
 
 export interface CharacterGenerationConfig {
@@ -423,6 +424,7 @@ Use provider-supported speech mannerisms only when they help communicate tone or
         modelExpressionPrompt: existingExtension.acting?.modelExpressionPrompt ?? defaultActing.modelExpressionPrompt,
         speechExpressionPrompt: existingExtension.acting?.speechExpressionPrompt ?? defaultActing.speechExpressionPrompt,
         speechMannerismPrompt: existingExtension.acting?.speechMannerismPrompt ?? defaultActing.speechMannerismPrompt,
+        idleAnimations: existingExtension.acting?.idleAnimations ?? defaultActing.idleAnimations,
       },
       agents: existingExtension.agents ?? {},
       heartbeats: {

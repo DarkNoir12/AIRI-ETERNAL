@@ -5,7 +5,7 @@ import type { SpeechCapabilitiesInfo } from '@proj-airi/stage-ui/stores/provider
 
 import kebabcase from '@stdlib/string-base-kebabcase'
 
-import { useModelStore } from '@proj-airi/stage-ui-three'
+import { useCustomVrmAnimationsStore, useModelStore } from '@proj-airi/stage-ui-three'
 import { animations } from '@proj-airi/stage-ui-three/assets/vrm'
 import { DEFAULT_ARTISTRY_WIDGET_INSTRUCTION } from '@proj-airi/stage-ui/constants/prompts/artistry-instruction'
 import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
@@ -59,6 +59,7 @@ const providersStore = useProvidersStore()
 const displayModelsStore = useDisplayModelsStore()
 const stageModelStore = useSettingsStageModel()
 const modelStore = useModelStore()
+const customVrmAnimationsStore = useCustomVrmAnimationsStore()
 const backgroundStore = useBackgroundStore()
 
 const { sensorPayload } = storeToRefs(proactivityStore)
@@ -67,6 +68,7 @@ const { activeSpeechProvider: speechProvider, activeSpeechModel: defaultSpeechMo
 const { stageModelSelected: defaultDisplayModelId } = storeToRefs(stageModelStore)
 const { activeProvider: defaultArtistryProvider } = storeToRefs(artistryStore)
 const { availableExpressions } = storeToRefs(modelStore)
+const { animationOptions } = storeToRefs(customVrmAnimationsStore)
 const { activeCardId } = storeToRefs(cardStore)
 
 // Determine if we're in edit mode
@@ -95,6 +97,7 @@ const generationAdvancedJson = ref<string>('{\n  \n}')
 const selectedActingModelExpressionPrompt = ref<string>('')
 const selectedActingSpeechExpressionPrompt = ref<string>('')
 const selectedActingSpeechMannerismPrompt = ref<string>('')
+const selectedActingIdleAnimations = ref<string[]>([])
 const actingSpeechCapabilities = ref<SpeechCapabilitiesInfo | null>(null)
 const actingSpeechCapabilitiesLoading = ref<boolean>(false)
 
@@ -549,6 +552,7 @@ async function saveCard(card: Card): Promise<boolean> {
           modelExpressionPrompt: selectedActingModelExpressionPrompt.value,
           speechExpressionPrompt: selectedActingSpeechExpressionPrompt.value,
           speechMannerismPrompt: selectedActingSpeechMannerismPrompt.value,
+          idleAnimations: [...(selectedActingIdleAnimations.value || [])],
         },
         generation: {
           enabled: generationEnabled.value,
@@ -621,6 +625,7 @@ function initializeCard(): Card {
   selectedActingModelExpressionPrompt.value = airiExt?.acting?.modelExpressionPrompt || DEFAULT_ACTING_MODEL_PROMPT
   selectedActingSpeechExpressionPrompt.value = airiExt?.acting?.speechExpressionPrompt || DEFAULT_ACTING_SPEECH_EXPRESSION_PROMPT
   selectedActingSpeechMannerismPrompt.value = airiExt?.acting?.speechMannerismPrompt || DEFAULT_ACTING_SPEECH_MANNERISM_PROMPT
+  selectedActingIdleAnimations.value = [...(airiExt?.acting?.idleAnimations || [])]
   try {
     selectedArtistryConfigStr.value = airiExt?.artistry?.options ? JSON.stringify(airiExt.artistry.options, null, 2) : '{\n  \n}'
   }
@@ -809,6 +814,8 @@ function getDefaultPlaceholder(defaultValue: string | undefined): string {
             v-model:selected-acting-model-expression-prompt="selectedActingModelExpressionPrompt"
             v-model:selected-acting-speech-expression-prompt="selectedActingSpeechExpressionPrompt"
             v-model:selected-acting-speech-mannerism-prompt="selectedActingSpeechMannerismPrompt"
+            v-model:selected-acting-idle-animations="selectedActingIdleAnimations"
+            :acting-idle-animation-options="animationOptions"
             :acting-model-expression-options="actingModelExpressionOptions"
             :acting-grouped-expression-tags="actingGroupedExpressionTags"
             :acting-mannerism-options="actingMannerismOptions"

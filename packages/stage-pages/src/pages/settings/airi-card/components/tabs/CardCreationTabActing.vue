@@ -13,10 +13,21 @@ defineProps<{
   insertModelExpression: (name: string) => void
   insertSpeechTag: (tag: string, description?: string) => void
   insertSpeechMannerism: (id: string) => void
+  actingIdleAnimationOptions: { label: string, value: string }[]
 }>()
 const selectedActingModelExpressionPrompt = defineModel<string>('selectedActingModelExpressionPrompt', { required: true })
 const selectedActingSpeechExpressionPrompt = defineModel<string>('selectedActingSpeechExpressionPrompt', { required: true })
 const selectedActingSpeechMannerismPrompt = defineModel<string>('selectedActingSpeechMannerismPrompt', { required: true })
+const selectedActingIdleAnimations = defineModel<string[]>('selectedActingIdleAnimations', { required: true })
+
+function toggleIdleAnimation(name: string) {
+  if (selectedActingIdleAnimations.value.includes(name)) {
+    selectedActingIdleAnimations.value = selectedActingIdleAnimations.value.filter(n => n !== name)
+  }
+  else {
+    selectedActingIdleAnimations.value = [...selectedActingIdleAnimations.value, name]
+  }
+}
 </script>
 
 <template>
@@ -26,6 +37,33 @@ const selectedActingSpeechMannerismPrompt = defineModel<string>('selectedActingS
     </p>
 
     <div class="input-list ml-auto mr-auto w-90% flex flex-col gap-8">
+      <div class="border border-neutral-200 rounded-xl p-4 dark:border-neutral-700">
+        <div class="mb-1 text-sm text-neutral-800 font-medium dark:text-neutral-200">
+          Idle Loop / Cycle Animations
+        </div>
+        <div class="mb-3 text-xs text-neutral-500">
+          Pick from the animations available which ones you would like for your character to cycle through automatically. You may pick just one if you want it to have a default set idle loop.
+        </div>
+        <div class="flex flex-col gap-2">
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="opt in actingIdleAnimationOptions"
+              :key="opt.value"
+              class="flex items-center gap-1 border rounded-full px-3 py-1 text-xs outline-none transition-colors"
+              :class="[
+                selectedActingIdleAnimations.includes(opt.value)
+                  ? 'bg-primary-50/50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300 border-primary-200/50'
+                  : 'border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:border-primary-400 hover:text-primary-500',
+              ]"
+              @click="toggleIdleAnimation(opt.value)"
+            >
+              <div class="i-solar:running-bold-duotone text-[10px]" />
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="border border-neutral-200 rounded-xl p-4 dark:border-neutral-700">
         <FieldInput
           v-model="selectedActingModelExpressionPrompt"

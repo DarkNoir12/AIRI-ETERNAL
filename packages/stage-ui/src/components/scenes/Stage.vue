@@ -694,12 +694,25 @@ function handleAnimationFinished() {
 
   // Cycle if enabled
   if (vrmStore.vrmIdleCycleEnabled) {
-    const keys = customVrmAnimationsStore.animationKeys
+    const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
+    const keys = cardIdleAnimations.length > 0 ? cardIdleAnimations : customVrmAnimationsStore.animationKeys
+
+    // Fall back to the original full subset if none of the customized ones are currently valid
+    const validKeys = keys.filter(k => customVrmAnimationsStore.animationKeys.includes(k))
+    const finalKeys = validKeys.length > 0 ? validKeys : customVrmAnimationsStore.animationKeys
+
     const currentKey = vrmStore.vrmIdleAnimation
-    const otherKeys = keys.filter(key => key !== currentKey)
-    const randomKey = otherKeys[Math.floor(Math.random() * otherKeys.length)]
-    if (randomKey) {
-      vrmStore.vrmIdleAnimation = randomKey
+    const otherKeys = finalKeys.filter(key => key !== currentKey)
+
+    // If there's only one valid key (meaning the user picked a single animation to loop), just force it
+    if (finalKeys.length === 1) {
+      vrmStore.vrmIdleAnimation = finalKeys[0]
+    }
+    else {
+      const randomKey = otherKeys[Math.floor(Math.random() * otherKeys.length)]
+      if (randomKey) {
+        vrmStore.vrmIdleAnimation = randomKey
+      }
     }
   }
 }
