@@ -11,6 +11,7 @@ import { computed, onUnmounted, ref, toRaw, watch } from 'vue'
 
 import { useLlmmarkerParser } from '../composables/llm-marker-parser'
 import { categorizeResponse, createStreamingCategorizer } from '../composables/response-categoriser'
+import { useBackgroundStore } from './background'
 import { useChatOrchestratorStore } from './chat'
 import { useChatContextStore } from './chat/context-store'
 import { useChatSessionStore } from './chat/session-store'
@@ -19,7 +20,6 @@ import { useTextJournalStore } from './memory-text-journal'
 import { useAiriCardStore } from './modules/airi-card'
 import { useConsciousnessStore } from './modules/consciousness'
 import { useProvidersStore } from './providers'
-import { useSceneStore } from './scene'
 
 export const useProactivityStore = defineStore('proactivity', () => {
   const airiCardStore = useAiriCardStore()
@@ -31,7 +31,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
   const textJournalStore = useTextJournalStore()
   const consciousnessStore = useConsciousnessStore()
   const providersStore = useProvidersStore()
-  const sceneStore = useSceneStore()
+  const backgroundStore = useBackgroundStore()
 
   // eslint-disable-next-line no-console
   console.log('[Proactivity] Proactivity Store initialized.')
@@ -129,11 +129,10 @@ export const useProactivityStore = defineStore('proactivity', () => {
 
   const sensorPayload = computed(() => {
     const config = activeCard.value?.extensions?.airi?.heartbeats
-    const preferredBackgroundId = activeCard.value?.extensions?.airi?.modules?.preferredBackgroundId
-    const preferredBackgroundName = activeCard.value?.extensions?.airi?.modules?.preferredBackgroundName
-    const resolvedDefaultBackgroundName = preferredBackgroundId && preferredBackgroundId !== 'none'
-      ? (sceneStore.backgrounds.get(preferredBackgroundId)?.name ?? preferredBackgroundName ?? 'unknown')
-      : (preferredBackgroundId === 'none' ? 'none' : (preferredBackgroundName ?? 'none'))
+    const activeBackgroundId = activeCard.value?.extensions?.airi?.modules?.activeBackgroundId
+    const resolvedDefaultBackgroundName = activeBackgroundId && activeBackgroundId !== 'none'
+      ? (backgroundStore.entries.get(activeBackgroundId)?.title ?? 'unknown')
+      : 'none'
     const oneHourAgo = Date.now() - 3600000
     const recentJournalEntryCount = textJournalStore.entries.filter((entry) => {
       return entry.characterId === activeCardId.value && entry.createdAt > oneHourAgo

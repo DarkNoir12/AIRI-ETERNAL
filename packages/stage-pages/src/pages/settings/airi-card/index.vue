@@ -6,9 +6,9 @@ import { loadLive2DModelPreview } from '@proj-airi/stage-ui-live2d/utils/live2d-
 import { useModelStore } from '@proj-airi/stage-ui-three'
 import { loadVrmModelPreview } from '@proj-airi/stage-ui-three/utils/vrm-preview'
 import { Alert } from '@proj-airi/stage-ui/components'
+import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { DisplayModelFormat, useDisplayModelsStore } from '@proj-airi/stage-ui/stores/display-models'
 import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
-import { useSceneStore } from '@proj-airi/stage-ui/stores/scene'
 import { useSettingsStageModel } from '@proj-airi/stage-ui/stores/settings/stage-model'
 import { AiriCardSchema } from '@proj-airi/stage-ui/types'
 import { InputFile } from '@proj-airi/ui'
@@ -33,7 +33,7 @@ const { addCard, removeCard } = cardStore
 const { cards, activeCardId } = storeToRefs(cardStore)
 const modelStore = useModelStore()
 const stageModelStore = useSettingsStageModel()
-const sceneStore = useSceneStore()
+const backgroundStore = useBackgroundStore()
 const { activeExpressions } = storeToRefs(modelStore)
 const { stageModelSelected } = storeToRefs(stageModelStore)
 
@@ -230,7 +230,7 @@ watch(inputFiles, async (newFiles) => {
     const renamedCard = withImportedCardName(importedCard, uniqueName)
 
     // Add card and select it
-    selectedCardId.value = addCard(renamedCard)
+    selectedCardId.value = await addCard(renamedCard)
     isCardDialogOpen.value = true
     toast.success('Card imported successfully')
   }
@@ -344,8 +344,8 @@ function handleCardCreationDialog() {
   isCardCreationDialogOpen.value = true
 }
 
-function exportCard(cardId: string) {
-  const card = getCardWithExportedBackground(cardId)
+async function exportCard(cardId: string) {
+  const card = await getCardWithExportedBackground(cardId)
   if (!card) {
     console.error(`Card with id ${cardId} not found`)
     return
@@ -413,40 +413,45 @@ function buildCharaCardV2(card: AiriCard) {
   }
 }
 
-function getCardWithExportedBackground(cardId: string): AiriCard | undefined {
+async function getCardWithExportedBackground(cardId: string): Promise<AiriCard | undefined> {
   const card = cardStore.getCard(cardId)
   if (!card)
     return undefined
 
-  const preferredBackgroundId = card.extensions?.airi?.modules?.preferredBackgroundId
+  const activeBackgroundId = card.extensions?.airi?.modules?.activeBackgroundId
 
-  if (!preferredBackgroundId || preferredBackgroundId === 'none')
+  if (!activeBackgroundId || activeBackgroundId === 'none')
     return card
 
-  const linkedBackground = sceneStore.backgrounds.get(preferredBackgroundId)
-  const matchedByName = !linkedBackground && card.extensions?.airi?.modules?.preferredBackgroundName
-    ? Array.from(sceneStore.backgrounds.values()).find(background => background.name === card.extensions?.airi?.modules?.preferredBackgroundName)
-    : null
-  const exportBackground = linkedBackground ?? matchedByName ?? null
+  const exportBackground = backgroundStore.entries.get(activeBackgroundId)
 
   if (!exportBackground)
     return card
 
-  return {
-    ...card,
-    extensions: {
-      ...card.extensions,
-      airi: {
-        ...card.extensions?.airi,
-        modules: {
-          ...card.extensions?.airi?.modules,
-          preferredBackgroundId,
-          preferredBackgroundName: exportBackground.name,
-          preferredBackgroundDataUrl: exportBackground.url,
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      resolve({
+        ...card,
+        extensions: {
+          ...card.extensions,
+          airi: {
+            ...card.extensions?.airi,
+            modules: {
+              ...card.extensions?.airi?.modules,
+              activeBackgroundId,
+              // Export these for backwards compatibility with chara_card_v2 format standards
+              preferredBackgroundId: activeBackgroundId,
+              preferredBackgroundName: exportBackground.title || exportBackground.id,
+              preferredBackgroundDataUrl: e.target?.result as string,
+            },
+          },
         },
-      },
-    },
-  }
+      })
+    }
+    reader.onerror = () => resolve(card)
+    reader.readAsDataURL(exportBackground.blob)
+  })
 }
 
 function utf8ToBase64(input: string) {
@@ -606,7 +611,7 @@ async function composeCardExportPng(previewImage: string) {
 }
 
 async function exportCardPng(cardId: string) {
-  const card = getCardWithExportedBackground(cardId)
+  const card = await getCardWithExportedBackground(cardId)
   if (!card) {
     console.error(`Card with id ${cardId} not found`)
     return

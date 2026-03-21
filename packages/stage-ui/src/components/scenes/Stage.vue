@@ -30,13 +30,13 @@ import { categorizeResponse } from '../../composables/response-categoriser'
 import { llmInferenceEndToken } from '../../constants'
 import { EMOTION_EmotionMotionName_value, EMOTION_VRMExpressionName_value, EmotionThinkMotionName } from '../../constants/emotions'
 import { useAudioContext, useSpeakingStore } from '../../stores/audio'
+import { useBackgroundStore } from '../../stores/background'
 import { useChatOrchestratorStore } from '../../stores/chat'
 import { useModsServerChannelStore } from '../../stores/mods/api/channel-server'
 import { useAiriCardStore } from '../../stores/modules'
 import { useConsciousnessStore } from '../../stores/modules/consciousness'
 import { useSpeechStore } from '../../stores/modules/speech'
 import { useProvidersStore } from '../../stores/providers'
-import { useSceneStore } from '../../stores/scene'
 import { useSettings } from '../../stores/settings'
 import { useSpeechRuntimeStore } from '../../stores/speech-runtime'
 
@@ -122,9 +122,9 @@ const { ssmlEnabled, activeSpeechProvider, activeSpeechModel, activeSpeechVoice,
 const { activeProvider: activeChatProvider } = storeToRefs(consciousnessStore)
 const activeCardId = computed(() => activeCard.value?.name ?? 'default')
 const speechRuntimeStore = useSpeechRuntimeStore()
-const sceneStore = useSceneStore()
+const backgroundStore = useBackgroundStore()
 
-const { activeBackgroundUrl } = storeToRefs(sceneStore)
+const { activeBackgroundUrl } = storeToRefs(backgroundStore)
 const resizeStateEventName = useElectronWindowResizeStateEvent()
 const isWindowResizing = ref(false)
 const reducedRenderScale = computed(() => {

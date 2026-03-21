@@ -25,7 +25,7 @@ const selectedSpeechProvider = defineModel<string>('selectedSpeechProvider', { r
 const selectedSpeechModel = defineModel<string>('selectedSpeechModel', { required: true })
 const selectedSpeechVoiceId = defineModel<string>('selectedSpeechVoiceId', { required: true })
 const selectedDisplayModelId = defineModel<string>('selectedDisplayModelId', { required: true })
-const selectedPreferredBackgroundId = defineModel<string>('selectedPreferredBackgroundId', { required: true })
+const selectedActiveBackgroundId = defineModel<string>('selectedActiveBackgroundId', { required: true })
 
 const { t } = useI18n()
 </script>
@@ -124,7 +124,7 @@ const { t } = useI18n()
           {{ t('settings.pages.card.creation.preferred_background') }}
         </label>
         <Select
-          v-model="selectedPreferredBackgroundId"
+          v-model="selectedActiveBackgroundId"
           :options="sceneOptions"
           placeholder="Select background preference"
           class="w-full"

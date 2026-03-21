@@ -13,8 +13,8 @@ import SystemPromptV2 from '../../constants/prompts/system-v2'
 
 import { DEFAULT_ARTISTRY_WIDGET_INSTRUCTION } from '../../constants/prompts/artistry-instruction'
 import { AiriCardSchema } from '../../types/card.schema'
+import { useBackgroundStore } from '../background'
 import { DisplayModelFormat, useDisplayModelsStore } from '../display-models'
-import { useSceneStore } from '../scene'
 import { useSettingsStageModel } from '../settings/stage-model'
 import { useConsciousnessStore } from './consciousness'
 import { useSpeechStore } from './speech'
@@ -92,10 +92,8 @@ export interface AiriExtension {
 
     // ID from display-models store (e.g. 'preset-live2d-1', 'display-model-<nanoid>')
     displayModelId?: string
-    // ID from scene store
-    preferredBackgroundId?: string | null
-    preferredBackgroundName?: string | null
-    preferredBackgroundDataUrl?: string | null
+    // ID from unified background store
+    activeBackgroundId?: string | null
     // Legacy key from older local card revisions. Read-only for migration.
     selectedModelId?: string
   }
@@ -150,7 +148,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
   const displayModelsStore = useDisplayModelsStore()
   const live2dStore = useLive2d()
   const vrmStore = useModelStore()
-  const sceneStore = useSceneStore()
+  const backgroundStore = useBackgroundStore()
 
   const {
     activeProvider: activeConsciousnessProvider,
@@ -163,65 +161,13 @@ export const useAiriCardStore = defineStore('airi-card', () => {
     activeSpeechModel,
   } = storeToRefs(speechStore)
 
-  function resolveLocalPreferredBackground(modules?: AiriExtension['modules']) {
-    if (!modules)
-      return undefined
-
-    if (modules.preferredBackgroundId === 'none') {
-      return {
-        preferredBackgroundId: 'none' as const,
-        preferredBackgroundName: modules.preferredBackgroundName ?? 'none',
-        preferredBackgroundDataUrl: modules.preferredBackgroundDataUrl ?? null,
-      }
-    }
-
-    if (modules.preferredBackgroundId && sceneStore.backgrounds.has(modules.preferredBackgroundId)) {
-      const existing = sceneStore.backgrounds.get(modules.preferredBackgroundId)
-      return {
-        preferredBackgroundId: modules.preferredBackgroundId,
-        preferredBackgroundName: existing?.name ?? modules.preferredBackgroundName ?? null,
-        preferredBackgroundDataUrl: existing?.url ?? modules.preferredBackgroundDataUrl ?? null,
-      }
-    }
-
-    if (modules.preferredBackgroundName) {
-      const matchedBackground = Array.from(sceneStore.backgrounds.values()).find(
-        background => background.name === modules.preferredBackgroundName,
-      )
-      if (matchedBackground) {
-        return {
-          preferredBackgroundId: matchedBackground.id,
-          preferredBackgroundName: matchedBackground.name,
-          preferredBackgroundDataUrl: matchedBackground.url,
-        }
-      }
-    }
-
-    if (modules.preferredBackgroundDataUrl && modules.preferredBackgroundName) {
-      const importedBackgroundId = sceneStore.addBackground(modules.preferredBackgroundDataUrl, modules.preferredBackgroundName)
-      return {
-        preferredBackgroundId: importedBackgroundId,
-        preferredBackgroundName: modules.preferredBackgroundName,
-        preferredBackgroundDataUrl: modules.preferredBackgroundDataUrl,
-      }
-    }
-
-    return {
-      preferredBackgroundId: modules.preferredBackgroundId ?? null,
-      preferredBackgroundName: modules.preferredBackgroundName ?? null,
-      preferredBackgroundDataUrl: modules.preferredBackgroundDataUrl ?? null,
-    }
-  }
-
   function stripEmbeddedBackgroundData(extension: AiriExtension): AiriExtension {
+    const modulesCopy: any = { ...extension.modules }
+    delete modulesCopy.preferredBackgroundDataUrl
+
     return {
       ...extension,
-      modules: {
-        ...extension.modules,
-        // NOTICE: embedded background image data is only for import/export portability.
-        // Persisting it in the `airi-cards` localStorage blob quickly exhausts browser quota.
-        preferredBackgroundDataUrl: null,
-      },
+      modules: modulesCopy,
     }
   }
 
@@ -237,8 +183,25 @@ export const useAiriCardStore = defineStore('airi-card', () => {
     return normalizedCards
   }
 
-  const addCard = (card: AiriCard | Card | ccv3.CharacterCardV3) => {
+  const addCard = async (card: AiriCard | Card | ccv3.CharacterCardV3) => {
     const newCardId = nanoid()
+
+    // Extract embedded background before it gets stripped
+    const ext = ('data' in card ? card.data?.extensions?.airi : card.extensions?.airi) as AiriExtension | undefined
+    const modules = ext?.modules as any
+
+    if (modules && modules.preferredBackgroundDataUrl && modules.preferredBackgroundName) {
+      try {
+        const res = await fetch(modules.preferredBackgroundDataUrl)
+        const blob = await res.blob()
+        const importedBackgroundId = await backgroundStore.addBackground('journal', blob, modules.preferredBackgroundName, undefined, newCardId)
+        modules.activeBackgroundId = importedBackgroundId
+      }
+      catch (err) {
+        console.error('[AiriCard] Failed to import embedded background', err)
+      }
+    }
+
     const nextCards = new Map(cards.value)
     nextCards.set(newCardId, compactCard(card))
     cards.value = nextCards
@@ -306,38 +269,9 @@ export const useAiriCardStore = defineStore('airi-card', () => {
         vrmStore.shouldUpdateView()
     }
 
-    const resolvedPreferredBackground = resolveLocalPreferredBackground(extension.modules)
-    const preferredBackgroundId = resolvedPreferredBackground?.preferredBackgroundId
-    const preferredBackgroundName = resolvedPreferredBackground?.preferredBackgroundName
-    const preferredBackgroundDataUrl = resolvedPreferredBackground?.preferredBackgroundDataUrl
-    if (preferredBackgroundId === 'none') {
-      sceneStore.setActiveBackground(null)
-    }
-    else if (preferredBackgroundId && sceneStore.backgrounds.has(preferredBackgroundId)) {
-      sceneStore.setActiveBackground(preferredBackgroundId)
-    }
-    else if (preferredBackgroundName) {
-      const matchedBackground = Array.from(sceneStore.backgrounds.values()).find(
-        background => background.name === preferredBackgroundName,
-      )
-      if (matchedBackground) {
-        sceneStore.setActiveBackground(matchedBackground.id)
-      }
-      else if (preferredBackgroundDataUrl) {
-        const importedBackgroundId = sceneStore.addBackground(preferredBackgroundDataUrl, preferredBackgroundName)
-        sceneStore.setActiveBackground(importedBackgroundId)
-      }
-      else if (sceneStore.globalBackgroundId) {
-        sceneStore.setActiveBackground(sceneStore.globalBackgroundId)
-      }
-    }
-    else if (preferredBackgroundDataUrl && preferredBackgroundName) {
-      const importedBackgroundId = sceneStore.addBackground(preferredBackgroundDataUrl, preferredBackgroundName)
-      sceneStore.setActiveBackground(importedBackgroundId)
-    }
-    else if (sceneStore.globalBackgroundId) {
-      sceneStore.setActiveBackground(sceneStore.globalBackgroundId)
-    }
+    // Background syncing to a global store is no longer needed manually.
+    // The backgroundStore uses a computed property `activeBackgroundUrl`
+    // derived directly from the active card's `activeBackgroundId`.
   }
 
   async function activateCard(id: string, force = false) {
@@ -366,9 +300,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
         voice_id: activeSpeechVoiceId.value,
       },
       displayModelId: stageModelStore.stageModelSelected,
-      preferredBackgroundId: 'none',
-      preferredBackgroundName: null,
-      preferredBackgroundDataUrl: null,
+      activeBackgroundId: 'none',
     }
 
     const defaultHeartbeats: HeartbeatConfig = {
@@ -444,7 +376,12 @@ Use provider-supported speech mannerisms only when they help communicate tone or
     const resolvedDisplayModelId = existingExtension.modules?.displayModelId
       ?? existingExtension.modules?.selectedModelId
       ?? defaultModules.displayModelId
-    const resolvedPreferredBackground = resolveLocalPreferredBackground(existingExtension.modules)
+
+    // Resolve legacy preferredBackgroundId to new activeBackgroundId
+    const existingModulesAny = existingExtension.modules as Record<string, any> | undefined
+    const resolvedActiveBackgroundId = existingModulesAny?.activeBackgroundId
+      ?? existingModulesAny?.preferredBackgroundId
+      ?? defaultModules.activeBackgroundId
 
     return {
       modules: {
@@ -464,9 +401,7 @@ Use provider-supported speech mannerisms only when they help communicate tone or
         vrm: existingExtension.modules?.vrm,
         live2d: existingExtension.modules?.live2d,
         displayModelId: resolvedDisplayModelId,
-        preferredBackgroundId: resolvedPreferredBackground?.preferredBackgroundId ?? defaultModules.preferredBackgroundId,
-        preferredBackgroundName: resolvedPreferredBackground?.preferredBackgroundName ?? defaultModules.preferredBackgroundName,
-        preferredBackgroundDataUrl: resolvedPreferredBackground?.preferredBackgroundDataUrl ?? defaultModules.preferredBackgroundDataUrl,
+        activeBackgroundId: resolvedActiveBackgroundId,
       },
       artistry: {
         ...existingExtension.artistry,

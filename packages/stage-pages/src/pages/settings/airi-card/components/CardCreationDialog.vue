@@ -8,15 +8,14 @@ import kebabcase from '@stdlib/string-base-kebabcase'
 import { useModelStore } from '@proj-airi/stage-ui-three'
 import { animations } from '@proj-airi/stage-ui-three/assets/vrm'
 import { DEFAULT_ARTISTRY_WIDGET_INSTRUCTION } from '@proj-airi/stage-ui/constants/prompts/artistry-instruction'
+import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { DisplayModelFormat, useDisplayModelsStore } from '@proj-airi/stage-ui/stores/display-models'
 import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { useArtistryStore } from '@proj-airi/stage-ui/stores/modules/artistry'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
-import { useImageJournalStore } from '@proj-airi/stage-ui/stores/modules/image-journal'
 import { useSpeechStore } from '@proj-airi/stage-ui/stores/modules/speech'
 import { useProactivityStore } from '@proj-airi/stage-ui/stores/proactivity'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
-import { useSceneStore } from '@proj-airi/stage-ui/stores/scene'
 import { useSettingsStageModel } from '@proj-airi/stage-ui/stores/settings/stage-model'
 import { Button } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
@@ -59,8 +58,8 @@ const proactivityStore = useProactivityStore()
 const providersStore = useProvidersStore()
 const displayModelsStore = useDisplayModelsStore()
 const stageModelStore = useSettingsStageModel()
-const journalStore = useImageJournalStore()
 const modelStore = useModelStore()
+const backgroundStore = useBackgroundStore()
 
 const { sensorPayload } = storeToRefs(proactivityStore)
 const { activeProvider: consciousnessProvider, activeModel: defaultConsciousnessModel } = storeToRefs(consciousnessStore)
@@ -68,8 +67,6 @@ const { activeSpeechProvider: speechProvider, activeSpeechModel: defaultSpeechMo
 const { stageModelSelected: defaultDisplayModelId } = storeToRefs(stageModelStore)
 const { activeProvider: defaultArtistryProvider } = storeToRefs(artistryStore)
 const { availableExpressions } = storeToRefs(modelStore)
-const sceneStore = useSceneStore()
-const { backgrounds } = storeToRefs(sceneStore)
 const { activeCardId } = storeToRefs(cardStore)
 
 // Determine if we're in edit mode
@@ -82,7 +79,7 @@ const selectedSpeechProvider = ref<string>('')
 const selectedSpeechModel = ref<string>('')
 const selectedSpeechVoiceId = ref<string>('')
 const selectedDisplayModelId = ref<string>('')
-const selectedPreferredBackgroundId = ref<string>('__none__')
+const selectedActiveBackgroundId = ref<string>('none')
 const selectedArtistryProvider = ref<string>('')
 const selectedArtistryModel = ref<string>('')
 const selectedArtistryPromptPrefix = ref<string>('')
@@ -261,52 +258,14 @@ const displayModelOptions = computed(() => {
 })
 
 const sceneOptions = computed(() => {
-  const options = Array.from(backgrounds.value.entries()).map(([id, bg]) => ({
-    value: id,
-    label: bg.name || id,
-  }))
-
-  const journalOptions = journalStore.entries
-    .filter(e => e.characterId === props.cardId)
-    .map(entry => ({
-      value: entry.id,
-      label: `Journal: ${entry.title}`,
-    }))
-
+  const backgrounds = backgroundStore.getCharacterBackgrounds(props.cardId)
   return [
-    { value: '__default__', label: t('settings.pages.card.creation.use_default') },
-    { value: '__none__', label: t('settings.pages.card.creation.none') },
-    ...options,
-    ...journalOptions,
+    { value: 'none', label: t('settings.pages.card.creation.none') },
+    ...backgrounds.map(bg => ({
+      value: bg.id,
+      label: bg.type === 'journal' ? `Journal: ${bg.title}` : bg.title,
+    })),
   ]
-})
-
-const selectedPreferredBackgroundName = computed(() => {
-  if (selectedPreferredBackgroundId.value === '__none__')
-    return 'none'
-
-  if (selectedPreferredBackgroundId.value === '__default__')
-    return null
-
-  const journalEntry = journalStore.entries.find(e => e.id === selectedPreferredBackgroundId.value)
-  if (journalEntry)
-    return journalEntry.title
-
-  return backgrounds.value.get(selectedPreferredBackgroundId.value)?.name || null
-})
-
-const selectedPreferredBackgroundDataUrl = computed(() => {
-  if (selectedPreferredBackgroundId.value === '__none__')
-    return null
-
-  if (selectedPreferredBackgroundId.value === '__default__')
-    return null
-
-  const journalEntry = journalStore.entries.find(e => e.id === selectedPreferredBackgroundId.value)
-  if (journalEntry)
-    return journalEntry.url
-
-  return backgrounds.value.get(selectedPreferredBackgroundId.value)?.url || null
 })
 
 const actingModelExpressionOptions = computed(() => {
@@ -484,7 +443,7 @@ const activeTab = computed({
 const showError = ref<boolean>(false)
 const errorMessage = ref<string>('')
 
-function saveCard(card: Card): boolean {
+async function saveCard(card: Card): Promise<boolean> {
   // Before saving, let's validate what the user entered :
   const rawCard: Card = toRaw(card)
 
@@ -567,11 +526,7 @@ function saveCard(card: Card): boolean {
             voice_id: selectedSpeechVoiceId.value || defaultSpeechVoiceId.value,
           },
           displayModelId: selectedDisplayModelId.value || defaultDisplayModelId.value,
-          preferredBackgroundId: selectedPreferredBackgroundId.value === '__default__'
-            ? null
-            : (selectedPreferredBackgroundId.value === '__none__' ? 'none' : selectedPreferredBackgroundId.value),
-          preferredBackgroundName: selectedPreferredBackgroundName.value,
-          preferredBackgroundDataUrl: selectedPreferredBackgroundDataUrl.value,
+          activeBackgroundId: selectedActiveBackgroundId.value || 'none',
         },
         agents: {},
         heartbeats: {
@@ -628,7 +583,7 @@ function saveCard(card: Card): boolean {
   }
   else {
     // Create mode: add new card
-    cardStore.addCard(cardWithModules)
+    await cardStore.addCard(cardWithModules)
   }
 
   modelValue.value = false // Close this
@@ -650,10 +605,8 @@ function initializeCard(): Card {
   selectedSpeechModel.value = airiExt?.modules?.speech?.model || defaultSpeechModel.value
   selectedSpeechVoiceId.value = airiExt?.modules?.speech?.voice_id || defaultSpeechVoiceId.value
   selectedDisplayModelId.value = airiExt?.modules?.displayModelId || defaultDisplayModelId.value
-  const preferredBg = airiExt?.modules?.preferredBackgroundId
-  selectedPreferredBackgroundId.value = preferredBg === 'none'
-    ? '__none__'
-    : (preferredBg ?? '__none__')
+  const activeBg = airiExt?.modules?.activeBackgroundId || airiExt?.modules?.preferredBackgroundId
+  selectedActiveBackgroundId.value = !activeBg ? 'none' : activeBg
   selectedArtistryProvider.value = airiExt?.artistry?.provider || defaultArtistryProvider.value
   selectedArtistryModel.value = airiExt?.artistry?.model || ''
   selectedArtistryPromptPrefix.value = airiExt?.artistry?.promptPrefix || ''
@@ -709,34 +662,10 @@ function initializeCard(): Card {
 }
 
 const card = ref<Card>(initializeCard())
-const hasInitializedPreferredBackground = ref(false)
-
-watch(selectedPreferredBackgroundId, (nextValue) => {
-  if (!hasInitializedPreferredBackground.value) {
-    hasInitializedPreferredBackground.value = true
-    return
-  }
-
-  if (!isEditMode.value || !props.cardId || activeCardId.value !== props.cardId)
-    return
-
-  if (nextValue === '__none__') {
-    sceneStore.setActiveBackground(null)
-    return
-  }
-
-  if (nextValue === '__default__') {
-    sceneStore.setActiveBackground(sceneStore.globalBackgroundId)
-    return
-  }
-
-  sceneStore.setActiveBackground(nextValue)
-})
 
 // Reinitialize when cardId changes or dialog opens
 watch(() => [props.modelValue, props.cardId], () => {
   if (props.modelValue) {
-    hasInitializedPreferredBackground.value = false
     card.value = initializeCard()
   }
 })
@@ -898,7 +827,7 @@ function getDefaultPlaceholder(defaultValue: string | undefined): string {
             v-model:selected-speech-model="selectedSpeechModel"
             v-model:selected-speech-voice-id="selectedSpeechVoiceId"
             v-model:selected-display-model-id="selectedDisplayModelId"
-            v-model:selected-preferred-background-id="selectedPreferredBackgroundId"
+            v-model:selected-active-background-id="selectedActiveBackgroundId"
             :consciousness-provider-options="consciousnessProviderOptions"
             :consciousness-model-options="consciousnessModelOptions"
             :speech-provider-options="speechProviderOptions"

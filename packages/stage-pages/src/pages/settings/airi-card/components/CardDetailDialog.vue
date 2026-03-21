@@ -3,13 +3,11 @@ import type { AiriCard } from '@proj-airi/stage-ui/stores/modules/airi-card'
 
 import DOMPurify from 'dompurify'
 
-import { useBackgroundStore } from '@proj-airi/stage-layouts'
 import {
   useAiriCardStore,
   useArtistryStore,
+  useBackgroundStore,
   useConsciousnessStore,
-  useImageJournalStore,
-  useSceneStore,
   useSpeechStore,
 } from '@proj-airi/stage-ui/stores'
 import { Button, Select } from '@proj-airi/ui'
@@ -40,8 +38,6 @@ const { t } = useI18n()
 const cardStore = useAiriCardStore()
 const consciousnessStore = useConsciousnessStore()
 const speechStore = useSpeechStore()
-const journalStore = useImageJournalStore()
-const sceneStore = useSceneStore()
 const backgroundStore = useBackgroundStore()
 const isRefreshingGallery = ref(false)
 
@@ -60,7 +56,9 @@ const selectedCard = computed<AiriCard | undefined>(() => {
 })
 
 // Journal entries for this card
-const journalEntries = computed(() => journalStore.entries.filter(e => e.characterId === props.cardId))
+const journalEntries = computed(() => {
+  return backgroundStore.getCharacterJournalEntries(props.cardId)
+})
 
 // ... keep existing moduleSettings and characterSettings ...
 
@@ -142,35 +140,18 @@ interface Tab {
 
 // Background options including journal entries
 const backgroundOptions = computed(() => {
-  const options = Array.from(sceneStore.backgrounds.entries()).map(([id, bg]) => ({
-    value: id,
-    label: bg.name || id,
-  }))
-
-  const journalOptions = journalEntries.value.map(entry => ({
-    value: entry.id,
-    label: `Journal: ${entry.title}`,
-  }))
-
+  const backgrounds = backgroundStore.getCharacterBackgrounds(props.cardId)
   return [
     { value: 'none', label: t('settings.pages.card.creation.none') },
-    ...options,
-    ...journalOptions,
+    ...backgrounds.map(bg => ({
+      value: bg.id,
+      label: bg.type === 'journal' ? `Journal: ${bg.title}` : bg.title,
+    })),
   ]
 })
 
-// Convert a Blob to a self-contained data URL string
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
-}
-
-const preferredBackgroundId = computed({
-  get: () => selectedCard.value?.extensions?.airi?.modules?.preferredBackgroundId || 'none',
+const activeBackgroundId = computed({
+  get: () => selectedCard.value?.extensions?.airi?.modules?.activeBackgroundId || 'none',
   set: async (val: string) => {
     if (!selectedCard.value)
       return
@@ -178,28 +159,7 @@ const preferredBackgroundId = computed({
     if (!extension.airi.modules)
       extension.airi.modules = {}
 
-    extension.airi.modules.preferredBackgroundId = val
-
-    // If it's a journal entry, convert blob to data URL for reload persistence
-    // NOTICE: blob: URLs are ephemeral and die on page reload. Data URLs are
-    // self-contained strings that survive localStorage/card extension serialization.
-    const journalEntry = journalEntries.value.find(e => e.id === val)
-    if (journalEntry) {
-      extension.airi.modules.preferredBackgroundName = journalEntry.title
-      try {
-        extension.airi.modules.preferredBackgroundDataUrl = journalEntry.blob
-          ? await blobToDataUrl(journalEntry.blob)
-          : journalEntry.url || null
-      }
-      catch {
-        extension.airi.modules.preferredBackgroundDataUrl = journalEntry.url || null
-      }
-    }
-    else {
-      const sceneBg = sceneStore.backgrounds.get(val)
-      extension.airi.modules.preferredBackgroundName = sceneBg?.name || null
-      extension.airi.modules.preferredBackgroundDataUrl = sceneBg?.url || null
-    }
+    extension.airi.modules.activeBackgroundId = val
 
     cardStore.updateCard(props.cardId, {
       ...selectedCard.value,
@@ -260,46 +220,19 @@ const tabs = computed<Tab[]>(() => {
 })
 
 async function handleSetAsBackground(entry: any) {
-  try {
-    // Convert blob to data URL for both scene store and persistence
-    const dataUrl = entry.blob ? await blobToDataUrl(entry.blob) : entry.url
-
-    // 1. Update SceneStore (Renderer immediate)
-    const id = sceneStore.addBackground(dataUrl, entry.title)
-    sceneStore.setActiveBackground(id)
-
-    // 2. Update BackgroundStore (New system / layout sync)
-    const background = await backgroundStore.addOption({
-      id: entry.id,
-      label: entry.title,
-      description: `Journal entry: ${entry.prompt}`,
-      kind: 'image' as any,
-      file: entry.blob,
-    })
-    backgroundStore.setSelection(background)
-
-    // 3. Update card extension so the dropdown and reload persistence work
-    preferredBackgroundId.value = entry.id
-  }
-  catch (e) {
-    console.error('[Gallery] Failed to set background', e)
-  }
-}
-
-async function handleSetAsPreferred(entry: any) {
-  preferredBackgroundId.value = entry.id
+  activeBackgroundId.value = entry.id
 }
 
 async function handleDeleteEntry(id: string) {
   if (confirm('Are you sure you want to delete this image from the journal?')) {
-    await journalStore.deleteEntry(id)
+    await backgroundStore.removeBackground(id)
   }
 }
 
 async function handleRefreshGallery() {
   isRefreshingGallery.value = true
   try {
-    await journalStore.refresh()
+    await backgroundStore.initializeStore()
   }
   finally {
     isRefreshingGallery.value = false
@@ -619,7 +552,7 @@ function getModuleDisplayValue(value: string | undefined, defaultValue: string |
                 </div>
                 <div w-64>
                   <Select
-                    v-model="preferredBackgroundId"
+                    v-model="activeBackgroundId"
                     :options="backgroundOptions"
                     placeholder="Select background"
                   />
@@ -644,29 +577,22 @@ function getModuleDisplayValue(value: string | undefined, defaultValue: string |
                   v-for="entry in journalEntries"
                   :key="entry.id"
                   class="group relative aspect-square overflow-hidden border border-neutral-200 rounded-lg bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900"
-                  :class="{ 'ring-2 ring-primary-500 border-primary-500': preferredBackgroundId === entry.id }"
+                  :class="{ 'ring-2 ring-primary-500 border-primary-500': activeBackgroundId === entry.id }"
                 >
                   <img
-                    :src="entry.url"
+                    :src="backgroundStore.getBackgroundUrl(entry.id)"
                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     loading="lazy"
                   >
                   <!-- Overlay Actions -->
                   <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/60 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                     <button
-                      class="flex items-center gap-1 rounded-full bg-white/20 px-3 py-1.5 text-[10px] text-white font-bold backdrop-blur-md transition-all active:scale-95 hover:bg-white/30"
+                      class="flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] text-white font-bold backdrop-blur-md transition-all active:scale-95"
+                      :class="activeBackgroundId === entry.id ? 'bg-primary-500 hover:bg-primary-600' : 'bg-white/20 hover:bg-white/30'"
                       @click="handleSetAsBackground(entry)"
                     >
-                      <div class="i-solar:wallpaper-linear" />
-                      SET BG
-                    </button>
-                    <button
-                      class="flex items-center gap-1 rounded-full px-3 py-1.5 text-[10px] text-white font-bold backdrop-blur-md transition-all active:scale-95"
-                      :class="preferredBackgroundId === entry.id ? 'bg-primary-500 hover:bg-primary-600' : 'bg-white/20 hover:bg-white/30'"
-                      @click="handleSetAsPreferred(entry)"
-                    >
-                      <div :class="preferredBackgroundId === entry.id ? 'i-solar:pin-bold' : 'i-solar:pin-linear'" />
-                      {{ preferredBackgroundId === entry.id ? 'PINNED' : 'PIN AS PREFERRED' }}
+                      <div :class="activeBackgroundId === entry.id ? 'i-solar:pin-bold' : 'i-solar:pin-linear'" />
+                      {{ activeBackgroundId === entry.id ? 'ACTIVE BG' : 'SET AS BG' }}
                     </button>
                     <button
                       class="flex items-center gap-1 rounded-full bg-red-500/80 px-3 py-1.5 text-[10px] text-white font-bold backdrop-blur-md transition-all active:scale-95 hover:bg-red-500"
@@ -681,7 +607,7 @@ function getModuleDisplayValue(value: string | undefined, defaultValue: string |
                     {{ entry.title }}
                   </div>
                   <!-- Active Indicator -->
-                  <div v-if="preferredBackgroundId === entry.id" class="absolute left-1 top-1 rounded bg-primary-500 p-1 text-white shadow-lg">
+                  <div v-if="activeBackgroundId === entry.id" class="absolute left-1 top-1 rounded bg-primary-500 p-1 text-white shadow-lg">
                     <div class="i-solar:pin-bold text-[10px]" />
                   </div>
                 </div>

@@ -1,46 +1,63 @@
 <script setup lang="ts">
 import { Section } from '@proj-airi/stage-ui/components'
-import { useSceneStore } from '@proj-airi/stage-ui/stores/scene'
+import { useAiriCardStore, useBackgroundStore } from '@proj-airi/stage-ui/stores'
 import { Button, Callout } from '@proj-airi/ui'
-import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-const sceneStore = useSceneStore()
-const { backgrounds, globalBackgroundId, activeBackgroundId } = storeToRefs(sceneStore)
+const backgroundStore = useBackgroundStore()
+const cardStore = useAiriCardStore()
 
 const fileInputRef = ref<HTMLInputElement>()
+
+const sceneEntries = computed(() => {
+  return backgroundStore.availableBackgrounds
+    .filter(e => e.type === 'scene' || e.type === 'builtin')
+})
+
+const activeBackgroundId = computed({
+  get: () => cardStore.activeCard?.extensions?.airi?.modules?.activeBackgroundId || 'none',
+  set: (val: string) => {
+    if (!cardStore.activeCard)
+      return
+    const extension = JSON.parse(JSON.stringify(cardStore.activeCard.extensions))
+    if (!extension.airi.modules)
+      extension.airi.modules = {}
+
+    extension.airi.modules.activeBackgroundId = val
+
+    cardStore.updateCard(cardStore.activeCardId, {
+      ...cardStore.activeCard,
+      extensions: extension,
+    })
+  },
+})
 
 function triggerUpload() {
   fileInputRef.value?.click()
 }
 
-function handleFileChange(event: Event) {
+async function handleFileChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file)
     return
 
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const result = e.target?.result
-    if (typeof result === 'string') {
-      sceneStore.addBackground(result, file.name)
-    }
-  }
-  reader.readAsDataURL(file)
+  await backgroundStore.addBackground('scene', file, file.name)
 }
 
-function setAsGlobal(id: string) {
-  sceneStore.setGlobalBackground(id)
+function setAsBackground(id: string) {
+  activeBackgroundId.value = id
 }
 
 function removeBackground(id: string) {
-  sceneStore.removeBackground(id)
+  if (confirm(t('settings.pages.scene.gallery.delete_confirm', 'Are you sure you want to delete this background?'))) {
+    backgroundStore.removeBackground(id)
+  }
 }
 
-function clearGlobalDefault() {
-  sceneStore.setGlobalBackground(null)
+function clearDefault() {
+  activeBackgroundId.value = 'none'
 }
 </script>
 
@@ -80,9 +97,9 @@ function clearGlobalDefault() {
             {{ t('settings.pages.scene.background_image.upload') }}
           </Button>
           <Button
-            v-if="globalBackgroundId"
+            v-if="activeBackgroundId !== 'none'"
             variant="secondary"
-            @click="clearGlobalDefault"
+            @click="clearDefault"
           >
             <div :class="['i-solar:trash-bin-trash-bold-duotone', 'mr-2']" />
             {{ t('settings.pages.scene.background_image.clear') }}
@@ -90,20 +107,20 @@ function clearGlobalDefault() {
         </div>
 
         <!-- Gallery Grid -->
-        <div v-if="backgrounds.size > 0" :class="['grid grid-cols-2 sm:grid-cols-3 gap-3']">
+        <div v-if="sceneEntries.length > 0" :class="['grid grid-cols-2 sm:grid-cols-3 gap-3']">
           <div
-            v-for="[id, bg] in backgrounds"
-            :key="id"
+            v-for="bg in sceneEntries"
+            :key="bg.id"
             :class="[
               'relative aspect-square overflow-hidden rounded-xl border-2 group transition-all',
-              id === globalBackgroundId ? 'border-primary shadow-lg' : 'border-transparent bg-neutral-100 dark:bg-neutral-900',
+              bg.id === activeBackgroundId ? 'border-primary shadow-lg' : 'border-transparent bg-neutral-100 dark:bg-neutral-900',
             ]"
           >
             <!-- Background Image -->
             <div
               :class="['absolute inset-0 z-0']"
               :style="{
-                backgroundImage: `url(${bg.url})`,
+                backgroundImage: `url(${backgroundStore.getBackgroundUrl(bg.id)})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
               }"
@@ -115,22 +132,16 @@ function clearGlobalDefault() {
                 'bg-black/60 px-2 py-1.5 text-xs text-white font-medium',
                 'truncate',
               ]"
-              :title="bg.name"
+              :title="bg.title"
             >
-              {{ bg.name }}
+              {{ bg.title }}
             </div>
 
             <!-- Badges -->
             <div :class="['absolute top-2 left-2', 'flex flex-col gap-1']">
               <div
-                v-if="id === globalBackgroundId"
+                v-if="bg.id === activeBackgroundId"
                 :class="['bg-primary text-white text-xs px-1.5 py-0.5 rounded-md shadow-sm font-bold']"
-              >
-                {{ t('settings.pages.scene.gallery.global_badge') }}
-              </div>
-              <div
-                v-if="id === activeBackgroundId"
-                :class="['bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-md shadow-sm font-bold']"
               >
                 {{ t('settings.pages.scene.gallery.active_badge') }}
               </div>
@@ -144,18 +155,19 @@ function clearGlobalDefault() {
               ]"
             >
               <Button
-                v-if="id !== globalBackgroundId"
+                v-if="bg.id !== activeBackgroundId"
                 size="sm"
                 variant="primary"
-                @click="setAsGlobal(id)"
+                @click="setAsBackground(bg.id)"
               >
                 <div :class="['i-solar:check-read-bold-duotone']" />
               </Button>
               <Button
+                v-if="bg.type !== 'builtin'"
                 size="sm"
                 variant="secondary"
                 :class="['!bg-red-500 hover:!bg-red-600 !text-white']"
-                @click="removeBackground(id)"
+                @click="removeBackground(bg.id)"
               >
                 <div :class="['i-solar:trash-bin-trash-bold-duotone']" />
               </Button>

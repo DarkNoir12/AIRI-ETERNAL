@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { useElectronEventaInvoke } from '@proj-airi/electron-vueuse'
-import { useBackgroundStore } from '@proj-airi/stage-layouts'
-import { useAiriCardStore, useImageJournalStore } from '@proj-airi/stage-ui/stores'
-import { computed, ref } from 'vue'
+import { useAiriCardStore, useBackgroundStore } from '@proj-airi/stage-ui/stores'
+import { computed, ref, watch } from 'vue'
 
 import { widgetsHideWindow, widgetsRemove } from '../../../../shared/eventa'
 
 const props = withDefaults(defineProps<{
   id?: string
   status?: 'idle' | 'generating' | 'done' | 'error'
-  imageUrl?: string
+  entryId?: string // Unified background ID
+  imageUrl?: string // Legacy/Fallback
   prompt?: string
   progress?: number
   actionLabel?: string
@@ -21,7 +21,6 @@ const props = withDefaults(defineProps<{
   progress: 0,
 })
 
-const journalStore = useImageJournalStore()
 const cardStore = useAiriCardStore()
 const backgroundStore = useBackgroundStore()
 
@@ -29,9 +28,20 @@ const backgroundStore = useBackgroundStore()
 // handled by the `image_journal` tool. This widget only reads existing
 // entries for gallery browsing and background setting.
 
-// Filter history for current character
-const history = computed(() => journalStore.entries.filter(e => e.characterId === cardStore.activeCardId))
+// Filter history for current character using unified store
+const history = computed(() => backgroundStore.getCharacterJournalEntries(cardStore.activeCardId))
 const currentIndex = ref(0)
+
+// When entryId prop matches a new generation, jump to it in the gallery
+watch(() => props.entryId, (newId) => {
+  if (newId) {
+    const index = history.value.findIndex(e => e.id === newId)
+    if (index >= 0) {
+      currentIndex.value = index
+    }
+  }
+}, { immediate: true })
+
 const isFlipped = ref(false)
 const errorOccurred = ref(false)
 const isSettingBackground = ref(false)
@@ -39,11 +49,15 @@ const isSettingBackground = ref(false)
 const hideWindow = useElectronEventaInvoke(widgetsHideWindow)
 const removeWidget = useElectronEventaInvoke(widgetsRemove)
 
-// If status changes to generating, we stay on the current image if any,
-// but we might want to reset the current index when done.
-// The watch above handles jumping to the new entry when done.
-
+// The current image is either resolved from the collection or fallback to props
 const currentImage = computed(() => history.value[currentIndex.value])
+const resolvedImageUrl = computed(() => {
+  if (currentImage.value)
+    return backgroundStore.getBackgroundUrl(currentImage.value.id)
+  if (props.entryId)
+    return backgroundStore.getBackgroundUrl(props.entryId)
+  return props.imageUrl
+})
 
 function handleImageError() {
   errorOccurred.value = true
@@ -68,19 +82,25 @@ function toggleFlip() {
 }
 
 async function handleSetAsBackground() {
-  if (!currentImage.value)
+  if (!currentImage.value || !cardStore.activeCardId)
     return
   isSettingBackground.value = true
   try {
     const entry = currentImage.value
-    const background = await backgroundStore.addOption({
-      id: entry.id,
-      label: entry.title,
-      description: `Journal entry: ${entry.prompt}`,
-      kind: 'image' as any,
-      file: entry.blob,
-    })
-    backgroundStore.setSelection(background)
+    // Update the active card's background ID
+    const cardId = cardStore.activeCardId
+    const card = cardStore.activeCard
+    if (card) {
+      const extension = JSON.parse(JSON.stringify(card.extensions || {}))
+      if (!extension.airi)
+        extension.airi = {}
+      if (!extension.airi.modules)
+        extension.airi.modules = {}
+      extension.airi.modules.activeBackgroundId = entry.id
+
+      await cardStore.updateCard(cardId, { ...card, extensions: extension })
+      console.log(`[ComfyWidget] Set activeBackgroundId to ${entry.id} for ${cardId}`)
+    }
   }
   catch (e) {
     console.error('[ComfyWidget] Failed to set background', e)
@@ -157,12 +177,11 @@ async function handleClose() {
           </template>
         </div>
 
-        <!-- Image Display -->
         <div class="relative h-full w-full flex items-center justify-center bg-black">
           <img
-            v-if="currentImage && !errorOccurred"
-            :key="currentImage.frameId"
-            :src="currentImage.url"
+            v-if="resolvedImageUrl && !errorOccurred"
+            :key="resolvedImageUrl"
+            :src="resolvedImageUrl"
             class="h-full w-full object-cover transition-all duration-500"
             @error="handleImageError"
           >
