@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import { join, resolve } from 'node:path'
 
 import VueI18n from '@intlify/unplugin-vue-i18n/vite'
@@ -18,6 +19,7 @@ import { defineConfig } from 'electron-vite'
 
 const stageUIAssetsRoot = resolve(join(import.meta.dirname, '..', '..', 'packages', 'stage-ui', 'src', 'assets'))
 const sharedCacheDir = resolve(join(import.meta.dirname, '..', '..', '.cache'))
+const require = createRequire(import.meta.url)
 
 export default defineConfig({
   main: {
@@ -93,6 +95,7 @@ export default defineConfig({
     base: './',
 
     build: {
+      target: 'esnext',
       rollupOptions: {
         input: {
           'main': resolve(join(import.meta.dirname, 'src', 'renderer', 'index.html')),
@@ -102,6 +105,15 @@ export default defineConfig({
     },
 
     optimizeDeps: {
+      esbuildOptions: {
+        target: 'esnext',
+      },
+      include: [
+        'tslib',
+        '@vueuse/motion',
+        'popmotion',
+        'uncrypto',
+      ],
       exclude: [
         // Internal Packages
         '@proj-airi/stage-ui',
@@ -146,10 +158,11 @@ export default defineConfig({
         { find: '@proj-airi/stage-layouts', replacement: resolve(join(import.meta.dirname, '..', '..', 'packages', 'stage-layouts', 'src')) },
         { find: 'node:crypto', replacement: resolve(join(import.meta.dirname, 'src', 'renderer', 'shims', 'node-crypto.ts')) },
         { find: 'crypto', replacement: resolve(join(import.meta.dirname, 'src', 'renderer', 'shims', 'node-crypto.ts')) },
+        { find: 'tslib', replacement: require.resolve('tslib/tslib.es6.js') },
       ],
     },
     ssr: {
-      noExternal: ['uncrypto', '@noble/hashes'],
+      noExternal: ['tslib', 'uncrypto', '@noble/hashes'],
     },
 
     server: {

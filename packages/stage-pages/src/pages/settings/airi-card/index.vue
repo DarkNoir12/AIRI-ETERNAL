@@ -211,9 +211,7 @@ watch(inputFiles, async (newFiles) => {
       }
     }
 
-    const normalizedForValidation = 'data' in importedCard
-      ? addCardPreviewNormalize(importedCard)
-      : importedCard
+    const normalizedForValidation = addCardPreviewNormalize(importedCard)
 
     // Validate the normalized AIRI card shape
     const validation = safeParse(AiriCardSchema, normalizedForValidation)
@@ -226,8 +224,8 @@ watch(inputFiles, async (newFiles) => {
       return
     }
 
-    const uniqueName = getUniqueImportedCardName(getImportedCardName(importedCard))
-    const renamedCard = withImportedCardName(importedCard, uniqueName)
+    const uniqueName = getUniqueImportedCardName(getImportedCardName(normalizedForValidation))
+    const renamedCard = withImportedCardName(normalizedForValidation, uniqueName)
 
     // Add card and select it
     selectedCardId.value = await addCard(renamedCard)
@@ -240,27 +238,75 @@ watch(inputFiles, async (newFiles) => {
   }
 })
 
-function addCardPreviewNormalize(card: ImportedCardPayload) {
-  if (!('data' in card))
-    return card
+function parseStMessageExamples(exampleStr: string): string[][] {
+  if (!exampleStr || typeof exampleStr !== 'string')
+    return []
+
+  // ST standard uses <START> (often case-insensitive) as a separator for example chat logs
+  // We split by <START> and filter out empty blocks
+  const blocks = exampleStr
+    .split(/<START>/i)
+    .map(block => block.trim())
+    .filter(Boolean)
+
+  return blocks.map((block) => {
+    // Each block is a transcript. We split by lines and filter empty lines.
+    // We also ensure lines start with {{user}}: or {{char}}: as per AIRI requirements
+    return block
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0)
+      .map((line) => {
+        // Basic normalization for common ST variants
+        let normalized = line
+        if (normalized.toLowerCase().startsWith('user:')) {
+          normalized = `{{user}}:${normalized.slice(5)}`
+        }
+        else if (normalized.toLowerCase().startsWith('char:')) {
+          normalized = `{{char}}:${normalized.slice(5)}`
+        }
+        // Ensure space after colon if missing for AIRI schema compliance
+        // Schema regex: /^\{\{(?:user|char)\}\}: /
+        if (/^\{\{(?:user|char)\}\}:\S/.test(normalized)) {
+          normalized = normalized.replace(/^(\{\{(?:user|char)\}\}:)/, '$1 ')
+        }
+
+        return normalized
+      })
+      // Filter to only kept lines that match AIRI's MessageExampleItemSchema
+      .filter(line => /^\{\{(?:user|char)\}\}: /.test(line))
+  }).filter(block => block.length > 0)
+}
+
+function addCardPreviewNormalize(card: any) {
+  // If it's already an AIRI card or has AIRI data, we might still want to ensure version
+  if (card.format === 'airi-card' || card.systemPrompt !== undefined) {
+    return {
+      ...card,
+      version: card.version || '1.0.0',
+    }
+  }
+
+  // Detect ST V2 (data wrapper) vs V1 (root fields)
+  const data = card.data || card
 
   return {
-    name: card.data.name,
-    version: card.data.character_version || '1.0.0',
-    description: card.data.description ?? '',
-    notes: card.data.creator_notes ?? '',
-    personality: card.data.personality ?? '',
-    scenario: card.data.scenario ?? '',
-    systemPrompt: card.data.system_prompt ?? '',
-    postHistoryInstructions: card.data.post_history_instructions ?? '',
+    name: data.name || 'Imported Card',
+    version: data.character_version || '1.0.0',
+    description: data.description ?? '',
+    notes: data.creator_notes ?? '',
+    personality: data.personality ?? '',
+    scenario: data.scenario ?? '',
+    systemPrompt: data.system_prompt ?? '',
+    postHistoryInstructions: data.post_history_instructions ?? '',
     greetings: [
-      card.data.first_mes,
-      ...(card.data.alternate_greetings ?? []),
+      data.first_mes,
+      ...(data.alternate_greetings ?? []),
     ].filter(Boolean),
-    messageExample: [],
+    messageExample: parseStMessageExamples(data.mes_example || ''),
     extensions: {
-      airi: card.data.extensions?.airi,
-      ...card.data.extensions,
+      airi: data.extensions?.airi,
+      ...data.extensions,
     },
   }
 }
@@ -447,7 +493,7 @@ async function getCardWithExportedBackground(cardId: string): Promise<AiriCard |
             },
           },
         },
-      })
+      } as any)
     }
     reader.onerror = () => resolve(card)
     reader.readAsDataURL(exportBackground.blob)
