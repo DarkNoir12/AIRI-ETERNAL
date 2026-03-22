@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { useLive2d } from '@proj-airi/stage-ui-live2d/stores'
 import { Checkbox, FieldRange } from '@proj-airi/ui'
+import { useDebounceFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
+
+import { useAiriCardStore } from '../../../../stores/modules/airi-card'
 
 const live2dStore = useLive2d()
+const airiCardStore = useAiriCardStore()
+const { activeCard } = storeToRefs(airiCardStore)
 const {
   availableExpressions,
   parameterMetadata,
@@ -12,6 +17,29 @@ const {
   expressionData,
   activeExpressions,
 } = storeToRefs(live2dStore)
+
+const saveLive2dState = useDebounceFn(() => {
+  if (!activeCard.value)
+    return
+
+  const extensions = JSON.parse(JSON.stringify(activeCard.value.extensions))
+  if (!extensions.airi)
+    extensions.airi = { modules: {} }
+  if (!extensions.airi.modules)
+    extensions.airi.modules = {}
+
+  extensions.airi.modules.live2d = {
+    ...extensions.airi.modules.live2d,
+    activeExpressions: { ...activeExpressions.value },
+    modelParameters: { ...modelParameters.value },
+  }
+
+  airiCardStore.updateCard(activeCard.value.id, { extensions })
+}, 1000)
+
+watch([activeExpressions, modelParameters], () => {
+  saveLive2dState()
+}, { deep: true })
 
 // === Categorize parameters ===
 const toggles = computed(() =>

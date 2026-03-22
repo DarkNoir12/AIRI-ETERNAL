@@ -45,6 +45,8 @@ const AiriModulesSchema = object({
     source: optional(union([literal('file'), literal('url')])),
     file: optional(string()),
     url: optional(string()),
+    activeExpressions: optional(record(string(), number())),
+    modelParameters: optional(record(string(), number())),
   })),
   preferredBackgroundId: optional(string()),
   preferredBackgroundName: optional(string()),

@@ -502,6 +502,28 @@ async function loadModel() {
             name: exp.Name || exp.name || exp.File?.split('/').pop()?.replace('.exp3.json', ''),
             fileName: exp.File || exp.file,
           }))
+
+          // Fetch expression data for URL-based models so they can be restored
+          if (props.modelSrc && !props.modelSrc.startsWith('blob:')) {
+            const baseUrl = props.modelSrc.substring(0, props.modelSrc.lastIndexOf('/') + 1)
+            const fetchPromises = availableExpressions.value.map(async (exp) => {
+              try {
+                const resp = await fetch(baseUrl + encodeURIComponent(exp.fileName))
+                if (resp.ok) {
+                  const data = await resp.json()
+                  return { name: exp.name, fileName: exp.fileName, data }
+                }
+              }
+              catch (err) {
+                console.warn(`[Live2D] Failed to fetch expression ${exp.fileName}:`, err)
+              }
+              return null
+            })
+            Promise.all(fetchPromises).then((results) => {
+              expressionData.value = results.filter((r): r is any => r !== null)
+              console.info('✅ Fetched expression data from URLs:', expressionData.value.length)
+            })
+          }
           console.info('✅ Populated expressions from FileRefs:', availableExpressions.value.length)
         }
         else {
@@ -625,9 +647,10 @@ watch(currentMotion, value => setMotion(value.group, value.index))
 watch(paused, value => value ? pixiApp.value?.stop() : pixiApp.value?.start())
 
 // Watch and apply all model parameters dynamically
-watch(() => modelParameters.value, (params) => {
-  if (model.value) {
-    const coreModel = model.value.internalModel.coreModel
+// NOTICE: We watch both model instance and parameters to ensure state is applied after model reload.
+watch([() => model.value, () => modelParameters.value], ([currModel, params]) => {
+  if (currModel) {
+    const coreModel = currModel.internalModel.coreModel
     // Standard parameters
     coreModel.setParameterValueById('ParamAngleX', params.angleX)
     coreModel.setParameterValueById('ParamAngleY', params.angleY)

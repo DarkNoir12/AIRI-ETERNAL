@@ -89,6 +89,8 @@ export interface AiriExtension {
       source?: 'file' | 'url'
       file?: string // Example: "live2d/model.json"
       url?: string // Example: "https://example.com/live2d/model.json"
+      activeExpressions?: Record<string, number>
+      modelParameters?: Record<string, number>
     }
 
     // ID from display-models store (e.g. 'preset-live2d-1', 'display-model-<nanoid>')
@@ -264,10 +266,19 @@ export const useAiriCardStore = defineStore('airi-card', () => {
       await stageModelStore.updateStageModel()
 
       const selectedModel = await displayModelsStore.getDisplayModel(newModelId)
-      if (selectedModel?.format === DisplayModelFormat.Live2dZip)
+      if (selectedModel?.format === DisplayModelFormat.Live2dZip) {
+        // Sync Live2D parameters from card to store
+        if (extension.modules?.live2d) {
+          if (extension.modules.live2d.activeExpressions)
+            live2dStore.activeExpressions = { ...extension.modules.live2d.activeExpressions }
+          if (extension.modules.live2d.modelParameters)
+            live2dStore.modelParameters = { ...extension.modules.live2d.modelParameters }
+        }
         live2dStore.shouldUpdateView()
-      else if (selectedModel?.format === DisplayModelFormat.VRM)
+      }
+      else if (selectedModel?.format === DisplayModelFormat.VRM) {
         vrmStore.shouldUpdateView()
+      }
     }
 
     // Background syncing to a global store is no longer needed manually.
