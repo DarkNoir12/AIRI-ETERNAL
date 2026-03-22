@@ -22,7 +22,7 @@ export const providerOpenAI = defineProvider<OpenAICompatibleConfig>({
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.openai.title'),
   description: 'OpenAI',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.openai.description'),
-  tasks: ['chat'],
+  tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:openai',
 
   createProviderConfig: ({ t }) => openAICompatibleConfigSchema.extend({

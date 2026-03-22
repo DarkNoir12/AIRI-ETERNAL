@@ -8,7 +8,7 @@ const props = defineProps<{
 
 const events = defineEmits<{
   (event: 'submit', message: string): void
-  (event: 'pasteFile', files: File[]): void
+  (event: 'attach', files: File[]): void
 }>()
 
 const input = defineModel<string>({
@@ -66,7 +66,32 @@ function onPaste(e: ClipboardEvent) {
   const { files } = e.clipboardData
   if (files.length > 0) {
     e.preventDefault()
-    events('pasteFile', Array.from(files))
+    events('attach', Array.from(files))
+  }
+}
+
+const isDragging = ref(false)
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+  isDragging.value = true
+}
+
+function onDragLeave(e: DragEvent) {
+  e.preventDefault()
+  isDragging.value = false
+}
+
+function onDrop(e: DragEvent) {
+  e.preventDefault()
+  isDragging.value = false
+
+  if (!e.dataTransfer)
+    return
+
+  const { files } = e.dataTransfer
+  if (files.length > 0) {
+    events('attach', Array.from(files))
   }
 }
 
@@ -92,7 +117,12 @@ watch(input, () => {
     ref="textareaRef"
     v-model="input"
     :style="{ height: textareaHeight }"
+    :class="{ 'border-primary-500 ring-2 ring-primary-500/20': isDragging }"
     @keydown="onKeyDown"
     @paste="onPaste"
+    @dragenter.prevent="onDragOver"
+    @dragover.prevent="onDragOver"
+    @dragleave.prevent="onDragLeave"
+    @drop.prevent="onDrop"
   />
 </template>

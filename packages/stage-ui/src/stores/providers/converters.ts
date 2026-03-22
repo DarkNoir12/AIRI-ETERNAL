@@ -19,6 +19,9 @@ function getCategoryFromTasks(tasks: string[]): ProviderMetadata['category'] {
   if (tasks.some(task => ['embed', 'embedding'].includes(task.toLowerCase()))) {
     return 'embed'
   }
+  if (tasks.some(task => ['vision', 'image-to-text'].includes(task.toLowerCase()))) {
+    return 'vision'
+  }
 
   return 'chat'
 }
@@ -72,12 +75,32 @@ function buildConfigValidationResult(plan: ProviderValidationPlan) {
 
 function mapModelsToMetadataModels(providerId: string, models: any[]) {
   return models.map((model: any) => {
+    const capabilities: string[] = []
+
+    // Strict VLM detection based on explicit modalities (OpenRouter/Standard format)
+    const inputModalities = model.input_modalities || model.architecture?.input_modalities || []
+    const outputModalities = model.output_modalities || model.architecture?.output_modalities || []
+
+    const hasVisionModality = model.architecture?.modality?.includes('image')
+      || (inputModalities.includes('image') && outputModalities.includes('text'))
+
+    const isVision = hasVisionModality || (model.capabilities?.vision === true)
+
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('airi:debug') === '1') {
+      console.log(`[VLM Check] ${model.id}: input=[${inputModalities.join(', ')}] output=[${outputModalities.join(', ')}] modality=${model.architecture?.modality} isVision=${isVision}`)
+    }
+
+    if (isVision) {
+      capabilities.push('vision')
+    }
+
     return {
       id: model.id,
       name: model.name || model.display_name || model.id,
       provider: providerId,
       description: model.description || '',
       contextLength: model.context_length || 0,
+      capabilities,
       deprecated: false,
     }
   })

@@ -22,7 +22,9 @@ import { useChatStreamStore } from './chat/stream-store'
 import { useLLM } from './llm'
 import { useAiriCardStore } from './modules/airi-card'
 import { useConsciousnessStore } from './modules/consciousness'
+import { useVisionStore } from './modules/vision'
 import { useProactivityStore } from './proactivity'
+import { useProvidersStore } from './providers'
 import { useSettingsChat } from './settings/chat'
 
 interface SendOptions {
@@ -71,7 +73,9 @@ const hooks = createChatHooks()
 
 export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
   const llmStore = useLLM()
+  const providersStore = useProvidersStore()
   const consciousnessStore = useConsciousnessStore()
+  const visionStore = useVisionStore()
   const airiCardStore = useAiriCardStore()
   const settingsChat = useSettingsChat()
   const { activeProvider } = storeToRefs(consciousnessStore)
@@ -175,22 +179,51 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
     let streamIdleTimeout: ReturnType<typeof setTimeout> | undefined
 
     try {
-      const contentParts: CommonContentPart[] = [{ type: 'text', text: sendingMessage }]
+      let effectiveModel = options.model
+      let effectiveProvider = options.chatProvider
+      let effectiveProviderId = activeProvider.value
+      let effectiveConfig = options.providerConfig
+      let effectiveTools = options.tools
+
+      const hasImages = options.attachments && options.attachments.some(a => a.type === 'image')
+      let promptShimText = ''
+      if (hasImages && visionStore.activeProvider && visionStore.activeModel) {
+        chatLog('Vision handover activated. Replacing main LLM with Vision VLM.', {
+          provider: visionStore.activeProvider,
+          model: visionStore.activeModel,
+        })
+        effectiveModel = visionStore.activeModel
+        effectiveProviderId = visionStore.activeProvider
+        effectiveProvider = await providersStore.getProviderInstance(visionStore.activeProvider)
+        effectiveConfig = providersStore.getProviderConfig(visionStore.activeProvider)
+        promptShimText = visionStore.promptShim || ''
+        effectiveTools = undefined // Vision models often do not support tools, and we only need them for direct reply
+      }
+
+      const userText = promptShimText
+        ? `${promptShimText}\n\n${sendingMessage}`
+        : sendingMessage
+
+      const inferenceContentParts: CommonContentPart[] = [{ type: 'text', text: userText }]
+      const historicalContentParts: CommonContentPart[] = [{ type: 'text', text: sendingMessage }]
 
       if (options.attachments) {
         for (const attachment of options.attachments) {
           if (attachment.type === 'image') {
-            contentParts.push({
-              type: 'image_url',
+            const imagePart = {
+              type: 'image_url' as const,
               image_url: {
                 url: `data:${attachment.mimeType};base64,${attachment.data}`,
               },
-            })
+            }
+            inferenceContentParts.push(imagePart)
+            historicalContentParts.push(imagePart)
           }
         }
       }
 
-      const finalContent = contentParts.length > 1 ? contentParts : sendingMessage
+      const inferenceContent = inferenceContentParts.length > 1 ? inferenceContentParts : userText
+      const historicalContent = historicalContentParts.length > 1 ? historicalContentParts : sendingMessage
       if (!streamingMessageContext.input) {
         streamingMessageContext.input = {
           type: 'input:text',
@@ -203,8 +236,12 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       if (shouldAbort())
         return
 
+      const userMessageId = nanoid()
+      const historicalUserMessage = { role: 'user' as const, content: historicalContent, createdAt: sendingCreatedAt, id: userMessageId }
+      const inferenceUserMessage = { role: 'user' as const, content: inferenceContent, createdAt: sendingCreatedAt, id: userMessageId }
+
       const sessionMessagesForSend = chatSession.getSessionMessages(sessionId)
-      const nextMessages = [...sessionMessagesForSend, { role: 'user' as const, content: finalContent, createdAt: sendingCreatedAt, id: nanoid() }]
+      const nextMessages = [...sessionMessagesForSend, historicalUserMessage]
       chatSession.setSessionMessages(sessionId, nextMessages)
 
       if (options.skipAssistant) {
@@ -212,7 +249,9 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
         return
       }
 
-      const categorizer = createStreamingCategorizer(activeProvider.value)
+      const inferenceMessages = [...sessionMessagesForSend, inferenceUserMessage]
+
+      const categorizer = createStreamingCategorizer(effectiveProviderId)
       let streamPosition = 0
 
       const literalInterceptor = createLlmJsonInterceptor({
@@ -480,7 +519,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
         ],
       })
 
-      let newMessages = nextMessages.map((msg) => {
+      let newMessages = inferenceMessages.map((msg: any) => {
         const { context: _context, id: _id, createdAt: _createdAt, ...withoutContext } = msg
         const rawMessage = toRaw(withoutContext)
 
@@ -520,7 +559,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       await hooks.emitBeforeSendHooks(sendingMessage, streamingMessageContext)
 
       let fullText = ''
-      const headers = (options.providerConfig?.headers || {}) as Record<string, string>
+      const headers = (effectiveConfig?.headers || {}) as Record<string, string>
       const generationConfig = activeCard.value?.extensions?.airi?.generation
       const generationKnown = generationConfig?.enabled ? generationConfig.known : undefined
       const abortController = new AbortController()
@@ -542,9 +581,9 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
 
       resetStreamIdleTimeout()
 
-      await llmStore.stream(options.model, options.chatProvider, newMessages as Message[], {
+      await llmStore.stream(effectiveModel, effectiveProvider, newMessages as Message[], {
         headers,
-        tools: options.tools,
+        tools: effectiveTools,
         temperature: generationKnown?.temperature,
         top_p: generationKnown?.topP,
         max_tokens: generationKnown?.maxTokens,

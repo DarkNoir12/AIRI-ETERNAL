@@ -22,7 +22,7 @@ export const providerOpenRouterAI = defineProvider<OpenRouterConfig>({
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.openrouter.title'),
   description: 'openrouter.ai',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.openrouter.description'),
-  tasks: ['chat'],
+  tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:openrouter',
 
   createProviderConfig: ({ t }) => openRouterConfigSchema.extend({

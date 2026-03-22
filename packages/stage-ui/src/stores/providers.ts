@@ -117,7 +117,7 @@ type AliyunNlsRegion = typeof ALIYUN_NLS_REGIONS[number]
 export interface ProviderMetadata {
   id: string
   order?: number
-  category: 'chat' | 'embed' | 'speech' | 'transcription'
+  category: 'chat' | 'embed' | 'speech' | 'transcription' | 'vision'
   tasks: string[]
   nameKey: string // i18n key for provider name
   name: string // Default name (fallback)
@@ -219,6 +219,7 @@ export interface ModelInfo {
   capabilities?: string[]
   contextLength?: number
   deprecated?: boolean
+  [key: string]: any // Ensure extra field data from providers is preserved
 }
 
 export interface VoiceInfo {
@@ -3032,10 +3033,11 @@ export const useProvidersStore = defineStore('providers', () => {
       if (runtimeState) {
         runtimeState.models = uniqBy(models.filter(model => !!model.id), m => m.id)
           .map(model => ({
+            ...model, // Preserve all additional fields (modalities, architecture, etc.)
             id: model.id,
-            name: model.name,
+            name: model.name || model.id,
             description: model.description,
-            contextLength: model.contextLength,
+            contextLength: model.contextLength || model.context_length,
             deprecated: model.deprecated,
             provider: providerId,
           }))
@@ -3218,6 +3220,10 @@ export const useProvidersStore = defineStore('providers', () => {
     return availableProvidersMetadata.value.filter(metadata => metadata.category === 'transcription')
   })
 
+  const allVisionProvidersMetadata = computed(() => {
+    return availableProvidersMetadata.value.filter(metadata => metadata.category === 'vision')
+  })
+
   const configuredChatProvidersMetadata = computed(() => {
     return allChatProvidersMetadata.value.filter(metadata => configuredProviders.value[metadata.id] || shouldListProvider(metadata.id))
   })
@@ -3228,6 +3234,10 @@ export const useProvidersStore = defineStore('providers', () => {
 
   const configuredTranscriptionProvidersMetadata = computed(() => {
     return allAudioTranscriptionProvidersMetadata.value.filter(metadata => configuredProviders.value[metadata.id] || shouldListProvider(metadata.id))
+  })
+
+  const configuredVisionProvidersMetadata = computed(() => {
+    return allVisionProvidersMetadata.value.filter(metadata => configuredProviders.value[metadata.id] || shouldListProvider(metadata.id))
   })
 
   function isProviderConfigDirty(providerId: string) {
@@ -3257,6 +3267,10 @@ export const useProvidersStore = defineStore('providers', () => {
 
   const persistedTranscriptionProvidersMetadata = computed(() => {
     return persistedProvidersMetadata.value.filter(metadata => metadata.category === 'transcription')
+  })
+
+  const persistedVisionProvidersMetadata = computed(() => {
+    return persistedProvidersMetadata.value.filter(metadata => metadata.category === 'vision')
   })
 
   function getProviderConfig(providerId: string) {
@@ -3300,12 +3314,15 @@ export const useProvidersStore = defineStore('providers', () => {
     allChatProvidersMetadata,
     allAudioSpeechProvidersMetadata,
     allAudioTranscriptionProvidersMetadata,
+    allVisionProvidersMetadata,
     configuredChatProvidersMetadata,
     configuredSpeechProvidersMetadata,
     configuredTranscriptionProvidersMetadata,
+    configuredVisionProvidersMetadata,
     persistedProvidersMetadata,
     persistedChatProvidersMetadata,
     persistedSpeechProvidersMetadata,
     persistedTranscriptionProvidersMetadata,
+    persistedVisionProvidersMetadata,
   }
 })

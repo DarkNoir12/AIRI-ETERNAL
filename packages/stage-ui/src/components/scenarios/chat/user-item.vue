@@ -23,13 +23,21 @@ const content = computed(() => {
 
   if (Array.isArray(raw)) {
     const textPart = raw.find(part => 'type' in part && part.type === 'text') as { text?: string } | undefined
-    if (textPart?.text)
-      return textPart.text
-
-    return raw.map(entry => JSON.stringify(entry)).join('\n')
+    return textPart?.text || ''
   }
 
   return ''
+})
+
+const images = computed(() => {
+  const raw = props.message.content
+  if (!Array.isArray(raw))
+    return []
+
+  return raw
+    .filter(part => 'type' in part && part.type === 'image_url')
+    .map(part => (part as any).image_url?.url as string)
+    .filter(Boolean)
 })
 
 const containerClasses = computed(() => [
@@ -58,7 +66,15 @@ function deleteSelf() {
       <div>
         <span text-sm text="black/60 dark:white/65" font-normal class="inline <sm:hidden">{{ label }}</span>
       </div>
+
+      <div v-if="images.length > 0" class="my-2 flex flex-wrap gap-2">
+        <div v-for="(url, idx) in images" :key="idx" class="relative max-w-sm overflow-hidden border border-neutral-200 rounded-lg dark:border-neutral-700">
+          <img :src="url" class="max-h-64 object-contain">
+        </div>
+      </div>
+
       <MarkdownRenderer
+        v-if="content"
         :content="content as string"
         class="break-words"
       />

@@ -19,6 +19,7 @@ const {
   allChatProvidersMetadata,
   allAudioSpeechProvidersMetadata,
   allAudioTranscriptionProvidersMetadata,
+  allVisionProvidersMetadata,
 } = storeToRefs(providersStore)
 
 const allArtistryProvidersMetadata = computed(() => {
@@ -78,6 +79,13 @@ const providerBlocksConfig = [
     title: 'Artistry',
     description: 'Image generation and design model providers. e.g. ComfyUI, Replicate.',
     providersRef: allArtistryProvidersMetadata,
+  },
+  {
+    id: 'vision',
+    icon: 'i-solar:eye-scan-bold-duotone',
+    title: 'Vision',
+    description: 'Vision-Language model providers. e.g. OpenRouter, OpenAI, Ollama.',
+    providersRef: allVisionProvidersMetadata,
   },
 ]
 
@@ -175,7 +183,7 @@ const providerBlocks = computed(() => {
           :icon="provider.icon"
           :icon-color="provider.iconColor"
           :icon-image="provider.iconImage"
-          :to="`/settings/providers/${provider.category}/${provider.id}`"
+          :to="`/settings/providers/${provider.category === 'vision' ? 'chat' : provider.category}/${provider.id}`"
           :configured="provider.configured"
           @click="trackProviderClick(provider.id, provider.category)"
         />
