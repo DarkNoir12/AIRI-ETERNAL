@@ -142,7 +142,22 @@ const temporaryVrma = ref<string | null>(null)
 let temporaryVrmaTimeout: ReturnType<typeof setTimeout> | null = null
 
 const vrmActiveAnimation = computed(() => {
-  const vrmaKey = temporaryVrma.value || vrmStore.vrmIdleAnimation
+  let baseKey = vrmStore.vrmIdleAnimation
+
+  const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
+  if (cardIdleAnimations.length > 0 && !cardIdleAnimations.includes(baseKey)) {
+    // If the globally stored animation isn't allowed by the card's strict subset, clamp it to the first valid preset
+    const validKeys = cardIdleAnimations.filter(k => customVrmAnimationsStore.animationKeys.includes(k))
+    if (validKeys.length > 0) {
+      baseKey = validKeys[0]
+      // Sync it back to the store so the first initial loop finish accurately triggers any overrides
+      if (vrmStore.vrmIdleCycleEnabled) {
+        vrmStore.vrmIdleAnimation = baseKey
+      }
+    }
+  }
+
+  const vrmaKey = temporaryVrma.value || baseKey
   return customVrmAnimationsStore.resolveAnimationUrl(vrmaKey)
 })
 

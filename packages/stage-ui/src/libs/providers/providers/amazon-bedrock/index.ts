@@ -385,7 +385,21 @@ export const providerAmazonBedrock = defineProvider<AmazonBedrockConfig>({
   },
 
   validators: {
-    validateConfig: [],
+    validateConfig: [
+      ({ t }) => ({
+        id: 'amazon-bedrock:check-config',
+        name: t('settings.pages.providers.provider.amazon-bedrock.validators.check-config', 'Configuration Requirements'),
+        validator: async (config: Record<string, any>) => {
+          if (!config.accessKeyId?.trim()) {
+            return { valid: false, reason: 'AWS Access Key ID is required.' }
+          }
+          if (!config.secretAccessKey?.trim()) {
+            return { valid: false, reason: 'AWS Secret Access Key is required.' }
+          }
+          return { valid: true, reason: '' }
+        },
+      }),
+    ],
     validateProvider: [
       ({ t }) => ({
         id: 'amazon-bedrock:check-credentials',

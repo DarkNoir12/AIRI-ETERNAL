@@ -2839,9 +2839,11 @@ export const useProvidersStore = defineStore('providers', () => {
       // Suppress logging and toasts for unconfigured providers unless forced
       const configObj = (config || {}) as Record<string, any>
       const hasKey = !!configObj.apiKey?.trim()
+      const hasAwsKey = !!configObj.accessKeyId?.trim() && !!configObj.secretAccessKey?.trim()
       const defaultUrl = (metadata.defaultOptions?.() as any)?.baseUrl || ''
       const hasCustomUrl = !!configObj.baseUrl?.trim() && configObj.baseUrl !== defaultUrl
-      const isConfigured = hasKey || hasCustomUrl
+
+      const isConfigured = hasKey || hasAwsKey || hasCustomUrl
       const isUnconfigured = !validationResult.valid && !isConfigured
 
       if ((window as any).electron?.ipcRenderer) {

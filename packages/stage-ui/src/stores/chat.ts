@@ -58,6 +58,9 @@ interface QueuedSend {
   }
 }
 
+// NOTICE: gated to DEV builds to avoid console spam during streaming in production.
+const chatLog = import.meta.env.DEV ? console.log.bind(console, '[ChatDebug]') : () => {}
+
 // NOTICE: The hooks event bus is intentionally a module-level singleton, NOT created
 // inside the defineStore setup function. During Vite HMR, Pinia re-runs the store's
 // setup function which would create a new hooks instance. Long-lived components like
@@ -122,7 +125,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
     generation: number,
     sessionId: string,
   ) {
-    console.log('[ChatDebug] performSend starting with message:', sendingMessage)
+    chatLog('performSend starting with message:', sendingMessage)
 
     if (!sendingMessage && !options.attachments?.length)
       return
@@ -205,7 +208,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       chatSession.setSessionMessages(sessionId, nextMessages)
 
       if (options.skipAssistant) {
-        console.log('[ChatDebug] skipAssistant is true, ending ingest.')
+        chatLog('skipAssistant is true, ending ingest.')
         return
       }
 
@@ -257,19 +260,42 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       })
 
       async function tryBridgeMarker(marker: string): Promise<boolean> {
-        // Supports: <|tool:args|>, [call_tool:tool, args], and [call_tool:tool(args)]
-        const match = marker.match(/^<\|([\w-]+):([^|]*)\|>/) || marker.match(/^\[call_tool:([\w-]+),\s*([^\]]*)\]/)
+        chatLog('tryBridgeMarker evaluating:', marker)
+        // Supports: <|tool:args|>, [call_tool:tool, args], and hybrid <|tool:args</tool_call>
+        const match = marker.match(/^<\|([\w-]+):([^|]*?)(?:\|>|<\/tool_call>|$)/)
+          || marker.match(/^\[call_tool:([\w-]+),\s*([^\]]*?)(?:\]|<\/tool_call>|$)/)
+          || marker.match(/<tool_call>([\w-]+)\((.*?)\)<\/tool_call>/s)
+          || marker.match(/<tool_call>(\{.*?\})<\/tool_call>/s)
+
         if (!match)
           return false
+        let toolName: string
+        let argsRaw: string
 
-        const [, toolName, argsRaw] = match
+        // check if it's the JSON flavor: <tool_call>{"name": "...", "arguments": "..."}</tool_call>
+        const potentialJson = match[1] || ''
+        if (potentialJson.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(potentialJson)
+            toolName = parsed.name
+            argsRaw = typeof parsed.arguments === 'string' ? parsed.arguments : JSON.stringify(parsed.arguments)
+          }
+          catch (e) {
+            console.error('[ChatDebug] Failed to parse JSON tool call tag:', e)
+            return false
+          }
+        }
+        else {
+          toolName = match[1]
+          argsRaw = match[2] || ''
+        }
         const resolvedTools = typeof options.tools === 'function' ? await options.tools() : options.tools
         const tool = resolvedTools?.find(t => (t.function?.name || (t as any).name) === toolName)
 
         if (!tool)
           return false
 
-        console.log(`[ChatDebug] Bridging marker to tool call: ${toolName}`)
+        chatLog(`Bridging marker to tool call: ${toolName}`)
         try {
           const args: Record<string, any> = {}
           const kvRegex = /(?:^|[, \n\t]+)\s*([\w-]+)\s*[:=]\s*(?:"([^"]*)"|'([^']*)'|(\d+(?:\.\d+)?)|(true|false)|(\{.*\}|\[.*\]))/g
@@ -330,12 +356,16 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
 
       const parser = useLlmmarkerParser({
         onLiteral: async (text) => {
-          console.log('[ChatDebug] onLiteral:', text)
+          chatLog('onLiteral:', text)
           if (shouldAbort())
             return
 
           // Catch hallucinated markers
-          const literalMarkerMatch = text.match(/\[call_tool:[\w-]+,[^\]]+\]/) || text.match(/<\|([\w-]+):[^|]+\|>/)
+          const literalMarkerMatch = text.match(/\[call_tool:[\w-]+,[^\]]+\]/)
+            || text.match(/<\|([\w-]+):[^|]+\|>/)
+            || text.match(/<tool_call>.*?<\/tool_call>/s)
+            || text.match(/<\|[\w-]+:.*?<\/tool_call>/s)
+
           if (literalMarkerMatch) {
             const marker = literalMarkerMatch[0]
             if (await tryBridgeMarker(marker)) {
@@ -348,7 +378,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
           }
         },
         onSpecial: async (special) => {
-          console.log('[ChatDebug] onSpecial:', special)
+          chatLog('onSpecial:', special)
           if (shouldAbort())
             return
 
@@ -358,7 +388,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
           await hooks.emitTokenSpecialHooks(special, streamingMessageContext)
         },
         onEnd: async (fullText) => {
-          console.log('[ChatDebug] parser.onEnd triggered with fullText length:', fullText.length)
+          chatLog('parser.onEnd triggered with fullText length:', fullText.length)
           if (isStaleGeneration())
             return
 
@@ -398,7 +428,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
                 const tool = resolvedTools?.find(t => (t.function?.name || (t as any).name) === toolCall.function.name)
 
                 if (tool && (tool as any).execute) {
-                  console.log(`[ChatDebug] Manually executing bridged tool: ${toolCall.function.name}`)
+                  chatLog(`Manually executing bridged tool: ${toolCall.function.name}`)
                   try {
                     const result = await (tool as any).execute(JSON.parse(toolCall.function.arguments))
                     toolCallQueue.enqueue({
@@ -538,6 +568,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
               })
               break
             case 'text-delta':
+              console.log('[ChatDebug] text-delta:', event.text)
               fullText += event.text
               ;(window as any).electron.ipcRenderer.send('llm-raw-output', {
                 type: 'delta',
@@ -554,6 +585,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
               updateUI()
               break
             case 'finish':
+              console.log('[ChatDebug] Stream finished. Reason:', (event as any).finishReason, 'fullText length:', fullText.length)
               ;(window as any).electron.ipcRenderer.send('llm-raw-output', {
                 type: 'full',
                 text: fullText,
@@ -568,6 +600,18 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
 
       clearStreamIdleTimeout()
       await parser.end()
+
+      // Final attempt to bridge any unclosed markers in the full accumulated text
+      if (fullText.includes('<|') || fullText.includes('[call_tool:') || fullText.includes('<tool_call>')) {
+        const hybridMatch = fullText.match(/<\|([\w-]+):.*$/s)
+          || fullText.match(/\[call_tool:([\w-]+),.*$/s)
+          || fullText.match(/<tool_call>.*$/s)
+
+        if (hybridMatch) {
+          chatLog('Attempting recovery of unclosed tool call at stream end')
+          await tryBridgeMarker(hybridMatch[0])
+        }
+      }
 
       if (!isStaleGeneration() && buildingMessage.slices.length > 0) {
         const currentMessages = chatSession.getSessionMessages(sessionId)
@@ -590,7 +634,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       }
     }
     catch (error) {
-      console.error('Error sending message:', error)
+      console.error('Error sending message:', { sessionId, generation, error })
       throw error
     }
     finally {
@@ -606,7 +650,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
     targetSessionId?: string,
   ) {
     const sessionId = targetSessionId || activeSessionId.value
-    console.log('[ChatDebug] Ingesting message:', { sendingMessage, sessionId, sending: sending.value })
+    chatLog('Ingesting message:', { sendingMessage, sessionId, sending: sending.value })
     const generation = chatSession.getSessionGeneration(sessionId)
 
     return new Promise<void>((resolve, reject) => {

@@ -44,7 +44,7 @@ const imageJournalParams = z.object({
   title: z.string().optional().describe('Short label for the journal entry (optional for create).'),
   query: z.string().optional().describe('Title or ID to fuzzy match for setting background (required for set_as_background).'),
   set_as_background: z.boolean().optional().describe('If true, also sets the newly created image as the active background (only for create).'),
-}).strict()
+})
 
 async function executeCreateImageJournalEntry(params: { prompt?: string, title?: string, set_as_background?: boolean }) {
   if (!params.prompt?.trim())
@@ -52,24 +52,56 @@ async function executeCreateImageJournalEntry(params: { prompt?: string, title?:
 
   const backgroundStore = useBackgroundStore()
   const cardStore = useAiriCardStore()
-  const artistryConfig = getArtistryConfig()
+  const activeCard = cardStore.activeCard
+  const globalArtistryConfig = getArtistryConfig()
+
+  // Prioritize active card artistry config if available
+  const cardArtistry = activeCard?.extensions?.airi?.artistry
+  const artistryConfig = {
+    provider: cardArtistry?.provider || globalArtistryConfig.provider,
+    model: cardArtistry?.model || globalArtistryConfig.model,
+    promptPrefix: cardArtistry?.promptPrefix || globalArtistryConfig.promptPrefix,
+    options: cardArtistry?.options || globalArtistryConfig.options,
+    Globals: globalArtistryConfig.Globals, // Globals should probably remain global or merged
+  }
 
   const title = params.title || `Generation ${new Date().toLocaleString()}`
 
   try {
-    const result = await generateHeadless({
+    const artistryResult = await generateHeadless({
       prompt: artistryConfig.promptPrefix ? `${artistryConfig.promptPrefix} ${params.prompt}` : params.prompt as string,
       model: artistryConfig.model as string,
       provider: artistryConfig.provider as string,
-      options: artistryConfig.options as any,
-      globals: artistryConfig.Globals as any,
+      options: JSON.parse(JSON.stringify(artistryConfig.options || {})),
+      globals: JSON.parse(JSON.stringify(artistryConfig.Globals || {})),
     })
 
-    if (result.error || !result.imageUrl)
-      throw new Error(result.error || 'No image URL returned from generator')
+    if (artistryResult.error) {
+      console.error('[ImageJournalTool] Headless generation failed:', artistryResult.error)
+      throw new Error(`Failed to generate image: ${artistryResult.error}`)
+    }
 
-    const response = await fetch(result.imageUrl)
-    const blob = await response.blob()
+    if (!artistryResult.base64 && !artistryResult.imageUrl)
+      throw new Error('Failed to generate image: No output received.')
+
+    let blob: Blob
+    if (artistryResult.base64) {
+      // Convert base64 to blob
+      const parts = artistryResult.base64.split(',')
+      const contentType = parts[0].split(':')[1].split(';')[0]
+      const byteCharacters = atob(parts[1])
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      blob = new Blob([byteArray], { type: contentType })
+    }
+    else {
+      // Fallback to fetch if base64 is missing for some reason
+      const response = await fetch(artistryResult.imageUrl!)
+      blob = await response.blob()
+    }
 
     const entryId = await backgroundStore.addBackground(
       'journal',
@@ -203,7 +235,7 @@ async function executeImageJournalAction(params: any) {
 const tools: Promise<Tool>[] = [
   tool({
     name: 'image_journal',
-    description: 'ACTION: Manage AI-generated images for the active character. Use "create" to generate a NEW image (and optionally set it as background with set_as_background: true). Use "set_as_background" with a title query to APPLY an existing image as the active background. YOU MUST CALL THIS TOOL TO PERFORM THE ACTION—DO NOT SIMPLY SAY "DONE".',
+    description: 'Create or manage AI-generated images for the active character. Use "create" to generate an image and add it to the journal (optionally setting it as background). Use "set_as_background" with a query to apply an existing image as the active background.',
     execute: params => executeImageJournalAction(params),
     parameters: imageJournalParams,
   }),
