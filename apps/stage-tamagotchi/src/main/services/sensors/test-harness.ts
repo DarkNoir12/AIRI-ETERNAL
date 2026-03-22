@@ -1,6 +1,8 @@
 import os from 'node:os'
+import path from 'node:path'
 
 import { exec } from 'node:child_process'
+import { writeFileSync } from 'node:fs'
 import { promisify } from 'node:util'
 
 const execAsync = promisify(exec)
@@ -106,8 +108,6 @@ async function runTest() {
   print('--------------------------------')
 
   try {
-    const { writeFileSync } = require('node:fs')
-    const path = require('node:path')
     const absolutePath = path.resolve(logFile)
     writeFileSync(absolutePath, logLines.join('\n'))
     console.log(`Results written to ${absolutePath}`)

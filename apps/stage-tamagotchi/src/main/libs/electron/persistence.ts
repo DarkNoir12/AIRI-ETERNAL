@@ -1,6 +1,6 @@
 import type { BaseIssue, BaseSchema, InferIssue, InferOutput } from 'valibot'
 
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { copyFile, mkdir, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
@@ -184,8 +184,7 @@ export function createConfig<TSchema extends PersistedSchema>(
     try {
       const data = persistenceMap.get(key)
       if (data !== undefined) {
-        const { writeFileSync: writeFileSyncSync } = require('node:fs')
-        writeFileSyncSync(configPath(), JSON.stringify(data))
+        writeFileSync(configPath(), JSON.stringify(data))
       }
     }
     catch (error) {
