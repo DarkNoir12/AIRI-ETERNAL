@@ -6,6 +6,7 @@ import { generateText } from '@xsai/generate-text'
 import { listModels } from '@xsai/model'
 import { streamText } from '@xsai/stream-text'
 import { defineStore } from 'pinia'
+import { toRaw } from 'vue'
 
 import { mcp } from '../tools'
 
@@ -51,7 +52,11 @@ function sanitizeRequestOverrides(overrides?: Record<string, unknown>) {
 
 // TODO: proper format for other error messages.
 function sanitizeMessages(messages: unknown[]): Message[] {
-  return messages.map((m: any) => {
+  // Use JSON snapshotting to completely remove Vue reactivity and ensure cloninability.
+  // This is necessary because @xsai libraries use structuredClone internally.
+  const rawMessages = JSON.parse(JSON.stringify(toRaw(messages))) as any[]
+
+  return rawMessages.map((m: any) => {
     if (m && m.role === 'error') {
       return {
         role: 'user',
