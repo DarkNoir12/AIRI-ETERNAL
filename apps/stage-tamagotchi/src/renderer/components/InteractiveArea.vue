@@ -219,7 +219,7 @@ watch(messageInput, () => {
       @submit="handleSend"
       @compositionstart="isComposing = true"
       @compositionend="isComposing = false"
-      @paste-file="handleFilePaste"
+      @attach="handleFilePaste"
     />
   </div>
 </template>

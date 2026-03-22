@@ -22,12 +22,22 @@ pnpm -F @proj-airi/stage-tamagotchi run build:win
 This runs `electron-builder --win` after performing necessary typechecks and production builds for main/renderer/preload.
 
 ### Step 4: Publish to GitHub Releases
-Use the `gh` CLI to create the release and upload the asset:
+Use the `gh` CLI to create the release and upload the asset.
+
+**Daily / Development Release (Target your fork):**
+For daily releases or testing, you should target your own fork to avoid permission issues with the upstream repository.
 ```bash
-gh release create v0.9.0-stable.20260321 dist\AIRI-0.9.0-stable.20260321-windows-x64-setup.exe --repo moeru-ai/airi --title "AIRI v0.9.0-stable (March 21, 2026)" --notes "Your release notes here."
+gh release create v0.9.0-stable.20260322 apps/stage-tamagotchi/dist/AIRI-0.9.0-stable.20260322-windows-x64-setup.exe --repo dasilva333/airi --title "AIRI v0.9.0-stable (March 22, 2026)" --notes "Daily release focusing on Vision support MVP and Live2D state synchronization fixes."
 ```
+
+**Stable Release (Target upstream):**
+Only target the upstream repository if you have write access and are performing an official release.
+```bash
+gh release create [tag] [artifact_path] --repo moeru-ai/airi --title "[Title]" --notes "[Notes]"
+```
+
 > [!IMPORTANT]
-> Ensure your `gh` CLI session has the `workflow` scope. If not, run:
+> **Authentication Scope**: Ensure your `gh` CLI session has the `workflow` scope. This is required for creating releases. If you see a "Failed to create release" error despite having permissions, run:
 > `gh auth refresh -h github.com -s workflow`
 
 ---
