@@ -19,7 +19,7 @@ import {
   DialogRoot,
   DialogTitle,
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DeleteCardDialog from './DeleteCardDialog.vue'
@@ -27,6 +27,7 @@ import DeleteCardDialog from './DeleteCardDialog.vue'
 interface Props {
   modelValue: boolean
   cardId: string
+  initialTab?: string
 }
 
 const props = defineProps<Props>()
@@ -169,7 +170,21 @@ const activeBackgroundId = computed({
 })
 
 // Active tab ID state
-const activeTabId = ref('')
+const activeTabId = ref(props.initialTab || '')
+
+// Watch for initialTab changes to reset the tab when opening from a deep-link
+watch(() => props.initialTab, (newTab) => {
+  if (newTab) {
+    activeTabId.value = newTab
+  }
+})
+
+// Watch for dialog open to apply initialTab
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen && props.initialTab) {
+    activeTabId.value = props.initialTab
+  }
+})
 
 // Tabs for card details
 const tabs = computed<Tab[]>(() => {

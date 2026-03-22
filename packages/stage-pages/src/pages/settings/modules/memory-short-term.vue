@@ -51,6 +51,25 @@ async function rebuildFromHistory() {
   }
 }
 
+async function rebuildToday() {
+  if (!selectedCharacter.value)
+    return
+
+  try {
+    const success = await shortTermMemory.rebuildToday(selectedCharacter.value, {
+      tokenBudgetPerDay: tokensPerDay.value,
+    })
+
+    if (success) {
+      toast.success(`Short-term block for today has been successfully rebuilt.`)
+    }
+  }
+  catch (rebuildError) {
+    const message = rebuildError instanceof Error ? rebuildError.message : String(rebuildError)
+    toast.error(`Today's rebuild failed: ${message}`)
+  }
+}
+
 onMounted(async () => {
   cardStore.initialize()
   await shortTermMemory.load()
@@ -139,6 +158,13 @@ watch(characterOptions, (options) => {
           variant="secondary"
           :disabled="!selectedCharacter || rebuilding"
           @click="rebuildFromHistory"
+        />
+        <Button
+          label="Rebuild Today"
+          icon="i-solar:calendar-date-bold-duotone"
+          variant="secondary"
+          :disabled="!selectedCharacter || rebuilding"
+          @click="rebuildToday"
         />
         <Button
           label="Generate Yesterday's Block"

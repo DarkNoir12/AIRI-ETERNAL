@@ -16,6 +16,7 @@ const props = withDefaults(defineProps<Props>(), { placement: 'down' })
 
 const emit = defineEmits<{
   (e: 'manage'): void
+  (e: 'image-journal'): void
 }>()
 
 const { t } = useI18n()
@@ -41,6 +42,11 @@ async function activateCard(id: string) {
 function handleManage() {
   open.value = false
   emit('manage')
+}
+
+function handleImageJournal() {
+  open.value = false
+  emit('image-journal')
 }
 </script>
 
@@ -125,7 +131,19 @@ function handleManage() {
         </div>
 
         <!-- Actions -->
-        <div class="p-1">
+        <div class="flex flex-col gap-0.5 p-1">
+          <button
+            :class="[
+              'group w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition',
+              'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 font-medium',
+            ]"
+            type="button"
+            @click="handleImageJournal"
+          >
+            <div class="i-solar:gallery-bold-duotone size-4 text-neutral-400 transition group-hover:text-primary-500" />
+            View Image Journal
+          </button>
+
           <button
             :class="[
               'group w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition',

@@ -418,6 +418,61 @@ export const useShortTermMemoryStore = defineStore('short-term-memory', () => {
     }
   }
 
+  async function rebuildToday(characterId: string, options?: { tokenBudgetPerDay?: number }): Promise<boolean> {
+    await load()
+
+    const card = cards.value.get(characterId)
+    if (!card)
+      throw new Error('Selected character could not be resolved for rebuild today.')
+
+    const providerId = card.extensions?.airi?.modules?.consciousness?.provider || activeProvider.value
+    const modelId = card.extensions?.airi?.modules?.consciousness?.model || activeModel.value
+    if (!providerId || !modelId)
+      throw new Error('No chat provider/model is available for rebuild today.')
+
+    const provider = await providersStore.getProviderInstance<ChatProvider>(providerId)
+    if (!provider)
+      throw new Error(`Failed to resolve provider instance for "${providerId}".`)
+
+    rebuilding.value = true
+    error.value = null
+    const targetDate = formatLocalDayKey(Date.now())
+    rebuildProgress.value = `Summarizing today (${targetDate})...`
+
+    try {
+      const dayBucket = (await collectCharacterDayBuckets(characterId)).find(bucket => bucket.date === targetDate)
+      if (!dayBucket) {
+        throw new Error(`No messages found for today (${targetDate}) to summarize.`)
+      }
+
+      const nextBlock = await summarizeBucket(characterId, card, provider, modelId, dayBucket, 'rebuilt', options)
+      if (!nextBlock)
+        return false
+
+      const currentUserId = getCurrentUserId()
+      const nextBlocks = [...blocks.value]
+      const existingIndex = nextBlocks.findIndex(block => block.userId === currentUserId && block.characterId === characterId && block.date === targetDate)
+
+      if (existingIndex >= 0) {
+        nextBlocks.splice(existingIndex, 1, nextBlock)
+      }
+      else {
+        nextBlocks.push(nextBlock)
+      }
+
+      await persist(nextBlocks)
+      return true
+    }
+    catch (rebuildError) {
+      error.value = rebuildError instanceof Error ? rebuildError.message : String(rebuildError)
+      throw rebuildError
+    }
+    finally {
+      rebuilding.value = false
+      rebuildProgress.value = ''
+    }
+  }
+
   async function ensureYesterdayBlock(characterId: string, options?: { tokenBudgetPerDay?: number }) {
     await load()
 
@@ -462,6 +517,7 @@ export const useShortTermMemoryStore = defineStore('short-term-memory', () => {
     getCharacterBlocks,
     searchBlocks,
     rebuildFromHistory,
+    rebuildToday,
     ensureYesterdayBlock,
   }
 })

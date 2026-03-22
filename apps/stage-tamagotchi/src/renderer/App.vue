@@ -208,7 +208,7 @@ onMounted(async () => {
   })
 
   // Listen for open-settings IPC message from main process
-  defineInvokeHandler(context.value, electronOpenSettings, () => router.push('/settings'))
+  defineInvokeHandler(context.value, electronOpenSettings, payload => router.push(payload?.route || '/settings'))
 })
 
 watch(themeColorsHue, () => {

@@ -17,6 +17,7 @@ import { storeToRefs } from 'pinia'
 import { safeParse } from 'valibot'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 
 import cardExportFrameUrl from './card-export-frame.png?url'
@@ -37,6 +38,9 @@ const backgroundStore = useBackgroundStore()
 const { activeExpressions } = storeToRefs(modelStore)
 const { stageModelSelected } = storeToRefs(stageModelStore)
 
+const route = useRoute()
+const router = useRouter()
+
 // Currently selected card ID (different from active card ID)
 const selectedCardId = ref<string>('')
 // Currently editing card ID
@@ -44,6 +48,28 @@ const editingCardId = ref<string>('')
 // Dialog state
 const isCardDialogOpen = ref(false)
 const isCardCreationDialogOpen = ref(false)
+
+// Initial tab for the detail dialog
+const initialTab = ref<string | undefined>(undefined)
+
+// Watch for deep-linking query parameters
+watch(
+  () => route.query,
+  (query) => {
+    const cardId = query.cardId as string
+    const tab = query.tab as string
+
+    if (cardId && cards.value.has(cardId)) {
+      selectedCardId.value = cardId
+      initialTab.value = tab || undefined
+      isCardDialogOpen.value = true
+
+      // Clear query params after handling
+      router.replace({ query: {} })
+    }
+  },
+  { immediate: true },
+)
 
 // Search query
 const searchQuery = ref('')
@@ -889,6 +915,7 @@ function getDisplayModelId(id: string) {
   <CardDetailDialog
     v-model="isCardDialogOpen"
     :card-id="selectedCardId"
+    :initial-tab="initialTab"
   />
 
   <!-- Card creation/edit dialog -->

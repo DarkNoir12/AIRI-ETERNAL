@@ -184,9 +184,9 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       let effectiveConfig = options.providerConfig
       let effectiveTools = options.tools
 
-      const hasImages = options.attachments && options.attachments.some(a => a.type === 'image')
+      const isVlmTurn = !!(options.attachments && options.attachments.some(a => a.type === 'image') && visionStore.activeProvider && visionStore.activeModel)
       let promptShimText = ''
-      if (hasImages && visionStore.activeProvider && visionStore.activeModel) {
+      if (isVlmTurn) {
         chatLog('Vision handover activated. Replacing main LLM with Vision VLM.', {
           provider: visionStore.activeProvider,
           model: visionStore.activeModel,
@@ -248,7 +248,21 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
         return
       }
 
-      const inferenceMessages = [...sessionMessagesForSend, inferenceUserMessage]
+      let inferenceMessages = [...sessionMessagesForSend, inferenceUserMessage]
+
+      // For VLM turns, trim history to save context/tokens.
+      // Rule: System Message + last 6 conversation messages + current user input.
+      if (isVlmTurn) {
+        const systemMessage = inferenceMessages.find(m => m.role === 'system')
+        const historyWithoutSystem = inferenceMessages.filter(m => m.role !== 'system' && m !== inferenceUserMessage)
+        const trimmedHistory = historyWithoutSystem.slice(-6)
+
+        inferenceMessages = systemMessage
+          ? [systemMessage, ...trimmedHistory, inferenceUserMessage]
+          : [...trimmedHistory, inferenceUserMessage]
+
+        chatLog(`[ChatDebug] VLM turn detected. Trimmed history from ${sessionMessagesForSend.length + 1} to ${inferenceMessages.length} messages.`)
+      }
 
       const categorizer = createStreamingCategorizer(effectiveProviderId)
       let streamPosition = 0
@@ -580,12 +594,19 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
 
       resetStreamIdleTimeout()
 
+      const providerModels = providersStore.getModelsForProvider(effectiveProviderId)
+      const currentModel = providerModels.find(m => m.id === effectiveModel)
+      const isVisionSupported = isVlmTurn || (currentModel?.capabilities?.includes('vision') || false)
+
+      console.log(`[ChatDebug] Model: ${effectiveModel}, Provider: ${effectiveProviderId}, Vision Supported: ${isVisionSupported}`)
+
       await llmStore.stream(effectiveModel, effectiveProvider, newMessages as Message[], {
         headers,
         tools: effectiveTools,
         temperature: generationKnown?.temperature,
         top_p: generationKnown?.topP,
         max_tokens: generationKnown?.maxTokens,
+        vision: isVisionSupported,
         requestOverrides: generationConfig?.enabled ? generationConfig.advanced : undefined,
         abortSignal: abortController.signal,
         waitForTools: true,
