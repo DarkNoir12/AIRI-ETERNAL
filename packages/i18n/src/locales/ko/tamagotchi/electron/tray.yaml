@@ -8,6 +8,10 @@ menu:
       half_height: 절반 높이
       full_screen: 전체 화면
       align_to: 위치 정렬
+      position: 위치
+      lock: 잠금
+      snapshot: 홈으로 설정
+      restore: 홈 복원
       center: 중앙
       top_left: 좌측 상단
       top_right: 우측 상단

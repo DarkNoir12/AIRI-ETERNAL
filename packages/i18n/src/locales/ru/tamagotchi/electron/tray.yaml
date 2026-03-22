@@ -7,7 +7,11 @@ menu:
       full_height:
       half_height: Half Height
       full_screen: Во весь экран
-      align_to: Align to
+      align_to: Выровнять по
+      position: Позиция
+      lock: Заблокировать
+      snapshot: Сохранить позицию
+      restore: Восстановить позицию
       center: Center
       top_left: Top Left
       top_right: Top Right

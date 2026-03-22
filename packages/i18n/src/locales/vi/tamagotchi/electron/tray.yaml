@@ -8,6 +8,10 @@ menu:
       half_height: Nửa chiều cao
       full_screen: Toàn màn hình
       align_to: Căn chỉnh theo
+      position: Vị trí
+      lock: Khóa
+      snapshot: Đặt làm mặc định
+      restore: Khôi phục mặc định
       center: Giữa
       top_left: Góc trên phía trái
       top_right: Góc trên phía phải

@@ -8,6 +8,10 @@ menu:
       half_height: 半高
       full_screen: 全屏
       align_to: 对齐到...
+      position: 位置
+      lock: 锁定
+      snapshot: 设为默认
+      restore: 恢复默认
       center: 居中
       top_left: 左上
       top_right: 右上
