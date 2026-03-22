@@ -113,23 +113,25 @@ async function executeCreateImageJournalEntry(params: { prompt?: string, title?:
     )
 
     // Optionally spawn a widget to show the result (best effort)
-    try {
-      await addWidget({
-        componentName: 'artistry',
-        componentProps: {
-          status: 'done',
-          entryId,
-          imageUrl: artistryResult.imageUrl || artistryResult.base64,
-          prompt: params.prompt as string,
-          title,
-          _skipIngestion: true,
-        },
-        size: 'm',
-        ttlMs: 0,
-      })
-    }
-    catch (e) {
-      console.warn('[ImageJournalTool] Failed to spawn result widget', e)
+    if (!params.set_as_background) {
+      try {
+        await addWidget({
+          componentName: 'artistry',
+          componentProps: {
+            status: 'done',
+            entryId,
+            imageUrl: artistryResult.imageUrl || artistryResult.base64,
+            prompt: params.prompt as string,
+            title,
+            _skipIngestion: true,
+          },
+          size: 'm',
+          ttlMs: 0,
+        })
+      }
+      catch (e) {
+        console.warn('[ImageJournalTool] Failed to spawn result widget', e)
+      }
     }
 
     // If set_as_background is true, also apply as background
