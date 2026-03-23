@@ -703,7 +703,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
         try {
           const detail = error.response || error.data || error.body
           if (detail) {
-            errorMessage += `\n\nDetails: ${JSON.stringify(detail, null, 2)}`
+            errorMessage += `\n\n**Response**: ${JSON.stringify(detail, null, 2)}`
           }
         }
         catch {}
@@ -713,7 +713,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       }
 
       // Display in UI
-      buildingMessage.content += `${buildingMessage.content ? '\n\n' : ''}⚠️ **Error**: ${errorMessage}`
+      buildingMessage.content += `${buildingMessage.content ? '\n\n' : ''}⚠️ **Chat Error**\n${errorMessage}`
       updateUI()
 
       // Persist to session history if not stale

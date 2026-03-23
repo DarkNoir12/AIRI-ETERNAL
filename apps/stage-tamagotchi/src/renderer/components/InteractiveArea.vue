@@ -79,11 +79,6 @@ async function handleSend() {
       ...att,
       url: URL.createObjectURL(new Blob([Uint8Array.from(atob(att.data), c => c.charCodeAt(0))], { type: att.mimeType })),
     }))
-    messages.value.pop()
-    messages.value.push({
-      role: 'error',
-      content: (error as Error).message,
-    })
   }
 }
 

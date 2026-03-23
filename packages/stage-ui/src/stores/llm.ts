@@ -162,7 +162,7 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
     }
 
     try {
-      streamText({
+      const result = streamText({
         ...chatConfig,
         ...requestOverrides,
         maxSteps: 10,
@@ -175,6 +175,21 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
         tools,
         onEvent,
         abortSignal: options?.abortSignal,
+      })
+
+      // We MUST catch all promises returned by streamText to ensure the main promise settles
+      // and to prevent "Uncaught (in promise)" errors if the initial handshake fails (e.g. 429).
+      result.messages.catch(rejectOnce)
+      result.steps.catch(rejectOnce)
+      result.usage.catch(rejectOnce)
+      result.totalUsage.catch(rejectOnce)
+
+      // result.messages usually settles when the stream is done or fails.
+      result.messages.then(() => {
+        // If finish event didn't already resolve it, we resolve now.
+        resolveOnce()
+      }).catch((err) => {
+        rejectOnce(err)
       })
     }
     catch (err) {
