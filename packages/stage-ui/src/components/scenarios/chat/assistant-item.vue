@@ -101,26 +101,56 @@ const resolvedSlices = computed<ChatSlices[]>(() => {
   return []
 })
 
-function extractMood(text: string): string | null {
-  const match = text.match(ACT_MARKER_RE)
-  if (!match)
+function getMoodArchetype(text: string): string | null {
+  if (!text || typeof text !== 'string')
     return null
 
-  // Extract the label part: <|Label: ... |> -> Label
-  const raw = match[0]
-  const tagContent = raw.slice(2, -2).trim() // Remove <| and |>
-  const colonIndex = tagContent.indexOf(':')
-  if (colonIndex === -1)
-    return tagContent
+  // Pattern to find both ACT tags and Bracket tokens [mood]
+  const matches = Array.from(text.matchAll(/<\|ACT:([\s\S]*?)\|>|\[([\w-]+)\]/gi))
 
-  return tagContent.slice(0, colonIndex).trim()
+  for (const match of matches) {
+    let name = ''
+    if (match[1]) { // ACT tag fallback
+      const nameMatch = match[1].match(/"name":\s*"([^"]+)"/i)
+      if (nameMatch)
+        name = nameMatch[1].toLowerCase()
+    }
+    else if (match[2]) { // Bracket token [mood] - Priority!
+      name = match[2].toLowerCase()
+    }
+
+    if (!name)
+      continue
+
+    let result = null
+    // Map keywords to our 7 core visual archetypes
+    if (/happy|joy|laugh|grin|chuckle|smile|beam|cheer/.test(name))
+      result = 'happy'
+    else if (/sad|cry|sorrow|pout|sniff|sigh|whimper|mourn/.test(name))
+      result = 'sad'
+    else if (/angry|mad|annoy|frustrate|growl|hiss|glare|stomp/.test(name))
+      result = 'angry'
+    else if (/surprise|shock|wonder|gasp|eep|awe|blink/.test(name))
+      result = 'surprised'
+    else if (/think|ponder|curious|hmm|mmm|doubt|question/.test(name))
+      result = 'thinking'
+    else if (/blush|shy|embarrassed|rose|bashful|stutter|awkward/.test(name))
+      result = 'flustered'
+    else if (/relax|whisper|sleepy|soft|calm|peace|yawn|purr/.test(name))
+      result = 'relaxed'
+
+    if (result)
+      return result
+  }
+
+  return null
 }
 
 const mood = computed(() => {
   if (props.message.slices?.length) {
     for (const slice of props.message.slices) {
       if (slice.type === 'text') {
-        const m = extractMood(slice.text)
+        const m = getMoodArchetype(slice.text)
         if (m)
           return m
       }
@@ -128,35 +158,32 @@ const mood = computed(() => {
   }
 
   if (typeof props.message.content === 'string') {
-    return extractMood(props.message.content)
+    return getMoodArchetype(props.message.content)
   }
 
   if (Array.isArray(props.message.content)) {
     const textPart = props.message.content.find(part => 'type' in part && part.type === 'text') as { text?: string } | undefined
     if (textPart?.text)
-      return extractMood(textPart.text)
+      return getMoodArchetype(textPart.text)
   }
 
   return null
 })
 
+const MOOD_ARCHETYPE_COLORS: Record<string, { border: string, bg: string, glow: string }> = {
+  happy: { border: '#10b98180', bg: '#10b98115', glow: '#10b98130' }, // emerald
+  sad: { border: '#3b82f680', bg: '#3b82f615', glow: '#3b82f630' }, // blue
+  angry: { border: '#f43f5e80', bg: '#f43f5e15', glow: '#f43f5e30' }, // rose
+  surprised: { border: '#a855f790', bg: '#a855f720', glow: '#a855f740' }, // vibrant purple
+  thinking: { border: '#f59e0b80', bg: '#f59e0b10', glow: '#f59e0b20' }, // amber
+  flustered: { border: '#f472b680', bg: '#f472b615', glow: '#f472b630' }, // pink
+  relaxed: { border: '#14b8a680', bg: '#14b8a615', glow: '#14b8a630' }, // teal
+}
+
 const moodClasses = computed(() => {
   if (!mood.value)
     return ''
-
-  const m = mood.value.toLowerCase()
-  if (m.includes('happy') || m.includes('joy') || m.includes('laugh') || m.includes('grin'))
-    return 'mood-happy'
-  if (m.includes('sad') || m.includes('cry') || m.includes('sorrow') || m.includes('pout'))
-    return 'mood-sad'
-  if (m.includes('angry') || m.includes('mad') || m.includes('annoy') || m.includes('frustrate'))
-    return 'mood-angry'
-  if (m.includes('surprise') || m.includes('shock') || m.includes('wonder'))
-    return 'mood-surprised'
-  if (m.includes('think') || m.includes('ponder') || m.includes('curious'))
-    return 'mood-thinking'
-
-  return ''
+  return `mood-${mood.value}`
 })
 
 const showLoader = computed(() => props.showPlaceholder && resolvedSlices.value.length === 0)
@@ -165,6 +192,19 @@ const boxClasses = computed(() => [
   props.variant === 'mobile' ? 'px-2 py-2 text-sm bg-primary-50/90 dark:bg-primary-950/90' : 'px-3 py-3 bg-primary-50/80 dark:bg-primary-950/80',
   moodClasses.value,
 ])
+
+const boxStyle = computed(() => {
+  if (!mood.value || !MOOD_ARCHETYPE_COLORS[mood.value])
+    return { border: '1px solid transparent' }
+  const colors = MOOD_ARCHETYPE_COLORS[mood.value]
+  return {
+    borderColor: colors.border,
+    borderWidth: '2px', // Increase for visibility
+    borderStyle: 'solid',
+    backgroundColor: colors.bg, // Tint the background directly!
+    boxShadow: `0 0 15px ${colors.glow}`, // Add outer glow
+  }
+})
 
 function deleteSelf() {
   if (props.message.id)
@@ -180,18 +220,8 @@ function deleteSelf() {
       relative min-w-20 rounded-xl
       transition="all duration-300"
       :class="boxClasses"
+      :style="boxStyle"
     >
-      <div
-        v-if="moodClasses"
-        class="absolute inset-x-0 bottom--1px top--1px z--1 rounded-xl opacity-50 blur-sm transition-all duration-500"
-        :class="[
-          moodClasses === 'mood-happy' ? 'bg-emerald-400/30' : '',
-          moodClasses === 'mood-sad' ? 'bg-blue-400/30' : '',
-          moodClasses === 'mood-angry' ? 'bg-rose-400/30' : '',
-          moodClasses === 'mood-surprised' ? 'bg-purple-400/30' : '',
-          moodClasses === 'mood-thinking' ? 'bg-amber-400/20' : '',
-        ]"
-      />
       <div>
         <span text-sm text="black/60 dark:white/65" font-normal class="inline <sm:hidden">{{ label }}</span>
       </div>
@@ -231,24 +261,8 @@ function deleteSelf() {
 </template>
 
 <style scoped>
-.mood-happy {
-  @apply border-emerald-400/50 dark:border-emerald-500/50;
-}
-.mood-sad {
-  @apply border-blue-400/50 dark:border-blue-500/50;
-}
-.mood-angry {
-  @apply border-rose-400/50 dark:border-rose-500/50;
-}
-.mood-surprised {
-  @apply border-purple-400/50 dark:border-purple-500/50;
-}
-.mood-thinking {
-  @apply border-amber-400/30 dark:border-amber-500/30;
-}
-
-/* Ensure transition is smooth */
+/* Scoped styles kept here for transitions and complex selectors only */
 .rounded-xl {
-  border: 1px solid transparent;
+  transition: all 0.3s ease;
 }
 </style>
