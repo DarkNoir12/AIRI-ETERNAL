@@ -14,17 +14,28 @@ const {
   comfyuiActiveWorkflow,
 } = storeToRefs(artistryStore)
 
+const expandedWorkflow = ref<string | null>(null)
+
 // --- Connection test ---
 const connectionStatus = ref<'idle' | 'testing' | 'connected' | 'failed'>('idle')
 const connectionInfo = ref('')
+const isCorsError = ref(false)
 
 async function testConnection() {
   connectionStatus.value = 'testing'
   connectionInfo.value = ''
+  isCorsError.value = false
   try {
     const url = comfyuiServerUrl.value.replace(/\/+$/, '')
-    const resp = await fetch(`${url}/system_stats`)
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const resp = await fetch(`${url}/system_stats`, { mode: 'cors' })
+
+    if (resp.status === 403) {
+      isCorsError.value = true
+      throw new Error('Forbidden (Possible CORS issue)')
+    }
+
+    if (!resp.ok)
+      throw new Error(`HTTP ${resp.status}`)
     const data = await resp.json()
     const gpus = data.devices?.map((d: any) => d.name).join(', ') || 'Unknown GPU'
     const vram = data.devices?.[0]?.vram_total
@@ -33,6 +44,9 @@ async function testConnection() {
     connectionStatus.value = 'connected'
   }
   catch (e: any) {
+    if (e.message.includes('fetch') || e.message.includes('CORS') || e.message.includes('Forbidden')) {
+      isCorsError.value = true
+    }
     connectionInfo.value = `Failed: ${e.message}`
     connectionStatus.value = 'failed'
   }
@@ -54,7 +68,8 @@ function handleFileUpload(event: Event) {
 
   const input = event.target as HTMLInputElement
   const file = input?.files?.[0]
-  if (!file) return
+  if (!file)
+    return
 
   const reader = new FileReader()
   reader.onload = (e) => {
@@ -92,7 +107,8 @@ function handleFileUpload(event: Event) {
 
 function toggleField(nodeTitle: string, fieldName: string) {
   const set = selectedFields.value[nodeTitle]
-  if (!set) return
+  if (!set)
+    return
   if (set.has(fieldName)) {
     set.delete(fieldName)
   }
@@ -114,7 +130,8 @@ const totalExposed = computed(() => {
 })
 
 function saveWorkflow() {
-  if (!pendingWorkflowRaw.value || !pendingWorkflowName.value.trim()) return
+  if (!pendingWorkflowRaw.value || !pendingWorkflowName.value.trim())
+    return
 
   const exposedFields: Record<string, string[]> = {}
   for (const [title, fields] of Object.entries(selectedFields.value)) {
@@ -161,21 +178,43 @@ function removeWorkflow(id: string) {
 }
 
 function formatValue(val: any): string {
-  if (typeof val === 'string') return val.length > 40 ? `"${val.slice(0, 37)}..."` : `"${val}"`
-  if (typeof val === 'number') return String(val)
-  if (typeof val === 'boolean') return String(val)
+  if (typeof val === 'string')
+    return val.length > 40 ? `"${val.slice(0, 37)}..."` : `"${val}"`
+  if (typeof val === 'number')
+    return String(val)
+  if (typeof val === 'boolean')
+    return String(val)
   return JSON.stringify(val)
+}
+
+function generateExampleJson(wf: ComfyUIWorkflowTemplate) {
+  const example: Record<string, any> = {
+    template: wf.id,
+  }
+  for (const [nodeTitle, fields] of Object.entries(wf.exposedFields)) {
+    example[nodeTitle] = {}
+    for (const field of fields) {
+      const nodeId = Object.keys(wf.workflow).find(id => (wf.workflow[id]._meta?.title || wf.workflow[id].class_type) === nodeTitle)
+      const val = nodeId ? wf.workflow[nodeId].inputs[field] : '...'
+      example[nodeTitle][field] = val
+    }
+  }
+  return JSON.stringify(example, null, 2)
+}
+
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text)
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <!-- Header -->
-    <div class="bg-indigo-500/8 dark:bg-indigo-500/12 rounded-xl p-5">
-      <div class="flex items-center gap-3 mb-3">
+    <div class="rounded-xl bg-indigo-500/8 p-5 dark:bg-indigo-500/12">
+      <div class="mb-3 flex items-center gap-3">
         <div class="i-solar:gallery-bold-duotone text-3xl text-indigo-500" />
         <div>
-          <h2 class="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
+          <h2 class="text-xl text-neutral-800 font-semibold dark:text-neutral-100">
             ComfyUI Native API
           </h2>
           <p class="text-sm text-neutral-500 dark:text-neutral-400">
@@ -184,25 +223,25 @@ function formatValue(val: any): string {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-        <div class="rounded-lg bg-white/60 dark:bg-neutral-800/60 p-3">
-          <div class="text-xs font-medium text-neutral-400 dark:text-neutral-500 mb-1">
+      <div class="grid grid-cols-1 mt-4 gap-3 sm:grid-cols-3">
+        <div class="rounded-lg bg-white/60 p-3 dark:bg-neutral-800/60">
+          <div class="mb-1 text-xs text-neutral-400 font-medium dark:text-neutral-500">
             What You Need
           </div>
           <div class="text-sm text-neutral-700 dark:text-neutral-300">
             ComfyUI running locally or on your network.
           </div>
         </div>
-        <div class="rounded-lg bg-white/60 dark:bg-neutral-800/60 p-3">
-          <div class="text-xs font-medium text-neutral-400 dark:text-neutral-500 mb-1">
+        <div class="rounded-lg bg-white/60 p-3 dark:bg-neutral-800/60">
+          <div class="mb-1 text-xs text-neutral-400 font-medium dark:text-neutral-500">
             How To Export
           </div>
           <div class="text-sm text-neutral-700 dark:text-neutral-300">
             Enable Dev Mode → "Save (API Format)".
           </div>
         </div>
-        <div class="rounded-lg bg-white/60 dark:bg-neutral-800/60 p-3">
-          <div class="text-xs font-medium text-neutral-400 dark:text-neutral-500 mb-1">
+        <div class="rounded-lg bg-white/60 p-3 dark:bg-neutral-800/60">
+          <div class="mb-1 text-xs text-neutral-400 font-medium dark:text-neutral-500">
             Scope Boundary
           </div>
           <div class="text-sm text-neutral-700 dark:text-neutral-300">
@@ -214,10 +253,10 @@ function formatValue(val: any): string {
 
     <!-- Connection -->
     <div class="flex flex-col gap-4">
-      <h3 class="text-lg font-medium text-neutral-700 dark:text-neutral-300">
+      <h3 class="text-lg text-neutral-700 font-medium dark:text-neutral-300">
         Connection
       </h3>
-      <div class="flex gap-3 items-end">
+      <div class="flex items-end gap-3">
         <div class="flex-1">
           <FieldInput
             v-model="comfyuiServerUrl"
@@ -240,7 +279,7 @@ function formatValue(val: any): string {
       </div>
       <div
         v-if="connectionInfo"
-        class="text-sm rounded-lg px-3 py-2"
+        class="rounded-lg px-3 py-2 text-sm"
         :class="{
           'bg-green-500/10 text-green-600 dark:text-green-400': connectionStatus === 'connected',
           'bg-red-500/10 text-red-600 dark:text-red-400': connectionStatus === 'failed',
@@ -248,16 +287,33 @@ function formatValue(val: any): string {
       >
         {{ connectionInfo }}
       </div>
+
+      <!-- CORS Troubleshooting -->
+      <div
+        v-if="isCorsError"
+        class="flex flex-col gap-2 border border-amber-500/20 rounded-xl bg-amber-500/10 p-4"
+      >
+        <div class="flex items-center gap-2 text-sm text-amber-600 font-bold dark:text-amber-400">
+          <div i-solar:shield-warning-bold-duotone />
+          CORS Block Detected
+        </div>
+        <p class="text-xs text-neutral-600 leading-relaxed dark:text-neutral-400">
+          ComfyUI blocks requests from other applications by default. To allow AIRI to connect, you must start ComfyUI with the <code class="rounded bg-neutral-200 px-1 dark:bg-neutral-800">--enable-cors-header "*"</code> flag.
+        </p>
+        <div class="break-all rounded bg-black/5 p-2 text-[10px] text-neutral-500 font-mono dark:bg-black/20 dark:text-neutral-400">
+          python main.py --enable-cors-header "*"
+        </div>
+      </div>
     </div>
 
     <!-- Saved Workflows -->
     <div class="flex flex-col gap-4">
       <div class="flex items-center justify-between">
-        <h3 class="text-lg font-medium text-neutral-700 dark:text-neutral-300">
+        <h3 class="text-lg text-neutral-700 font-medium dark:text-neutral-300">
           Workflow Templates
         </h3>
         <button
-          class="rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 text-sm font-medium hover:bg-indigo-500/20 transition-colors"
+          class="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-sm text-indigo-600 font-medium transition-colors hover:bg-indigo-500/20 dark:text-indigo-400"
           @click="showUploadSection = !showUploadSection"
         >
           {{ showUploadSection ? '✕ Cancel' : '+ Upload Workflow' }}
@@ -265,42 +321,109 @@ function formatValue(val: any): string {
       </div>
 
       <!-- Workflow List -->
-      <div v-if="comfyuiSavedWorkflows.length === 0 && !showUploadSection" class="text-sm text-neutral-400 dark:text-neutral-500 italic">
+      <div v-if="comfyuiSavedWorkflows.length === 0 && !showUploadSection" class="text-sm text-neutral-400 italic dark:text-neutral-500">
         No workflows uploaded yet. Click "Upload Workflow" to import a workflow_api.json from ComfyUI.
       </div>
 
-      <div v-for="wf in comfyuiSavedWorkflows" :key="wf.id" class="flex items-center gap-3 rounded-lg border border-neutral-200 dark:border-neutral-700 p-3">
-        <input
-          type="radio"
-          :checked="comfyuiActiveWorkflow === wf.id"
-          name="active-workflow"
-          class="accent-indigo-500"
-          @change="comfyuiActiveWorkflow = wf.id"
-        >
-        <div class="flex-1">
-          <div class="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-            {{ wf.name }}
+      <div v-for="wf in comfyuiSavedWorkflows" :key="wf.id" class="flex flex-col gap-2 border border-neutral-200 rounded-lg p-3 dark:border-neutral-700">
+        <div class="flex items-center gap-3">
+          <input
+            type="radio"
+            :checked="comfyuiActiveWorkflow === wf.id"
+            name="active-workflow"
+            class="accent-indigo-500"
+            @change="comfyuiActiveWorkflow = wf.id"
+          >
+          <div class="flex-1 cursor-pointer" @click="expandedWorkflow = (expandedWorkflow === wf.id ? null : wf.id)">
+            <div class="flex items-center gap-2 text-sm text-neutral-800 font-medium dark:text-neutral-200">
+              {{ wf.name }}
+              <div v-if="expandedWorkflow === wf.id" class="i-solar:alt-arrow-down-linear text-xs opacity-50" />
+              <div v-else class="i-solar:alt-arrow-right-linear text-xs opacity-50" />
+            </div>
+            <div class="text-xs text-neutral-400 dark:text-neutral-500">
+              {{ Object.keys(wf.workflow).length }} nodes · {{ Object.values(wf.exposedFields).reduce((n, arr) => n + arr.length, 0) }} exposed fields
+            </div>
           </div>
-          <div class="text-xs text-neutral-400 dark:text-neutral-500">
-            {{ Object.keys(wf.workflow).length }} nodes · {{ Object.values(wf.exposedFields).reduce((n, arr) => n + arr.length, 0) }} exposed fields
+          <button
+            class="text-xs text-red-400 transition-colors hover:text-red-500"
+            @click="removeWorkflow(wf.id)"
+          >
+            Remove
+          </button>
+        </div>
+
+        <!-- Expanded Details -->
+        <div v-if="expandedWorkflow === wf.id" class="mt-2 flex flex-col gap-5 border-t border-neutral-100 pb-2 pl-7 pt-4 dark:border-neutral-800">
+          <!-- Exposed Fields Visualization -->
+          <div class="flex flex-col gap-2">
+            <div class="text-[10px] text-neutral-400 font-bold tracking-wider uppercase dark:text-neutral-500">
+              Exposed Parameters
+            </div>
+            <div class="flex flex-wrap gap-3">
+              <div v-for="(fields, nodeTitle) in wf.exposedFields" :key="nodeTitle" class="flex flex-col gap-1.5">
+                <div class="self-start rounded bg-neutral-100 px-1.5 py-0.5 text-[9px] text-neutral-500 font-mono dark:bg-neutral-800 dark:text-neutral-400">
+                  {{ nodeTitle }}
+                </div>
+                <div class="flex flex-wrap gap-1 pl-1">
+                  <div v-for="f in fields" :key="f" class="group relative flex items-center gap-1.5 text-[10px] text-indigo-600 font-medium dark:text-indigo-400">
+                    <div class="size-1 rounded-full bg-indigo-400" />
+                    {{ f }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Integration Snippet -->
+          <div class="flex flex-col gap-3 border border-indigo-500/10 rounded-xl bg-neutral-900/5 p-4 dark:bg-indigo-500/5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-xs text-indigo-600 font-bold dark:text-indigo-400">
+                <div i-solar:code-bold-duotone />
+                Artistry Config Snippet
+              </div>
+              <button
+                class="rounded bg-indigo-500/10 px-2 py-1 text-[10px] text-indigo-600 transition-colors hover:bg-indigo-500/20 dark:text-indigo-400"
+                @click="copyToClipboard(generateExampleJson(wf))"
+              >
+                Copy JSON
+              </button>
+            </div>
+
+            <div class="text-[11px] text-neutral-700 leading-relaxed font-mono dark:text-neutral-300">
+              <div class="flex gap-2">
+                <span class="text-indigo-500 dark:text-indigo-400">{</span>
+              </div>
+              <div class="pl-4">
+                <span class="text-emerald-600 dark:text-emerald-400">"template"</span>: <span class="text-amber-600">"{{ wf.id }}"</span>,
+              </div>
+              <div v-for="(fields, nodeTitle, index) in wf.exposedFields" :key="nodeTitle" class="pl-4">
+                <span class="text-emerald-600 dark:text-emerald-400">"{{ nodeTitle }}"</span>: {
+                <div v-for="(f, fIndex) in fields" :key="f" class="pl-4">
+                  <span class="text-emerald-600 dark:text-emerald-400">"{{ f }}"</span>: <span class="text-blue-500">"..."</span>{{ fIndex < fields.length - 1 ? ',' : '' }}
+                </div>
+                }<span>{{ index < Object.keys(wf.exposedFields).length - 1 ? ',' : '' }}</span>
+              </div>
+              <div class="flex gap-2">
+                <span class="text-indigo-500 dark:text-indigo-400">}</span>
+              </div>
+            </div>
+
+            <div class="mt-1 flex items-center gap-2 pb-1 text-[10px] text-neutral-400 italic">
+              <div i-solar:info-circle-linear />
+              Paste this into your AIRI Card artistry config to override these nodes.
+            </div>
           </div>
         </div>
-        <button
-          class="text-red-400 hover:text-red-500 text-xs transition-colors"
-          @click="removeWorkflow(wf.id)"
-        >
-          Remove
-        </button>
       </div>
 
       <!-- Upload Section -->
-      <div v-if="showUploadSection" class="rounded-xl border-2 border-dashed border-indigo-300 dark:border-indigo-700 p-5 flex flex-col gap-4">
+      <div v-if="showUploadSection" class="flex flex-col gap-4 border-2 border-indigo-300 rounded-xl border-dashed p-5 dark:border-indigo-700">
         <div class="flex flex-col items-center gap-2">
           <div class="text-3xl text-indigo-400">
             📋
           </div>
           <div class="text-sm text-neutral-600 dark:text-neutral-400">
-            Drop or select a <code class="bg-neutral-100 dark:bg-neutral-800 rounded px-1">workflow_api.json</code> file
+            Drop or select a <code class="rounded bg-neutral-100 px-1 dark:bg-neutral-800">workflow_api.json</code> file
           </div>
           <input
             type="file"
@@ -310,7 +433,7 @@ function formatValue(val: any): string {
           >
         </div>
 
-        <div v-if="uploadError" class="text-sm text-red-500 bg-red-500/10 rounded-lg px-3 py-2">
+        <div v-if="uploadError" class="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-500">
           {{ uploadError }}
         </div>
 
@@ -323,25 +446,25 @@ function formatValue(val: any): string {
             placeholder="e.g. Anime Text2Img"
           />
 
-          <div class="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+          <div class="text-sm text-neutral-600 font-medium dark:text-neutral-400">
             Select fields to expose to the AI agent:
           </div>
 
-          <div class="max-h-80 overflow-y-auto flex flex-col gap-2">
+          <div class="max-h-80 flex flex-col gap-2 overflow-y-auto">
             <div
               v-for="node in parsedWorkflow.nodes"
               :key="node.id"
-              class="rounded-lg border border-neutral-200 dark:border-neutral-700 p-3"
+              class="border border-neutral-200 rounded-lg p-3 dark:border-neutral-700"
             >
-              <div class="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+              <div class="mb-1 text-sm text-neutral-700 font-medium dark:text-neutral-300">
                 {{ node.title }}
-                <span class="text-xs text-neutral-400 ml-1">({{ node.type }})</span>
+                <span class="ml-1 text-xs text-neutral-400">({{ node.type }})</span>
               </div>
               <div class="flex flex-col gap-1 pl-3">
                 <label
                   v-for="(val, field) in node.inputs"
                   :key="String(field)"
-                  class="flex items-center gap-2 text-xs cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded px-1 py-0.5"
+                  class="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 text-xs hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   <input
                     type="checkbox"
@@ -349,17 +472,17 @@ function formatValue(val: any): string {
                     :checked="isFieldSelected(node.title, String(field))"
                     @change="toggleField(node.title, String(field))"
                   >
-                  <span class="font-mono text-neutral-600 dark:text-neutral-400">{{ field }}</span>
-                  <span class="text-neutral-400 dark:text-neutral-500 truncate">= {{ formatValue(val) }}</span>
+                  <span class="text-neutral-600 font-mono dark:text-neutral-400">{{ field }}</span>
+                  <span class="truncate text-neutral-400 dark:text-neutral-500">= {{ formatValue(val) }}</span>
                 </label>
               </div>
             </div>
           </div>
 
-          <div class="flex items-center justify-between mt-2">
+          <div class="mt-2 flex items-center justify-between">
             <span class="text-xs text-neutral-400">{{ totalExposed }} field(s) exposed</span>
             <button
-              class="rounded-lg bg-indigo-500 text-white px-4 py-2 text-sm font-medium hover:bg-indigo-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              class="rounded-lg bg-indigo-500 px-4 py-2 text-sm text-white font-medium transition-colors disabled:cursor-not-allowed hover:bg-indigo-600 disabled:opacity-40"
               :disabled="!pendingWorkflowName.trim() || totalExposed === 0"
               @click="saveWorkflow"
             >

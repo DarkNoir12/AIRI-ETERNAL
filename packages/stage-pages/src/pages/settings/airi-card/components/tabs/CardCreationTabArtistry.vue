@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { useArtistryStore } from '@proj-airi/stage-ui/stores/modules/artistry'
 import { FieldInput } from '@proj-airi/ui'
 import { Select } from '@proj-airi/ui/components/form'
-import { useArtistryStore } from '@proj-airi/stage-ui/stores/modules/artistry'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
@@ -142,6 +142,59 @@ function handleModelSelect(model: any) {
 function handleComfyWorkflowSelect(wf: any) {
   selectedArtistryModel.value = wf.id
   selectedArtistryConfigStr.value = JSON.stringify({ template: wf.id }, null, 2)
+  pendingInstructionWf.value = wf
+}
+
+const pendingInstructionWf = ref<any>(null)
+
+function generateAgentInstructions(wf: any) {
+  let fieldsStr = ''
+  for (const [node, fields] of Object.entries(wf.exposedFields as Record<string, string[]>)) {
+    fieldsStr += `- **${node}**: ${fields.join(', ')}\n`
+  }
+
+  const exampleKey = Object.keys(wf.exposedFields)[0] || 'NodeTitle'
+  const exampleField = (wf.exposedFields[exampleKey] as string[])?.[0] || 'field'
+
+  return `## Instruction: Widget Spawning (ComfyUI)
+You have the ability to generate images using a custom ComfyUI workflow: **${wf.name}**.
+
+### How to Use
+**Step 1: Spawn a canvas (do this once)**
+- Component name: \`artistry\`
+- Give it a unique ID (e.g. \`art-01\`)
+
+**Step 2: Generate an image**
+Update the widget with \`status: "generating"\`, a \`prompt\`, and optional field overrides in the root of \`componentProps\`.
+
+**Exposed Fields you can override:**
+${fieldsStr}
+
+**Example Update:**
+\`\`\`json
+{
+  "status": "generating",
+  "prompt": "your description",
+  "template": "${wf.id}",
+  "${exampleKey}": {
+    "${exampleField}": "value"
+  }
+}
+\`\`\`
+`
+}
+
+function applyRecommendedInstructions() {
+  if (!pendingInstructionWf.value)
+    return
+  selectedArtistryWidgetInstruction.value = generateAgentInstructions(pendingInstructionWf.value)
+  pendingInstructionWf.value = null
+}
+
+function getExposedFieldsCount(wf: any) {
+  if (!wf.exposedFields)
+    return 0
+  return Object.values(wf.exposedFields).reduce((n: number, arr: any) => n + (arr?.length || 0), 0)
 }
 
 function openReplicateModel() {
@@ -216,7 +269,7 @@ function openReplicateModel() {
             @click="handleComfyWorkflowSelect(wf)"
           >
             <span class="text-xs font-bold">{{ wf.name }}</span>
-            <span class="mt-1 text-[10px] opacity-60">{{ Object.values(wf.exposedFields).reduce((n: number, arr: any) => n + arr.length, 0) }} exposed fields</span>
+            <span class="mt-1 text-[10px] opacity-60">{{ getExposedFieldsCount(wf) }} exposed fields</span>
           </button>
         </div>
       </div>
@@ -241,6 +294,33 @@ function openReplicateModel() {
           >
             <div i-solar:link-round-bold-duotone class="text-xl" />
           </button>
+        </div>
+
+        <div
+          v-if="pendingInstructionWf"
+          class="flex flex-col gap-3 border border-indigo-500/20 rounded-xl bg-indigo-500/5 p-4"
+        >
+          <div class="flex items-center gap-2 text-sm text-indigo-600 font-bold dark:text-indigo-400">
+            <div i-solar:magic-stick-bold-duotone />
+            ComfyUI Instruction Sync
+          </div>
+          <p class="text-xs text-neutral-600 dark:text-neutral-400">
+            A specialized prompt is ready for your <strong>{{ pendingInstructionWf.name }}</strong> workflow. Applying this will overwrite current widget instructions so the AI knows how to use this specific template.
+          </p>
+          <div class="flex items-center gap-2">
+            <button
+              class="rounded-lg bg-indigo-500 px-3 py-1.5 text-xs text-white font-medium transition-colors hover:bg-indigo-600"
+              @click="applyRecommendedInstructions"
+            >
+              Apply Recommended Prompt
+            </button>
+            <button
+              class="rounded-lg bg-neutral-200 px-3 py-1.5 text-xs text-neutral-600 font-medium transition-colors dark:bg-neutral-800 hover:bg-neutral-300 dark:text-neutral-400 dark:hover:bg-neutral-700"
+              @click="pendingInstructionWf = null"
+            >
+              Keep Existing
+            </button>
+          </div>
         </div>
 
         <FieldInput

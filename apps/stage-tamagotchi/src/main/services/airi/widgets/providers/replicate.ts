@@ -16,6 +16,23 @@ export class ReplicateProvider implements ArtistryProvider {
   private inferenceSteps = 4
   private replicate: Replicate | null = null
 
+  private jobResults = new Map<string, ArtistryJobStatus>()
+  private callbacks = new Map<string, (status: ArtistryJobStatus) => void>()
+
+  setJobCallback(jobId: string, callback: (status: ArtistryJobStatus) => void) {
+    this.callbacks.set(jobId, callback)
+    const result = this.jobResults.get(jobId)
+    if (result)
+      callback(result)
+  }
+
+  private updateStatus(jobId: string, status: ArtistryJobStatus) {
+    this.jobResults.set(jobId, status)
+    const callback = this.callbacks.get(jobId)
+    if (callback)
+      callback(status)
+  }
+
   async initialize(config: any): Promise<void> {
     if (config?.replicateApiKey) {
       this.apiKey = config.replicateApiKey
@@ -59,11 +76,8 @@ export class ReplicateProvider implements ArtistryProvider {
     return { jobId, providerJobId: jobId }
   }
 
-  // Track async jobs internally since the provider interface expects polling
-  private jobResults = new Map<string, ArtistryJobStatus>()
-
   private async runGeneration(jobId: string, model: `${string}/${string}`, input: object) {
-    this.jobResults.set(jobId, { status: 'running', actionLabel: 'Requesting cloud generation...' })
+    this.updateStatus(jobId, { status: 'running', actionLabel: 'Requesting cloud generation...' })
 
     try {
       const output = await this.replicate!.run(model, { input })
@@ -95,7 +109,7 @@ export class ReplicateProvider implements ArtistryProvider {
 
         if (imageUrl && imageUrl.startsWith('http')) {
           log.log(`[Replicate] EXTRACTED IMAGE: ${imageUrl}`)
-          this.jobResults.set(jobId, { status: 'succeeded', progress: 100, imageUrl })
+          this.updateStatus(jobId, { status: 'succeeded', progress: 100, imageUrl })
         }
         else {
           log.error(`[Replicate] Failed to extract URL from output: ${JSON.stringify(first)}`)
@@ -108,12 +122,16 @@ export class ReplicateProvider implements ArtistryProvider {
     }
     catch (error: any) {
       const errorMessage = error.message || (typeof error === 'object' ? JSON.stringify(error) : String(error))
-      log.error(`[Replicate] Generation Failed: ${errorMessage}`)
-      this.jobResults.set(jobId, {
+      log.error(`[Replicate] Generation Failed for ${jobId}: ${errorMessage}`)
+      this.updateStatus(jobId, {
         status: 'failed',
         error: errorMessage,
         actionLabel: `Error: ${errorMessage.slice(0, 50)}${errorMessage.length > 50 ? '...' : ''}`,
       })
+    }
+    finally {
+      // Clean up callback after completion
+      setTimeout(() => this.callbacks.delete(jobId), 10000)
     }
   }
 
