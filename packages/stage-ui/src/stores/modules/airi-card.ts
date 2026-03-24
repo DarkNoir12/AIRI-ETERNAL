@@ -121,6 +121,7 @@ export interface AiriExtension {
   }
 
   heartbeats?: HeartbeatConfig
+  groundingEnabled?: boolean
   proactivity_metrics?: {
     ttsCount: number
     sttCount: number
@@ -231,6 +232,30 @@ export const useAiriCardStore = defineStore('airi-card', () => {
     nextCards.set(id, compactCard(updatedCard))
     cards.value = nextCards
     return true
+  }
+
+  const toggleGrounding = (id: string) => {
+    const card = cards.value.get(id)
+    if (!card) {
+      console.warn('[AiriCard] toggleGrounding: card not found for id', id)
+      return
+    }
+
+    const current = card.extensions?.airi?.groundingEnabled ?? false
+    console.log('[AiriCard] toggleGrounding:', { id, current, next: !current })
+    updateCard(id, {
+      extensions: {
+        ...card.extensions,
+        airi: {
+          ...card.extensions?.airi,
+          groundingEnabled: !current,
+        },
+      },
+    } as any)
+
+    // Verify persistence
+    const updated = cards.value.get(id)
+    console.log('[AiriCard] toggleGrounding result:', updated?.extensions?.airi?.groundingEnabled)
   }
 
   const getCard = (id: string) => {
@@ -381,6 +406,7 @@ Use provider-supported speech mannerisms only when they help communicate tone or
         heartbeats: defaultHeartbeats,
         artistry: defaultArtistry,
         generation: defaultGeneration,
+        groundingEnabled: false,
       }
     }
 
@@ -460,6 +486,7 @@ Use provider-supported speech mannerisms only when they help communicate tone or
         chatCount: existingExtension.proactivity_metrics?.chatCount ?? 0,
         totalTurns: existingExtension.proactivity_metrics?.totalTurns ?? 0,
       },
+      groundingEnabled: existingExtension.groundingEnabled ?? false,
     }
   }
 
@@ -567,6 +594,7 @@ Use provider-supported speech mannerisms only when they help communicate tone or
     removeCard,
     updateCard,
     getCard,
+    toggleGrounding,
     getCardDisplayModelId,
     resetState,
     initialize,

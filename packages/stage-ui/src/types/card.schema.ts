@@ -73,6 +73,7 @@ const AiriHeartbeatSchema = object({
 const AiriExtensionSchema = object({
   modules: optional(AiriModulesSchema),
   heartbeats: optional(AiriHeartbeatSchema),
+  groundingEnabled: optional(boolean()),
   generation: optional(object({
     enabled: boolean(),
     provider: optional(string()),

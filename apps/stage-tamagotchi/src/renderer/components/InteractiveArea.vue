@@ -13,6 +13,7 @@ import { useShortTermMemoryStore } from '@proj-airi/stage-ui/stores/memory-short
 import { useTextJournalStore } from '@proj-airi/stage-ui/stores/memory-text-journal'
 import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
+import { useProactivityStore } from '@proj-airi/stage-ui/stores/proactivity'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { useSettingsChat } from '@proj-airi/stage-ui/stores/settings'
 import { BasicTextarea } from '@proj-airi/ui'
@@ -33,6 +34,9 @@ const chatStream = useChatStreamStore()
 const textJournalStore = useTextJournalStore()
 const backgroundStore = useBackgroundStore()
 const airiCardStore = useAiriCardStore()
+const proactivityStore = useProactivityStore()
+
+const { activeCard } = storeToRefs(airiCardStore)
 const shortTermMemory = useShortTermMemoryStore()
 
 const { cleanupMessages } = useChatMaintenanceStore()
@@ -202,7 +206,14 @@ async function handleSend() {
     return
   }
 
-  const textToSend = messageInput.value
+  let textToSend = messageInput.value
+  if (activeCard.value?.extensions?.airi?.groundingEnabled) {
+    const sensorData = proactivityStore.sensorPayload
+    if (sensorData) {
+      textToSend = `[Grounding Context]\n${sensorData}\n\n---\nUser Says:\n${textToSend}`
+    }
+  }
+
   const attachmentsToSend = attachments.value.map(att => ({ ...att }))
 
   // optimistic clear
@@ -406,6 +417,22 @@ watch(messageInput, () => {
         <div class="i-solar:graph-bold-duotone text-xs" />
         <span>{{ formattedTokenCount }}</span>
       </div>
+
+      <!-- Grounding Toggle -->
+      <button
+        :class="[
+          'max-h-[10lh] min-h-[1lh]',
+          'flex items-center justify-center rounded-md p-2 outline-none',
+          'transition-colors transition-transform active:scale-95',
+          activeCard?.extensions?.airi?.groundingEnabled
+            ? 'bg-amber-100 text-lg text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+            : 'bg-neutral-100 text-lg text-neutral-500 hover:text-primary-500 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-primary-400',
+        ]"
+        :title="activeCard?.extensions?.airi?.groundingEnabled ? 'Grounding Active — sensor data attached to messages' : 'Attach sensor data with each message (Visit Proactivity tab to preview)'"
+        @click="airiCardStore.toggleGrounding(activeCardId)"
+      >
+        <div :class="[activeCard?.extensions?.airi?.groundingEnabled ? 'i-solar:cpu-bolt-bold-duotone' : 'i-solar:cpu-bold-duotone']" />
+      </button>
 
       <!-- Save Memory Button -->
       <div class="relative">
