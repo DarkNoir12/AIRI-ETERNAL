@@ -9,7 +9,7 @@ import { useAiriCardStore } from '../../../../stores/modules/airi-card'
 
 const live2dStore = useLive2d()
 const airiCardStore = useAiriCardStore()
-const { activeCard } = storeToRefs(airiCardStore)
+const { activeCard, activeCardId } = storeToRefs(airiCardStore)
 const {
   availableExpressions,
   parameterMetadata,
@@ -34,7 +34,7 @@ const saveLive2dState = useDebounceFn(() => {
     modelParameters: { ...modelParameters.value },
   }
 
-  airiCardStore.updateCard(activeCard.value.id, { extensions })
+  airiCardStore.updateCard(activeCardId.value, { extensions })
 }, 1000)
 
 watch([activeExpressions, modelParameters], () => {

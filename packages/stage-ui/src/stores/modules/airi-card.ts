@@ -217,7 +217,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
     cards.value = nextCards
   }
 
-  const updateCard = (id: string, updates: AiriCard | Card | ccv3.CharacterCardV3) => {
+  const updateCard = (id: string, updates: Partial<AiriCard> | Partial<Card> | Partial<ccv3.CharacterCardV3>) => {
     const existingCard = cards.value.get(id)
     if (!existingCard)
       return false

@@ -78,7 +78,7 @@ const defaultArtistryProps = {
     },
     Globals: {
       replicateApiKey: localStorage.getItem('artistry-replicate-api-key') || '',
-      comfyuiHostUrl: localStorage.getItem('artistry-comfyui-host-url') || 'https://comfyui-plus.duckdns.org',
+      comfyuiServerUrl: localStorage.getItem('artistry-comfyui-server-url') || 'http://localhost:8188',
     },
   },
 }

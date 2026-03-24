@@ -2,6 +2,7 @@
 import type { ChatHistoryItem } from '@proj-airi/stage-ui/types/chat'
 import type { ChatProvider } from '@xsai-ext/providers/utils'
 
+import { estimateTokens, formatTokenCount } from '@proj-airi/stage-shared'
 import { ChatHistory } from '@proj-airi/stage-ui/components'
 import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { useChatOrchestratorStore } from '@proj-airi/stage-ui/stores/chat'
@@ -288,6 +289,31 @@ onAfterMessageComposed(async () => {
 
 const historyMessages = computed(() => messages.value as unknown as ChatHistoryItem[])
 
+// --- Token Counter ---
+const sessionTokenCount = computed(() => {
+  let total = 0
+  for (const message of historyMessages.value) {
+    if (typeof message.content === 'string') {
+      total += estimateTokens(message.content)
+    }
+    else if (Array.isArray(message.content)) {
+      const textOnly = message.content
+        .map((part) => {
+          if (typeof part === 'string')
+            return part
+          if (part && typeof part === 'object' && 'text' in part && !('image_url' in part))
+            return String(part.text ?? '')
+          return ''
+        })
+        .join('')
+      total += estimateTokens(textOnly)
+    }
+  }
+  return total
+})
+
+const formattedTokenCount = computed(() => formatTokenCount(sessionTokenCount.value))
+
 onMounted(() => {
   updateWindowTitle()
   textJournalStore.load()
@@ -369,6 +395,18 @@ watch(messageInput, () => {
     </div>
 
     <div class="flex items-center justify-end gap-2 py-1">
+      <!-- Token Counter -->
+      <div
+        class="flex cursor-help items-center gap-1.5 px-2 py-1 text-[10px] font-bold tracking-tight uppercase"
+        :class="[
+          sessionTokenCount > 100000 ? 'text-amber-600 dark:text-amber-400' : 'text-neutral-400 dark:text-neutral-500',
+        ]"
+        title="Est. of tokens used for this chat"
+      >
+        <div class="i-solar:graph-bold-duotone text-xs" />
+        <span>{{ formattedTokenCount }}</span>
+      </div>
+
       <!-- Save Memory Button -->
       <div class="relative">
         <button
@@ -601,7 +639,7 @@ watch(messageInput, () => {
               'animate-scale-in',
             ]"
           >
-            <div class="px-5 pt-5 pb-3">
+            <div class="px-5 pb-3 pt-5">
               <div :class="['flex items-center gap-2 text-base font-bold', 'text-neutral-800 dark:text-neutral-100']">
                 <div class="i-solar:danger-triangle-bold-duotone text-amber-500" />
                 Unsaved Memories

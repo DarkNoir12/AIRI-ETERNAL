@@ -1,142 +1,229 @@
 import type { ArtistryJob, ArtistryJobStatus, ArtistryProvider, ArtistryRequest } from './base'
 
-import { spawn } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
-
 import { useLogg } from '@guiiai/logg'
 
 const log = useLogg('comfyui-provider').useGlobalConfig()
-const LOG_FILE = 'C:\\Users\\h4rdc\\cuipp.log'
 
-function debugLog(message: string) {
-  const ts = new Date().toISOString()
-  const line = `[${ts}] ${message}\n`
-  log.log(message)
-  try {
-    appendFileSync(LOG_FILE, line)
-  }
-  catch (e) {
-    // fallback if file is locked
-  }
-}
+const POLL_INTERVAL_MS = 5000
+const POLL_TIMEOUT_MS = 1000 * 60 * 5 // 5 minutes
 
 export class ComfyUIProvider implements ArtistryProvider {
   readonly id = 'comfyui'
   readonly name = 'ComfyUI (Local)'
 
-  private backendPath = '/mnt/e/CUIPP/comfyGalleryAppBackend'
-  private nodePath = '/home/dasilva333/.nvm/versions/node/v22.22.0/bin/node'
-  private hostUrl = 'https://comfyui-plus.duckdns.org'
-  private defaultCheckpoint = 'bunnyMint_bunnyMint.safetensors'
+  private serverUrl = 'http://localhost:8188'
+  private savedWorkflows: any[] = []
+  private activeWorkflowId = ''
 
-  // We maintain an active callback for stdout progress tracking since ComfyUI streams it
-  private jobCallbacks = new Map<string, (status: ArtistryJobStatus) => void>()
+  private jobResults = new Map<string, ArtistryJobStatus>()
 
   async initialize(config: any): Promise<void> {
-    if (config?.comfyuiWslBackendPath)
-      this.backendPath = config.comfyuiWslBackendPath
-    if (config?.comfyuiWslNodePath)
-      this.nodePath = config.comfyuiWslNodePath
-    if (config?.comfyuiHostUrl)
-      this.hostUrl = config.comfyuiHostUrl
-    if (config?.comfyuiDefaultCheckpoint)
-      this.defaultCheckpoint = config.comfyuiDefaultCheckpoint
-  }
-
-  // ComfyUI pushes status updates through stdout, so we accept a continuous callback stream
-  setJobCallback(jobId: string, callback: (status: ArtistryJobStatus) => void) {
-    this.jobCallbacks.set(jobId, callback)
+    if (config?.comfyuiServerUrl)
+      this.serverUrl = config.comfyuiServerUrl.replace(/\/+$/, '') // strip trailing slashes
+    if (config?.comfyuiSavedWorkflows)
+      this.savedWorkflows = config.comfyuiSavedWorkflows
+    if (config?.comfyuiActiveWorkflow)
+      this.activeWorkflowId = config.comfyuiActiveWorkflow
   }
 
   async generate(request: ArtistryRequest): Promise<ArtistryJob> {
-    const targetId = request.extra?.remixId
-    const isRemix = !!targetId
-    const checkpoint = request.model || request.extra?.checkpoint || this.defaultCheckpoint
-
-    const args = [
-      'wsl',
-      this.nodePath,
-      `${this.backendPath}/cli-agent.js`,
-      isRemix ? 'remix' : 'generate',
-    ]
-
-    if (request.prompt) {
-      args.push(isRemix ? '--prompt' : request.prompt)
-      if (isRemix)
-        args.push(request.prompt)
-    }
-
-    if (targetId) {
-      args.push('--targetId', String(targetId))
-    }
-
-    if (isRemix) {
-      args.push('--overrides', JSON.stringify({ checkpoint, batch_size: 1 }))
-    }
-    else {
-      args.push('-c', checkpoint, '-b', '1')
-    }
-
-    debugLog(`[CLI SPAWN] ${args.join(' ')}`)
-
-    // We use the request's internal ID as our Job ID
     const jobId = request.extra?.internalJobId || Math.random().toString(36).slice(2)
-    const activeCallback = this.jobCallbacks.get(jobId)
 
-    const child = spawn(args[0], args.slice(1), { cwd: 'E:\\CUIPP\\comfyGalleryAppBackend' })
-    let lastProgress = 0
+    // Resolve which workflow template to use
+    const templateId = request.extra?.template || this.activeWorkflowId
+    const template = this.savedWorkflows.find(w => w.id === templateId)
 
-    child.stdout.on('data', (data) => {
-      const output = data.toString()
-      debugLog(`[CLI STDOUT] ${output}`)
+    if (!template) {
+      this.jobResults.set(jobId, {
+        status: 'failed',
+        error: 'No workflow template configured. Upload a workflow in Settings > Providers > ComfyUI.',
+        actionLabel: 'Error: No workflow configured',
+      })
+      return { jobId, providerJobId: jobId }
+    }
 
-      if (!activeCallback)
-        return
+    // Start async generation
+    this.pollForResult(jobId, template, request)
 
-      const progressMatch = output.match(/(\d+)%/)
-      if (progressMatch) {
-        const progress = Number.parseInt(progressMatch[1])
-        if (progress !== lastProgress) {
-          lastProgress = progress
-          activeCallback({ progress, status: 'running' })
-        }
-      }
-
-      const labelMatch = output.match(/(?:▶️|🕒|✅)\s+([A-Z\-_ ]+?)\s+\d*%?/i)
-      if (labelMatch) {
-        activeCallback({ status: 'running', actionLabel: labelMatch[1].trim() })
-      }
-
-      const fileMatches = output.matchAll(/File: (.*\.webp|.*\.png|.*\.jpg)/g)
-      for (const match of fileMatches) {
-        const fullPath = match[1].trim()
-        const filename = fullPath.split('/').pop() || fullPath.split('\\').pop()
-        const imageUrl = `${this.hostUrl}/${filename}`
-
-        debugLog(`[CLI IMAGE FIND] ${imageUrl}`)
-        activeCallback({ status: 'succeeded', progress: 100, imageUrl })
-      }
-    })
-
-    child.stderr.on('data', (data) => {
-      debugLog(`[CLI STDERR] ${data.toString()}`)
-    })
-
-    child.on('close', (code) => {
-      debugLog(`[CLI CLOSE] Process exited with code ${code}`)
-      if (code !== 0 && activeCallback) {
-        activeCallback({
-          status: 'failed',
-          error: `CLI Error (${code}). Ensure ComfyUI network app is running.`,
-        })
-      }
-    })
-
-    return { jobId, providerJobId: String(child.pid) }
+    return { jobId, providerJobId: jobId }
   }
 
-  // Not strictly used for ComfyUI since it pushes updates via callbacks
-  async getStatus(_jobId: string): Promise<ArtistryJobStatus> {
-    return { status: 'running' }
+  private async pollForResult(
+    jobId: string,
+    template: { workflow: Record<string, any>, exposedFields: Record<string, string[]> },
+    request: ArtistryRequest,
+  ) {
+    this.jobResults.set(jobId, { status: 'running', actionLabel: 'Preparing workflow...' })
+
+    try {
+      // 1. Apply overrides to the workflow template
+      const resolvedPrompt = this.applyOverrides(template, request)
+
+      // 2. POST /prompt to queue the workflow
+      this.jobResults.set(jobId, { status: 'running', actionLabel: 'Queuing in ComfyUI...' })
+
+      let queueResp: Response
+      try {
+        queueResp = await fetch(`${this.serverUrl}/prompt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: resolvedPrompt }),
+        })
+      }
+      catch (e: any) {
+        throw new Error(`Cannot connect to ComfyUI at ${this.serverUrl}: ${e.message}`)
+      }
+
+      if (!queueResp.ok) {
+        const errorBody = await queueResp.text()
+        throw new Error(`Workflow error: ${errorBody.slice(0, 200)}`)
+      }
+
+      const queueData = await queueResp.json()
+      const promptId = queueData.prompt_id
+      if (!promptId) {
+        throw new Error('ComfyUI returned no prompt_id')
+      }
+
+      log.log(`[ComfyUI] Queued prompt ${promptId}`)
+      this.jobResults.set(jobId, { status: 'running', actionLabel: 'Generating...' })
+
+      // 3. Poll /history/{prompt_id} until completion
+      let historyDone = false
+      let attempt = 0
+      const startTime = Date.now()
+
+      while (!historyDone) {
+        await new Promise(r => setTimeout(r, POLL_INTERVAL_MS))
+        attempt++
+
+        if (Date.now() - startTime > POLL_TIMEOUT_MS) {
+          throw new Error('Generation timed out after 5 minutes')
+        }
+
+        if (attempt % 3 === 0) {
+          log.log(`[ComfyUI] Polling history for ${promptId}... attempt ${attempt}`)
+        }
+
+        let histResp: Response
+        try {
+          histResp = await fetch(`${this.serverUrl}/history/${promptId}`)
+        }
+        catch (e: any) {
+          throw new Error(`ComfyUI disconnected during polling: ${e.message}`)
+        }
+
+        if (histResp.ok) {
+          const histData = await histResp.json()
+          if (histData[promptId]) {
+            const outputs = histData[promptId].outputs
+
+            // Find first image in any node's output
+            for (const nodeId in outputs) {
+              const nodeOutput = outputs[nodeId]
+              if (nodeOutput.images && nodeOutput.images.length > 0) {
+                const img = nodeOutput.images[0]
+                const imageUrl = `${this.serverUrl}/view?filename=${encodeURIComponent(img.filename)}&subfolder=${encodeURIComponent(img.subfolder || '')}&type=${encodeURIComponent(img.type || 'output')}`
+                log.log(`[ComfyUI] Generation complete. Image: ${imageUrl}`)
+                this.jobResults.set(jobId, { status: 'succeeded', progress: 100, imageUrl })
+                historyDone = true
+                break
+              }
+            }
+
+            // Job finished but no images
+            if (!historyDone) {
+              log.log(`[ComfyUI] Job finished but no output images found.`)
+              this.jobResults.set(jobId, {
+                status: 'failed',
+                error: 'Job completed but no images were generated',
+                actionLabel: 'Error: No images generated',
+              })
+              historyDone = true
+            }
+          }
+        }
+      }
+    }
+    catch (error: any) {
+      const errorMessage = error.message || String(error)
+      log.error(`[ComfyUI] Generation failed: ${errorMessage}`)
+      this.jobResults.set(jobId, {
+        status: 'failed',
+        error: errorMessage,
+        actionLabel: `Error: ${errorMessage.slice(0, 50)}${errorMessage.length > 50 ? '...' : ''}`,
+      })
+    }
+  }
+
+  /**
+   * Apply request overrides to a workflow template.
+   * Matches nodes by _meta.title and overwrites exposed input fields.
+   * Mirrors the logic from CUIPP's getComfyTemplate.js.
+   */
+  private applyOverrides(
+    template: { workflow: Record<string, any>, exposedFields: Record<string, string[]> },
+    request: ArtistryRequest,
+  ): Record<string, any> {
+    // Deep clone the workflow so we don't mutate the stored template
+    const prompt = JSON.parse(JSON.stringify(template.workflow))
+
+    // Build overrides from the request
+    const overrides: Record<string, Record<string, any>> = {}
+
+    // The main prompt text goes into the first exposed "text" field we find
+    if (request.prompt) {
+      for (const [nodeTitle, fields] of Object.entries(template.exposedFields)) {
+        if (fields.includes('text')) {
+          if (!overrides[nodeTitle])
+            overrides[nodeTitle] = {}
+          overrides[nodeTitle].text = request.prompt
+          break // Only inject into the first text field
+        }
+      }
+    }
+
+    // Merge in any explicit per-node overrides from request.extra.options
+    if (request.extra?.options) {
+      for (const [nodeTitle, fields] of Object.entries(request.extra.options as Record<string, Record<string, any>>)) {
+        if (!overrides[nodeTitle])
+          overrides[nodeTitle] = {}
+        Object.assign(overrides[nodeTitle], fields)
+      }
+    }
+
+    // Apply overrides to matching nodes
+    for (const nodeId in prompt) {
+      const node = prompt[nodeId]
+      const title = node._meta?.title
+      if (title && overrides[title]) {
+        const nodeOverrides = overrides[title]
+        for (const [field, value] of Object.entries(nodeOverrides)) {
+          // Only override exposed fields (security boundary)
+          if (template.exposedFields[title]?.includes(field)) {
+            node.inputs[field] = value
+          }
+        }
+      }
+    }
+
+    // Auto-randomize seed if it's exposed and not explicitly set
+    for (const [nodeTitle, fields] of Object.entries(template.exposedFields)) {
+      if (fields.includes('seed') && !overrides[nodeTitle]?.seed) {
+        for (const nodeId in prompt) {
+          const node = prompt[nodeId]
+          if (node._meta?.title === nodeTitle) {
+            node.inputs.seed = Math.floor(Math.random() * 1e15)
+            break
+          }
+        }
+      }
+    }
+
+    return prompt
+  }
+
+  async getStatus(jobId: string): Promise<ArtistryJobStatus> {
+    return this.jobResults.get(jobId) || { status: 'queued' }
   }
 }

@@ -17,11 +17,9 @@ function getArtistryConfig() {
       promptPrefix: store.defaultPromptPrefix,
       options: store.providerOptions,
       Globals: {
-        comfyuiWslBackendPath: store.comfyuiWslBackendPath,
-        comfyuiWslNodePath: store.comfyuiWslNodePath,
-        comfyuiHostUrl: store.comfyuiHostUrl,
-        comfyuiDefaultCheckpoint: store.comfyuiDefaultCheckpoint,
-        comfyuiDefaultRemixId: store.comfyuiDefaultRemixId,
+        comfyuiServerUrl: store.comfyuiServerUrl,
+        comfyuiSavedWorkflows: store.comfyuiSavedWorkflows,
+        comfyuiActiveWorkflow: store.comfyuiActiveWorkflow,
         replicateApiKey: store.replicateApiKey,
         replicateDefaultModel: store.replicateDefaultModel,
         replicateAspectRatio: store.replicateAspectRatio,
@@ -109,7 +107,7 @@ async function executeCreateImageJournalEntry(params: { prompt?: string, title?:
       title,
       params.prompt,
       cardStore.activeCardId,
-      artistryConfig.Globals?.comfyuiDefaultRemixId as string,
+      undefined,
     )
 
     // Optionally spawn a widget to show the result (best effort)

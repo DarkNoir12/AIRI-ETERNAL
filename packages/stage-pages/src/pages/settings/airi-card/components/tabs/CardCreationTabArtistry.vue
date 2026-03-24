@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { FieldInput } from '@proj-airi/ui'
 import { Select } from '@proj-airi/ui/components/form'
+import { useArtistryStore } from '@proj-airi/stage-ui/stores/modules/artistry'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 defineProps<{
@@ -14,6 +16,9 @@ const selectedArtistryWidgetInstruction = defineModel<string>('selectedArtistryW
 const selectedArtistryConfigStr = defineModel<string>('selectedArtistryConfigStr', { required: true })
 
 const { t } = useI18n()
+
+const artistryStore = useArtistryStore()
+const comfyuiWorkflows = computed(() => artistryStore.comfyuiSavedWorkflows || [])
 
 const REPLICATE_MODELS = [
   {
@@ -134,6 +139,11 @@ function handleModelSelect(model: any) {
   selectedArtistryConfigStr.value = JSON.stringify(model.preset, null, 2)
 }
 
+function handleComfyWorkflowSelect(wf: any) {
+  selectedArtistryModel.value = wf.id
+  selectedArtistryConfigStr.value = JSON.stringify({ template: wf.id }, null, 2)
+}
+
 function openReplicateModel() {
   if (!selectedArtistryModel.value)
     return
@@ -181,12 +191,34 @@ function openReplicateModel() {
 
       <div
         v-if="selectedArtistryProvider === 'comfyui'"
-        :class="['mb-2 flex flex-row items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-sm text-blue-600 dark:text-blue-400']"
+        class="mb-2 flex flex-col gap-3"
       >
-        <div i-solar:info-circle-bold-duotone class="shrink-0 text-lg" />
-        <p>
-          ComfyUI support is still a WIP. This option is available here but incomplete for the public.
-        </p>
+        <div
+          v-if="comfyuiWorkflows.length === 0"
+          :class="['flex flex-row items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-amber-600 dark:text-amber-400']"
+        >
+          <div i-solar:info-circle-bold-duotone class="shrink-0 text-lg" />
+          <p>
+            No ComfyUI workflows configured. Go to Settings → Providers → ComfyUI to upload a workflow template.
+          </p>
+        </div>
+        <div v-else class="grid grid-cols-2 gap-3">
+          <button
+            v-for="wf in comfyuiWorkflows"
+            :key="wf.id"
+            type="button"
+            :class="[
+              'flex flex-col items-center justify-center rounded-xl border p-3 transition-all',
+              selectedArtistryModel === wf.id
+                ? 'border-primary-500 bg-primary-500/10 text-primary-600 dark:text-primary-400'
+                : 'border-neutral-200 bg-white hover:border-primary-300 dark:border-neutral-700 dark:bg-neutral-800',
+            ]"
+            @click="handleComfyWorkflowSelect(wf)"
+          >
+            <span class="text-xs font-bold">{{ wf.name }}</span>
+            <span class="mt-1 text-[10px] opacity-60">{{ Object.values(wf.exposedFields).reduce((n: number, arr: any) => n + arr.length, 0) }} exposed fields</span>
+          </button>
+        </div>
       </div>
 
       <div class="mt-4 flex flex-col gap-5">

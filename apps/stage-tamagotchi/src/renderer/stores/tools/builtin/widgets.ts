@@ -118,10 +118,9 @@ function getArtistryConfig() {
       promptPrefix: store.defaultPromptPrefix,
       options: store.providerOptions,
       Globals: {
-        comfyuiWslBackendPath: store.comfyuiWslBackendPath,
-        comfyuiWslNodePath: store.comfyuiWslNodePath,
-        comfyuiHostUrl: store.comfyuiHostUrl,
-        comfyuiDefaultCheckpoint: store.comfyuiDefaultCheckpoint,
+        comfyuiServerUrl: store.comfyuiServerUrl,
+        comfyuiSavedWorkflows: store.comfyuiSavedWorkflows,
+        comfyuiActiveWorkflow: store.comfyuiActiveWorkflow,
         replicateApiKey: store.replicateApiKey,
         replicateDefaultModel: store.replicateDefaultModel,
         replicateAspectRatio: store.replicateAspectRatio,

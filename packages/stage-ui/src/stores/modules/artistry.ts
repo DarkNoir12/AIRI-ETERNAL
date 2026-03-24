@@ -2,6 +2,13 @@ import { useLocalStorageManualReset } from '@proj-airi/stage-shared/composables'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+export interface ComfyUIWorkflowTemplate {
+  id: string
+  name: string
+  workflow: Record<string, any>
+  exposedFields: Record<string, string[]>
+}
+
 export const useArtistryStore = defineStore('artistry', () => {
   // --- Active provider & model ---
   const activeProvider = useLocalStorageManualReset<string>('artistry-provider', 'comfyui')
@@ -12,25 +19,17 @@ export const useArtistryStore = defineStore('artistry', () => {
   const providerOptions = useLocalStorageManualReset<Record<string, any> | undefined>('artistry-provider-options', undefined)
 
   // --- ComfyUI provider settings ---
-  const comfyuiWslBackendPath = useLocalStorageManualReset<string>(
-    'artistry-comfyui-wsl-backend-path',
-    '/mnt/e/CUIPP/comfyGalleryAppBackend',
+  const comfyuiServerUrl = useLocalStorageManualReset<string>(
+    'artistry-comfyui-server-url',
+    'http://localhost:8188',
   )
-  const comfyuiWslNodePath = useLocalStorageManualReset<string>(
-    'artistry-comfyui-wsl-node-path',
-    '/home/dasilva333/.nvm/versions/node/v22.22.0/bin/node',
+  const comfyuiSavedWorkflows = useLocalStorageManualReset<ComfyUIWorkflowTemplate[]>(
+    'artistry-comfyui-saved-workflows',
+    [],
   )
-  const comfyuiHostUrl = useLocalStorageManualReset<string>(
-    'artistry-comfyui-host-url',
-    'https://comfyui-plus.duckdns.org',
-  )
-  const comfyuiDefaultCheckpoint = useLocalStorageManualReset<string>(
-    'artistry-comfyui-default-checkpoint',
-    'bunnyMint_bunnyMint.safetensors',
-  )
-  const comfyuiDefaultRemixId = useLocalStorageManualReset<string>(
-    'artistry-comfyui-default-remix-id',
-    '48250602',
+  const comfyuiActiveWorkflow = useLocalStorageManualReset<string>(
+    'artistry-comfyui-active-workflow',
+    '',
   )
 
   // --- Replicate provider settings ---
@@ -53,11 +52,9 @@ export const useArtistryStore = defineStore('artistry', () => {
     activeModel.reset()
     defaultPromptPrefix.reset()
     providerOptions.reset()
-    comfyuiWslBackendPath.reset()
-    comfyuiWslNodePath.reset()
-    comfyuiHostUrl.reset()
-    comfyuiDefaultCheckpoint.reset()
-    comfyuiDefaultRemixId.reset()
+    comfyuiServerUrl.reset()
+    comfyuiSavedWorkflows.reset()
+    comfyuiActiveWorkflow.reset()
     replicateApiKey.reset()
     replicateDefaultModel.reset()
     replicateAspectRatio.reset()
@@ -73,7 +70,7 @@ export const useArtistryStore = defineStore('artistry', () => {
     }
 
     if (activeProvider.value === 'comfyui') {
-      return !!comfyuiHostUrl.value
+      return !!comfyuiServerUrl.value
     }
 
     return true
@@ -88,11 +85,9 @@ export const useArtistryStore = defineStore('artistry', () => {
     providerOptions,
 
     // ComfyUI provider config
-    comfyuiWslBackendPath,
-    comfyuiWslNodePath,
-    comfyuiHostUrl,
-    comfyuiDefaultCheckpoint,
-    comfyuiDefaultRemixId,
+    comfyuiServerUrl,
+    comfyuiSavedWorkflows,
+    comfyuiActiveWorkflow,
 
     // Replicate provider config
     replicateApiKey,
@@ -103,3 +98,4 @@ export const useArtistryStore = defineStore('artistry', () => {
     resetState,
   }
 })
+

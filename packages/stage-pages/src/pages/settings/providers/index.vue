@@ -33,7 +33,7 @@ const allArtistryProvidersMetadata = computed(() => {
       localizedName: 'ComfyUI',
       description: 'Local image generation runner.',
       localizedDescription: 'Local image generation runner.',
-      configured: !!artistryStore.comfyuiHostUrl,
+      configured: !!artistryStore.comfyuiServerUrl,
       to: '/settings/providers/artistry/comfyui',
     },
     {
