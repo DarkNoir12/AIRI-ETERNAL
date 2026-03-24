@@ -430,6 +430,12 @@ export const useProactivityStore = defineStore('proactivity', () => {
       const categorizer = createStreamingCategorizer(activeProviderId)
       let streamPosition = 0
 
+      const updateUI = () => {
+        if (sessionId === chatSession.activeSessionId) {
+          chatOrchestrator.streamingMessage = JSON.parse(JSON.stringify(buildingMessage))
+        }
+      }
+
       const parser = useLlmmarkerParser({
         onLiteral: async (literal) => {
           categorizer.consume(literal)
@@ -448,6 +454,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
               buildingMessage.slices.push({ type: 'text', text: speechOnly })
             }
           }
+          updateUI()
         },
         onSpecial: async (special) => {
           await chatOrchestrator.emitTokenSpecialHooks(special, streamingContext)
@@ -458,6 +465,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
             speech: finalCategorization.speech,
             reasoning: finalCategorization.reasoning,
           }
+          updateUI()
         },
       })
 
@@ -478,11 +486,12 @@ export const useProactivityStore = defineStore('proactivity', () => {
       await chatOrchestrator.emitStreamEndHooks(streamingContext)
       await chatOrchestrator.emitAssistantResponseEndHooks(trimmedReply, streamingContext)
 
-      if (!chatSession.sessionMessages[sessionId]) {
-        chatSession.sessionMessages[sessionId] = []
+      // Inscribe the proactive turn properly
+      chatSession.inscribeTurn(buildingMessage as any, sessionId)
+
+      if (sessionId === chatSession.activeSessionId) {
+        chatOrchestrator.streamingMessage = { role: 'assistant', content: '', slices: [], tool_results: [] }
       }
-      chatSession.sessionMessages[sessionId].push(buildingMessage as any)
-      chatSession.persistSessionMessages(sessionId)
 
       await chatOrchestrator.emitAssistantMessageHooks(buildingMessage, trimmedReply, streamingContext)
       await chatOrchestrator.emitChatTurnCompleteHooks({

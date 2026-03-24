@@ -1,6 +1,7 @@
-import type { ChatHistoryItem } from '../../types/chat'
+import type { ChatHistoryItem, ChatStreamEvent } from '../../types/chat'
 import type { ChatSessionMeta, ChatSessionRecord, ChatSessionsExport, ChatSessionsIndex } from '../../types/chat-session'
 
+import { useBroadcastChannel } from '@vueuse/core'
 import { nanoid } from 'nanoid'
 import { defineStore, storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
@@ -12,6 +13,7 @@ import { useAuthStore } from '../auth'
 import { useShortTermMemoryStore } from '../memory-short-term'
 import { useAiriCardStore } from '../modules/airi-card'
 import { useSettingsGeneral } from '../settings'
+import { CHAT_STREAM_CHANNEL_NAME } from './constants'
 import { mergeLoadedSessionMessages } from './session-message-merge'
 
 export const useChatSessionStore = defineStore('chat-session', () => {
@@ -19,6 +21,10 @@ export const useChatSessionStore = defineStore('chat-session', () => {
   const { activeCardId, systemPrompt } = storeToRefs(useAiriCardStore())
   const { remoteSyncEnabled } = storeToRefs(useSettingsGeneral())
   const shortTermMemory = useShortTermMemoryStore()
+
+  // NOTICE: This BroadcastChannel reuses the same channel as context-bridge to notify
+  // other windows (e.g. chatbox) that session data changed and they should reload from DB.
+  const { post: broadcastStreamEvent, data: incomingSessionUpdate } = useBroadcastChannel<ChatStreamEvent, ChatStreamEvent>({ name: CHAT_STREAM_CHANNEL_NAME })
 
   const activeSessionId = ref<string>('')
   const sessionMessages = ref<Record<string, ChatHistoryItem[]>>({})
@@ -270,12 +276,34 @@ export const useChatSessionStore = defineStore('chat-session', () => {
   }
 
   function setSessionMessages(sessionId: string, next: ChatHistoryItem[]) {
+    const prev = sessionMessages.value[sessionId] ?? []
     sessionMessages.value[sessionId] = next
     void persistSession(sessionId)
+
+    // NOTICE: Broadcast any NEW messages so other windows can apply them immediately.
+    // This covers the primary STT ingestion path (chat.ts performSend) which uses
+    // setSessionMessages rather than inscribeTurn.
+    const prevIds = new Set(prev.map(m => m.id).filter(Boolean))
+    for (const msg of next) {
+      if (msg.id && !prevIds.has(msg.id)) {
+        broadcastStreamEvent({ type: 'session-updated', sessionId, message: JSON.parse(JSON.stringify(msg)) })
+      }
+    }
   }
 
-  async function loadSession(sessionId: string) {
-    if (loadedSessions.has(sessionId))
+  function inscribeTurn(message: ChatHistoryItem, sessionId = activeSessionId.value) {
+    if (!sessionId)
+      return
+    const current = sessionMessages.value[sessionId] ?? []
+    sessionMessages.value[sessionId] = [...current, message]
+    void persistSession(sessionId)
+    // NOTICE: Broadcast the actual message payload so other windows can apply it directly
+    // without waiting for the DB write to complete (avoids race condition).
+    broadcastStreamEvent({ type: 'session-updated', sessionId, message: JSON.parse(JSON.stringify(message)) })
+  }
+
+  async function loadSession(sessionId: string, force = false) {
+    if (!force && loadedSessions.has(sessionId))
       return
     if (loadingSessions.has(sessionId)) {
       await loadingSessions.get(sessionId)
@@ -415,9 +443,6 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     get: () => {
       if (!activeSessionId.value)
         return []
-      ensureSession(activeSessionId.value)
-      if (ready.value)
-        void loadSession(activeSessionId.value)
       return sessionMessages.value[activeSessionId.value] ?? []
     },
     set: (value) => {
@@ -488,7 +513,6 @@ export const useChatSessionStore = defineStore('chat-session', () => {
   }
 
   function getSessionMessages(sessionId: string) {
-    ensureSession(sessionId)
     if (ready.value)
       void loadSession(sessionId)
     return sessionMessages.value[sessionId] ?? []
@@ -599,6 +623,32 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     void ensureActiveSessionForCharacter()
   })
 
+  watch(activeSessionId, async (nextId) => {
+    if (!nextId || !ready.value)
+      return
+    await loadSession(nextId)
+    ensureSession(nextId)
+  })
+
+  // NOTICE: Cross-window sync receiver. When another window (e.g. main stage)
+  // inscribes a turn (STT input, proactive message), it broadcasts a session-updated
+  // event with the message payload. We apply it directly to the local store to avoid
+  // race conditions with async DB persistence.
+  watch(incomingSessionUpdate, (event) => {
+    if (!event || event.type !== 'session-updated')
+      return
+    if (!ready.value)
+      return
+    const { sessionId, message } = event
+    console.info('[ChatSession] Cross-window session-updated, applying message directly', { sessionId, role: message.role })
+    // Apply directly to store — no DB roundtrip needed
+    const current = sessionMessages.value[sessionId] ?? []
+    // Deduplicate by message id if present
+    if (message.id && current.some(m => m.id === message.id))
+      return
+    sessionMessages.value[sessionId] = [...current, message]
+  })
+
   return {
     ready,
     isReady,
@@ -624,6 +674,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
 
     deleteMessage,
     forkSession,
+    inscribeTurn,
     exportSessions,
     importSessions,
   }

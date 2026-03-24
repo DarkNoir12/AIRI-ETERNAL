@@ -786,6 +786,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
 
   return {
     sending,
+    streamingMessage,
 
     ingest,
     ingestOnFork,

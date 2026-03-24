@@ -374,6 +374,10 @@ export const useContextBridgeStore = defineStore('mods:api:context-bridge', () =
                 remoteStreamReceivedLiteral = false
               }
               break
+            case 'session-updated':
+              // NOTICE: Handled by session-store's own watcher on the same BroadcastChannel.
+              // No action needed here; this case prevents unrecognized-event warnings.
+              break
           }
         }
         finally {

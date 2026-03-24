@@ -60,7 +60,7 @@ If any one of those layers is stale, detached, or writing to the wrong owner, yo
   - In Tamagotchi, the STT pipeline now forwards `builtinTools`, so it inherits the same registered builtin toolchain as typed chat.
   - That means STT-triggered assistant turns can use `stage_widgets`, `text_journal`, and future builtin tools without extra per-tool wiring.
   - `ChatArea.vue` remains generic; if another surface wants tool access, it must still pass a tools resolver explicitly.
-- **Note**: Both the main page and the `ChatArea` component can listen for speech events. Coordination is needed to avoid duplicate ingestion.
+- **Note**: The main page (`index.vue`) handles ingestion directly for voice. It no longer delegates to the hearing drawer to ensure consistency.
 
 ## 3. Proactivity Pipeline (Heartbeat -> LLM)
 - **Surface**: `packages/stage-ui/src/stores/proactivity.ts`
@@ -69,7 +69,8 @@ If any one of those layers is stale, detached, or writing to the wrong owner, yo
   - Dynamic registration via `proactivityStore.registerTools(tools)`.
   - In Tamagotchi, `App.vue` now registers `builtinTools`, not just `widgetsTools`.
   - That means heartbeat/proactivity turns currently receive the same builtin toolchain as normal chat and STT-triggered chat.
-- **Execution**: Direct call to `llmStore.generate(model, provider, messages, { tools, supportsTools: true })`.
+- **Execution**: Direct call to `llmStore.generate(...)`. Supports UI presence via `chatStore.streamingMessage` updates during generation.
+- **Inscription**: Handled by `chatSession.inscribeTurn(message)` to ensure reactivity and persistence.
 - **Context**: Injected sensor data (location, time, computer metrics) into the prompt to evaluate if the agent should proactively interact.
 - **Multi-step**: Supported via `maxSteps: 10` in `llmStore.generate` to allow complex tool-use logic during heartbeats.
 

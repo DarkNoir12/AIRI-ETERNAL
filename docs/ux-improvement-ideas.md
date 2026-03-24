@@ -24,11 +24,18 @@ These tasks have high visible impact with minimal architectural plumbing.
 ## 3. Deep Linking & Integration
 - **Character Settings**: Quick-access shortcut from the chat toolbar.
 - **Image Journal**: Deep link directly to the Image Journal.
-- **Text chips**: Show **date** (`YYYY-MM-DD`) and **clean title** for the latest 2 entries.
+- [x] **Coalesced Journal Preview Stream**: Unified manual (long-term) and auto-generated (short-term) entries sorted by latest.
+- **Text chips**: Show **date** (`YYYY-MM-DD`) and **persona-driven title** (e.g., `"My thoughts after {X} messages together~"`) for the latest 2 entries.
 - **Image chips**: Show thumbnail + title overlay for the latest 3 image journal entries.
-- **Vision Configuration**: Clicking an image attachment or the attachment button provides a deep link directly to `Settings > Providers > Vision` for troubleshooting.
+- **Display Icon**: Distinguish auto-journals with a `magic-stick` icon vs the `notebook` icon for manual entries.
 
-## 4. Context Width Configuration
+## 4. Future Journal QoL & Customization
+- **Toggle Control**: Add a setting/button to show or hide the entire Journal Preview row in the chat.
+- **Custom Ratios**: Allow users to configure the display ratio (e.g., 2 Text + 3 Images, or 5 Text only).
+- **Title Templates**:
+    - Select from premade persona-driven "title presets" for auto-journals.
+    - **Randomization**: Optionally randomize the template used per entry to make the character feel more "alive."
+- **Layout Flexibility**: Potentially a small grid or drag-and-drop system for arranging components in the "Interactive Area" above the input.
 - **Location**: **Generation** tab (per character).
 - **Behavior**: A configurable token limit (Context Width). Blank default passes `undefined`/`null` to the API.
 
