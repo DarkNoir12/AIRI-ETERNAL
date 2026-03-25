@@ -98,7 +98,29 @@ export function sanitizeMessages(messages: unknown[], options?: { vision?: boole
 }
 
 function streamOptionsToolsCompatibilityOk(model: string, chatProvider: ChatProvider, _: Message[], options?: StreamOptions): boolean {
-  return !!(options?.supportsTools || options?.tools || options?.toolsCompatibility?.[`${chatProvider.chat(model).baseURL}-${model}`])
+  if (options?.supportsTools)
+    return true
+  const key = `${chatProvider.chat(model).baseURL}-${model}`
+  return options?.toolsCompatibility?.[key] !== false
+}
+
+// Runtime auto-degrade: patterns that indicate the model/provider does not support tool calling.
+const TOOLS_RELATED_ERROR_PATTERNS: RegExp[] = [
+  /does not support tools/i, // Ollama
+  /no endpoints found that support tool use/i, // OpenRouter
+  /invalid schema for function/i, // OpenAI-compatible / Groq
+  /invalid.?function.?parameters/i, // OpenAI-compatible
+  /functions are not supported/i, // Azure AI Foundry
+  /unrecognized request argument.+tools/i, // Azure AI Foundry
+  /tool use with function calling is unsupported/i, // Google Generative AI
+  /tool_use_failed/i, // Groq
+  /does not support function.?calling/i, // Anthropic
+  /tools?\s+(is|are)\s+not\s+supported/i, // Cloudflare Workers AI
+]
+
+export function isToolRelatedError(err: unknown): boolean {
+  const msg = String(err)
+  return TOOLS_RELATED_ERROR_PATTERNS.some(p => p.test(msg))
 }
 
 async function streamFrom(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
@@ -181,18 +203,13 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
 
       // We MUST catch all promises returned by streamText to ensure the main promise settles
       // and to prevent "Uncaught (in promise)" errors if the initial handshake fails (e.g. 429).
-      result.messages.catch(rejectOnce)
-      result.steps.catch(rejectOnce)
-      result.usage.catch(rejectOnce)
-      result.totalUsage.catch(rejectOnce)
-
-      // result.messages usually settles when the stream is done or fails.
-      result.messages.then(() => {
-        // If finish event didn't already resolve it, we resolve now.
-        resolveOnce()
-      }).catch((err) => {
+      void result.messages.catch((err) => {
         rejectOnce(err)
+        console.error('Stream messages error:', err)
       })
+      void result.steps.catch(err => console.error('Stream steps error:', err))
+      void result.usage.catch(err => console.error('Stream usage error:', err))
+      void result.totalUsage.catch(err => console.error('Stream totalUsage error:', err))
     }
     catch (err) {
       rejectOnce(err)
@@ -311,10 +328,18 @@ export async function attemptForToolsCompatibilityDiscovery(model: string, chatP
 export const useLLM = defineStore('llm', () => {
   const toolsCompatibility = useLocalStorage<Record<string, boolean>>('settings/llm/tools-compatibility-v3', {})
 
-  function stream(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
-    // Disable automatic discovery to save user credits.
-    // Tools will be attempted blindly or skip discovery entirely.
-    return streamFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value })
+  async function stream(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
+    const key = `${chatProvider.chat(model).baseURL}-${model}`
+    try {
+      await streamFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value })
+    }
+    catch (err) {
+      if (isToolRelatedError(err)) {
+        console.warn(`[llm] Auto-disabling tools for "${key}" due to tool-related error`)
+        toolsCompatibility.value[key] = false
+      }
+      throw err
+    }
   }
 
   function generate(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
