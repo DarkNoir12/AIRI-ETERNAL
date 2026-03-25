@@ -18,6 +18,10 @@ const props = withDefaults(defineProps<Props>(), {
   iconClass: 'size-5',
 })
 
+const emit = defineEmits<{
+  (e: 'click'): void
+}>()
+
 const uiStore = useControlsIslandStore()
 const enabled = computed(() => uiStore.fadeOnHoverEnabled)
 const { t } = useI18n()
@@ -26,6 +30,7 @@ const requestNotice = useElectronEventaInvoke(noticeWindowEventa.openWindow)
 const NOTICE_WINDOW_ID = 'fade-on-hover'
 
 async function handleToggle() {
+  emit('click')
   if (enabled.value) {
     uiStore.disableFadeOnHover()
     return

@@ -76,13 +76,16 @@ watch(alwaysOnTop, (val) => {
 
 function toggleAlwaysOnTop() {
   alwaysOnTop.value = !alwaysOnTop.value
+  expanded.value = false
 }
 
 function handleOpenSettings() {
+  expanded.value = false
   return openSettings({})
 }
 
 function handleOpenChat() {
+  expanded.value = false
   return openChat()
 }
 
@@ -126,6 +129,7 @@ function startDraggingWindow() {
 }
 
 async function refreshWindow() {
+  expanded.value = false
   // Use store-level applyCardState with force=true to reload model without full page refresh
   if (activeCard.value) {
     await cardStore.activateCard(activeCardId.value, true)
@@ -170,6 +174,7 @@ const isFavoriteActive = computed(() => {
 function toggleFavorite() {
   if (!favoriteExpression.value)
     return
+  expanded.value = false
   const name = favoriteExpression.value
   const current = activeExpressions.value[name] || 0
   const next = current > 0 ? 0 : 1
@@ -303,7 +308,7 @@ function cycleAnimation() {
               </ControlButtonTooltip>
 
               <ControlButtonTooltip>
-                <ControlButton :button-style="adjustStyleClasses.button" @click="toggleDark()">
+                <ControlButton :button-style="adjustStyleClasses.button" @click="toggleDark(); expanded = false">
                   <Transition name="fade" mode="out-in">
                     <div v-if="isDark" i-solar:moon-outline :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
                     <div v-else i-solar:sun-2-outline :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
@@ -325,10 +330,14 @@ function cycleAnimation() {
                 </template>
               </ControlButtonTooltip>
 
-              <ControlsIslandFadeOnHover :icon-class="adjustStyleClasses.icon" :button-style="adjustStyleClasses.button" />
+              <ControlsIslandFadeOnHover
+                :icon-class="adjustStyleClasses.icon"
+                :button-style="adjustStyleClasses.button"
+                @click="expanded = false"
+              />
 
               <ControlButtonTooltip>
-                <ControlButton :button-style="adjustStyleClasses.button" hover:bg-red-500 hover:text-white @click="hideWindow()">
+                <ControlButton :button-style="adjustStyleClasses.button" hover:bg-red-500 hover:text-white @click="hideWindow(); expanded = false">
                   <div i-solar:close-circle-outline :class="adjustStyleClasses.icon" />
                 </ControlButton>
                 <template #tooltip>
