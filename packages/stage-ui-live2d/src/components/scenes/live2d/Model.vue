@@ -223,6 +223,15 @@ async function loadModel() {
 
     const live2DModel = new Live2DModel<PixiLive2DInternalModel>()
     await Live2DFactory.setupLive2DModel(live2DModel, { url: modelSrcRef.value, id: props.modelId, file: props.modelFile }, { autoInteract: false })
+
+    // NOTICE: setupLive2DModel is async; pixiApp or stage could have been destroyed during the wait.
+    if (isUnmounted || !pixiApp.value || !pixiApp.value.stage) {
+      live2DModel.destroy()
+      modelLoading.value = false
+      componentState.value = 'mounted'
+      return
+    }
+
     availableMotions.value.forEach((motion) => {
       if (motion.motionName in Emotion) {
         motionMap.value[motion.fileName] = motion.motionName
@@ -234,8 +243,8 @@ async function loadModel() {
 
     // --- Scene
     model.value = live2DModel
-    // REVIEW: pixiApp and stage are guaranteed to be valid here due to the until(...) above.
-    pixiApp.value!.stage.addChild(model.value)
+    // REVIEW: pixiApp and stage are guaranteed to be valid here due to the check above.
+    pixiApp.value.stage.addChild(model.value)
     initialModelWidth.value = model.value.width
     initialModelHeight.value = model.value.height
     model.value.anchor.set(0.5, 0.5)
@@ -415,14 +424,14 @@ async function loadModel() {
           const baseUrl = props.modelSrc.substring(0, props.modelSrc.lastIndexOf('/') + 1)
           try {
             const resp = await fetch(baseUrl + encodeURIComponent(cdiFileName))
-            if (resp.ok)
+            if (resp.ok && !isUnmounted && model.value)
               cdiData = await resp.json()
           }
           catch {}
         }
       }
 
-      if (cdiData) {
+      if (cdiData && !isUnmounted && model.value) {
         const params = cdiData?.Parameters || cdiData?.parameters
         if (params) {
           // Initialize missing modelParameters from core model defaults BEFORE setting metadata
@@ -520,6 +529,8 @@ async function loadModel() {
               return null
             })
             Promise.all(fetchPromises).then((results) => {
+              if (isUnmounted || !model.value)
+                return
               expressionData.value = results.filter((r): r is any => r !== null)
               console.info('✅ Fetched expression data from URLs:', expressionData.value.length)
             })
