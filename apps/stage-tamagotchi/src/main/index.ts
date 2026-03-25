@@ -8,7 +8,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { Format, LogLevel, setGlobalFormat, setGlobalLogLevel, useLogg } from '@guiiai/logg'
 import { createContext } from '@moeru/eventa/adapters/electron/main'
 import { initScreenCaptureForMain } from '@proj-airi/electron-screen-capture/main'
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, session } from 'electron'
 import { createLoggLogger, injeca, lifecycle } from 'injeca'
 import { isLinux } from 'std-env'
 
@@ -97,6 +97,21 @@ electronApp.setAppUserModelId('ai.moeru.airi')
 initScreenCaptureForMain()
 
 app.whenReady().then(async () => {
+  // NOTICE: Deepgram's API does not send CORS headers for browser-origin requests
+  // authenticated with project API keys. Since the renderer is a Chromium context,
+  // we inject permissive CORS response headers at the Electron session level for
+  // any requests to api.deepgram.com. This avoids needing a dedicated proxy backend.
+  session.defaultSession.webRequest.onHeadersReceived(
+    { urls: ['https://api.deepgram.com/*'] },
+    (details, callback) => {
+      const headers = { ...details.responseHeaders }
+      headers['access-control-allow-origin'] = ['*']
+      headers['access-control-allow-headers'] = ['Authorization, Content-Type']
+      headers['access-control-allow-methods'] = ['GET, POST, OPTIONS']
+      callback({ responseHeaders: headers })
+    },
+  )
+
   injeca.setLogger(createLoggLogger(useLogg('injeca').useGlobalConfig()))
 
   const appConfig = injeca.provide('configs:app', () => createGlobalAppConfig())
