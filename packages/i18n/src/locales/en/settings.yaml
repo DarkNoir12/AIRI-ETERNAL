@@ -4,9 +4,7 @@ animations:
   stage-transitions:
     title: Disable Stage Transitions
   use-page-specific-transitions:
-    description: >-
-      Some pages will have their own transitions, this will override the stage
-      transitions
+    description: Some pages will have their own transitions, this will override the stage transitions
     title: Use Page Specific Transitions
 dialogs:
   onboarding:
@@ -33,9 +31,7 @@ dialogs:
     start: Let's do it!
     select-model: Choose model
     no-models: No available models
-    no-models-help: >-
-      Please return to the previous step and check your API key, or check the
-      network connection.
+    no-models-help: Please return to the previous step and check your API key, or check the network connection.
     permissions:
       title: Notifications
       description: You can allow notifications now or continue and set it up later.
@@ -51,15 +47,12 @@ dialogs:
       stateNotGranted: Not granted
 language:
   title: Language
-  description: >
-    Change the language of the AIRI interface. This will not affect the language
-    of the character's responses.
+  description: |
+    Change the language of the AIRI interface. This will not affect the language of the character's responses.
 privacy:
   remote-sync:
     title: Enable Cloud Sync
-    description: >-
-      Off by default. When disabled, AIRI stays local-only and will not fetch a
-      remote session or sync chat history to airi-api.moeru.ai.
+    description: Off by default. When disabled, AIRI stays local-only and will not fetch a remote session or sync chat history to airi-api.moeru.ai.
 controls-island:
   icon-size:
     title: Controls Island Icon Size
@@ -85,7 +78,7 @@ live2d:
     title: Scale And Position
     scale: Scale
     x: X
-    'y': 'Y'
+    y: Y
   switch-to-vrm:
     title: Switch to 3D Avatar?
     change-to-vrm: Click here to switch to the 3D avatar setting (VRM)
@@ -161,39 +154,25 @@ pages:
         scenario: You recently woke up and forgot everything about your previous life.
         systemprompt: You will receive messages, answer to them like a real human.
         posthistoryinstructions: Remember to imitate an human.
-      modules_info: >-
-        Configure modules for this character card. If not set, default module
-        configuration will be used.
+      modules_info: Configure modules for this character card. If not set, default module configuration will be used.
       use_default: Use default
       use_default_not_configured: Use default (not configured)
       none: None (No background)
       preferred_background: Preferred Scene/Background
       fields_info:
-        subtitle: >-
-          You can put here some details about the character you are creating,
-          explain his history and context, and how your interactions should be
-          answered.
-        identity_prompting: >-
-          These fields all help define the character, but they are not
-          separate runtime layers today. System Prompt is used in AIRI's active
-          prompt assembly. Post-History Instructions is currently kept mainly
-          for card compatibility and future prompt-pipeline work, so you can
-          fill it out now without expecting distinct live behavior yet.
+        subtitle: You can put here some details about the character you are creating, explain his history and context, and how your interactions should be answered.
+        identity_prompting: These fields all help define the character, but they are not separate runtime layers today. System Prompt is used in AIRI's active prompt assembly. Post-History Instructions is currently kept mainly for card compatibility and future prompt-pipeline work, so you can fill it out now without expecting distinct live behavior yet.
         name: Is the formal name of this character.
         nickname: You can also give a nickname that will be used in priority.
         description: Description of this character.
         notes: If you want to add some personal notes.
-        personality: >-
-          Describe here the personality of your character. Shy ? Curious ?
-          Anything else ?
+        personality: Describe here the personality of your character. Shy ? Curious ? Anything else ?
         scenario: What are the surroundings ? What is the current situation ?
         greetings_field: Greetings
         greetings: How your character should say "hello" ?
         systemprompt: The main instructions AIRI actively uses today when building this character's prompt.
         posthistoryinstructions: Stored for card compatibility and future prompt compaction work. It is not currently applied as a distinct live prompt stage.
-        version: >-
-          Card version, you should increase this if you are making changes from
-          a previous card.
+        version: Card version, you should increase this if you are making changes from a previous card.
         consciousness_model: Select the consciousness model (AI model) for this character.
         speech_model: Select the speech synthesis model and voice for this character.
       errors:
@@ -263,7 +242,7 @@ pages:
         reset: Reset desktop data
     confirmations:
       tooltip: Are you sure?
-      'yes': 'Yes'
+      yes: Yes
     status:
       exported: Chat sessions exported.
       imported: Chat sessions imported.
@@ -290,14 +269,10 @@ pages:
     title: Scenes
     description: Customize the virtual environment for your characters.
     beta_label: Scenes System
-    beta_description: >-
-      Each character card specifies its own preferred background from this gallery.
-      Setting it here will set it as the default for the currently active character.
+    beta_description: Each character card specifies its own preferred background from this gallery. Setting it here will set it as the default for the currently active character.
     background_image:
       title: Active Character Background
-      no_background: >-
-        No background active for this character. Upload a square or landscape image for best
-        results.
+      no_background: No background active for this character. Upload a square or landscape image for best results.
       upload: Upload to Gallery
       change: Change Background
       clear: Clear Default
@@ -310,18 +285,14 @@ pages:
       active_badge: Current Scene
     tip:
       label: Tip!
-      description: >-
-        Using a square image will leverage <b>cover</b> cropping in portrait
-        mode, focusing on the center of the scene.
+      description: Using a square image will leverage <b>cover</b> cropping in portrait mode, focusing on the center of the scene.
   modules:
     artistry:
       description: Generate images and visual content during conversations
       title: Artistry
       widget-instructions:
         label: Widget Spawning Instructions
-        description: >-
-          The instructions provided to the AI LLM to teach it how to use the
-          artistry widget system. If empty, the system default will be used.
+        description: The instructions provided to the AI LLM to teach it how to use the artistry widget system. If empty, the system default will be used.
     beat_sync:
       description: Vibe with beats from the audio source
       title: Beat Sync
@@ -340,27 +311,19 @@ pages:
           title: Parameters
           parameters:
             adaptive_threshold:
-              description: >-
-                Whether to apply adaptive thresholds based on signal variance
-                over time.
+              description: Whether to apply adaptive thresholds based on signal variance over time.
               label: Adaptive threshold
             buffer_duration:
               description: Duration of the internal analysis buffer.
               label: Buffer duration
             envelope_filter_frequency:
-              description: >-
-                Frequency for the envelope filter applied to smooth energy
-                changes.
+              description: Frequency for the envelope filter applied to smooth energy changes.
               label: Envelope filter frequency
             highpass_filter_frequency:
-              description: >-
-                Frequency for the highpass filter applied to reduce low
-                frequencies like sub-bass noises.
+              description: Frequency for the highpass filter applied to reduce low frequencies like sub-bass noises.
               label: Highpass filter frequency
             lowpass_filter_frequency:
-              description: >-
-                Frequency for the lowpass filter applied to reduce high
-                frequencies like vocals.
+              description: Frequency for the lowpass filter applied to reduce high frequencies like vocals.
               label: Lowpass filter frequency
             min_beat_interval:
               description: Maximum BPM or minimum interval between detected beats.
@@ -488,11 +451,7 @@ pages:
             search_voices_placeholder: Search voices...
             search_voices_results: Found {count} of {total} voices
             unsupported_voice_warning_title: No supported voices
-            unsupported_voice_warning_content: >-
-              Try a different model or provider. We are working on supporting
-              all the voice for this model as quickly as possible. If you need
-              it urgently, please let us know on GitHub at
-              https://github.com/moeru-ai/airi/issues.
+            unsupported_voice_warning_content: Try a different model or provider. We are working on supporting all the voice for this model as quickly as possible. If you need it urgently, please let us know on GitHub at https://github.com/moeru-ai/airi/issues.
             show_less: Show less
             show_more: Show more
             title: Provider
@@ -535,22 +494,16 @@ pages:
         apply-and-restart: Save and restart stdio MCP
       messages:
         opened: Config file opened at {path}
-        restarted: >-
-          MCP servers restarted. Started {started}, failed {failed}, skipped
-          {skipped}
+        restarted: MCP servers restarted. Started {started}, failed {failed}, skipped {skipped}
   providers:
     explained:
       chat: Text generation model providers. e.g. OpenRouter, OpenAI, Ollama.
       Speech: Speech (text-to-speech) model providers. e.g. ElevenLabs, Azure Speech.
-      Transcription: >-
-        Transcription (speech-to-text) model providers. e.g. Whisper.cpp,
-        OpenAI, Azure Speech
+      Transcription: Transcription (speech-to-text) model providers. e.g. Whisper.cpp, OpenAI, Azure Speech
     helpinfo:
       title: First time here?
-      description: >
-        AIRI requires at least one {chat} provider to be configured to think,
-        and behave properly. You could think of it as the brain of the
-        characters living in AIRI system.
+      description: |
+        AIRI requires at least one {chat} provider to be configured to think, and behave properly. You could think of it as the brain of the characters living in AIRI system.
     speech:
       app_local_audio:
         title: App (Local) Audio Settings
@@ -575,9 +528,7 @@ pages:
         validation:
           failed:
             title: Please check your provider settings, validation failed.
-            description: >-
-              You can still save the current configuration if you want to
-              proceed.
+            description: You can still save the current configuration if you want to proceed.
             action: Save anyway
         config:
           common:
@@ -589,9 +540,7 @@ pages:
                   placeholder: sk-...
                 base-url:
                   label: Base URL
-                  description: >-
-                    The base url used to connect to remote service. Often looks
-                    like http://localhost:11434/v1 or https://example.com/v1.
+                  description: The base url used to connect to remote service. Often looks like http://localhost:11434/v1 or https://example.com/v1.
                   placeholder: Base url...
                 headers:
                   label: Custom HTTP Headers
@@ -602,7 +551,7 @@ pages:
                     placeholder: Value
                 thinking-mode:
                   label: Thinking Mode
-                  description: >
+                  description: |
                     Controls Ollama thinking behavior. GPT-OSS only supports low/medium/high levels.
                   options:
                     auto: Auto (provider default)
@@ -636,18 +585,10 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Extra configuration needed for Ollama
-                    content: >-
-                      Sorry to hear that Connectivity check failed for Ollama.
-                      Don't worry, for Ollama instances, extra configuration is
-                      needed for making it pass for Ollama. You need to set
-                      <code>OLLAMA_HOST</code> explicitly when start the Ollama
-                      application or Ollama CLI server, for detailed
-                      information, check <a
-                      href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama
-                      integration guide</a>.
+                    content: Sorry to hear that Connectivity check failed for Ollama. Don't worry, for Ollama instances, extra configuration is needed for making it pass for Ollama. You need to set <code>OLLAMA_HOST</code> explicitly when start the Ollama application or Ollama CLI server, for detailed information, check <a href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama integration guide</a>.
     common:
       continueAnyway: Continue Anyway
-      goToModelSelection: 'Select Model →'
+      goToModelSelection: Select Model →
       fields:
         field:
           api-key:
@@ -716,17 +657,11 @@ pages:
         helpinfo:
           title: Before you start
           description:
-            part1: >-
-              While Anthropic recently did announce that they are having a beta
-              support for OpenAI SDK compatibility
+            part1: While Anthropic recently did announce that they are having a beta support for OpenAI SDK compatibility
             part2: (you can read more here)
             part3: but due to the implementation details comes with
-            part4: >-
-              restrictions which not aligned with the OpenAI SDK, it's currently
-              not possible to use this provider in the browser.
-            part5: >-
-              If you do need to use this provider, you will need a dedicated
-              proxy backend like a Serverless Function running on
+            part4: restrictions which not aligned with the OpenAI SDK, it's currently not possible to use this provider in the browser.
+            part5: If you do need to use this provider, you will need a dedicated proxy backend like a Serverless Function running on
             part6: or some CORS bypassing services to bypass the CORS restrictions.
       cloudflare-workers-ai:
         description: cloudflare.com
@@ -814,9 +749,7 @@ pages:
               description: Smaller models load faster but may have slightly lower quality.
         models:
           fp32-webgpu:
-            description: >-
-              Full precision model using WebGPU - Recommended for supported
-              devices
+            description: Full precision model using WebGPU - Recommended for supported devices
           fp32:
             description: Full precision model
           fp16:
@@ -1014,9 +947,7 @@ pages:
                 title: Polaroid
                 description: Utility for taking shots of models
               context-flow:
-                description: >-
-                  Inspect incoming context updates and outgoing chat stream
-                  events
+                description: Inspect incoming context updates and outgoing chat stream events
               websocket-inspector:
                 title: WebSocket Inspector
                 description: Inspect raw WebSocket traffic
@@ -1025,12 +956,10 @@ pages:
                 description: Test color extraction
               providers-transcription-realtime-aliyun-nls:
                 title: Aliyun Real-time Transcriber
-                description: >-
-                  Stream microphone audio to Aliyun NLS and inspect live
-                  transcripts
+                description: Stream microphone audio to Aliyun NLS and inspect live transcripts
               performance-playground:
                 title: Performance Playground
-                description: 'VRM expressions + TTS lip sync playground'
+                description: VRM expressions + TTS lip sync playground
         theme-presets:
           presets:
             default:
@@ -1096,9 +1025,7 @@ pages:
                 color-6: Golden Yellow
                 color-7: Azure Blue
                 color-8: Ochre
-              description: >-
-                Traditional Chinese colors, derived from ancient textiles,
-                porcelain and paintings
+              description: Traditional Chinese colors, derived from ancient textiles, porcelain and paintings
               title: Chinese Traditional Colors
           title: Color Scheme Presets
     title: System
@@ -1138,7 +1065,7 @@ vrm:
       Coordinate axes are visualised.
     scale: Scale
     x: X Offset
-    'y': Y Offset
+    y: Y Offset
     z: Z Offset
     fov: FOV (degree)
     rotation-y: Rotation (Y-axis)
@@ -1161,15 +1088,10 @@ vrm:
     skybox-specular-mix: Specular Mix
 websocket-secure-enabled:
   title: Enable Secure WebSocket (WSS)
-  description: >-
-    Enable WSS (WebSocket Secure) to allow HTTPS connections for mobile (pocket)
-    in development mode. This will automatically generate a self-signed
-    certificate.
+  description: Enable WSS (WebSocket Secure) to allow HTTPS connections for mobile (pocket) in development mode. This will automatically generate a self-signed certificate.
 wip:
   title: Work in Progress
-  description: >-
-    This feature is currently under development and not yet publicly available.
-    Check back in future updates for this functionality.
+  description: This feature is currently under development and not yet publicly available. Check back in future updates for this functionality.
 chat:
   send-mode:
     title: Send Key
