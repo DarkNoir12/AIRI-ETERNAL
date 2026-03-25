@@ -757,6 +757,9 @@ pages:
       deepgram-tts:
         description: deepgram.com
         title: Deepgram
+      deepgram-transcription:
+        description: deepgram.com
+        title: Deepgram STT (Nova)
       speech-noop:
         title: None
         description: No speech output.
