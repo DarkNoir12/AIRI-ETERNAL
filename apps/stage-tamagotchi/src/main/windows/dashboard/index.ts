@@ -18,6 +18,7 @@ import { createContext } from '@moeru/eventa/adapters/electron/main'
 import { initScreenCaptureForWindow } from '@proj-airi/electron-screen-capture/main'
 import { defu } from 'defu'
 import { BrowserWindow, ipcMain, shell } from 'electron'
+import { throttle } from 'es-toolkit'
 import { isLinux } from 'std-env'
 import { array, number, object, optional, string } from 'valibot'
 
@@ -123,8 +124,9 @@ export async function setupDashboardWindow(params: {
     updateConfig(config)
   }
 
-  window.on('resize', () => handleNewBounds(window.getBounds()))
-  window.on('move', () => handleNewBounds(window.getBounds()))
+  const throttledHandleNewBounds = throttle(handleNewBounds, 200)
+  window.on('resize', () => throttledHandleNewBounds(window.getBounds()))
+  window.on('move', () => throttledHandleNewBounds(window.getBounds()))
 
   window.on('ready-to-show', () => window!.show())
   window.webContents.setWindowOpenHandler((details) => {

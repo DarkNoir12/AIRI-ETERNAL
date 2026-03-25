@@ -21,6 +21,7 @@ import clickDragPlugin from 'electron-click-drag-plugin'
 import { is } from '@electron-toolkit/utils'
 import { defu } from 'defu'
 import { BrowserWindow, ipcMain, shell } from 'electron'
+import { throttle } from 'es-toolkit'
 
 import icon from '../../../../resources/icon.png?asset'
 
@@ -159,8 +160,9 @@ export async function setupMainWindow(params: {
     window.webContents.send('eventa:event:electron:windows:main:config-changed', config.windows.find((w: any) => w.title === 'AIRI' && w.tag === 'main'))
   }
 
-  window.on('resize', () => handleNewBounds(window.getBounds()))
-  window.on('move', () => handleNewBounds(window.getBounds()))
+  const throttledHandleNewBounds = throttle(handleNewBounds, 200)
+  window.on('resize', () => throttledHandleNewBounds(window.getBounds()))
+  window.on('move', () => throttledHandleNewBounds(window.getBounds()))
 
   return window
 }
