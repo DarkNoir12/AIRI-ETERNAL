@@ -1,51 +1,38 @@
-# Selective Upstream Sync Current Report (March 17, 2026)
+# Selective Upstream Sync Report: alpha.15 → alpha.22
 
-## Comparison Basis
+## 📊 Comparison Basis
+- **Baseline Upstream Head**: `4671ceaaae92f5d780319394512bf63ed01a85f1` (alpha.15)
+- **Current Synced Head**: `279b4db1` (alpha.22)
+- **Sync Method**: Selective "Baby Steps" (Manual Ports)
 
-- **Baseline Upstream Head**: `65faf3fe1826804c41f46c66049ecac76d5cb303` (March 15)
-- **Current Upstream Head**: `4671ceaaae92f5d780319394512bf63ed01a85f1`
-- **Total Files Changed**: 13
+---
 
-## 📊 File Classification
+## 🟢 Integrated (Phase 1: Baby Steps)
+The following safe, non-breaking improvements have been successfully ported and verified via `pnpm typecheck`.
 
-### 🟢 `replace` (Safe / Direct Import)
-These files contain environmental or build fixes that should be adopted fully.
+| File | Status | Change Summary |
+| :--- | :--- | :--- |
+| `packages/stage-ui-three/src/composables/shader/ibl.ts` | **Synced** | Ported upstream IBL shading math fixes. |
+| `packages/ui/src/components/form/checkbox/checkbox.vue` | **Synced** | Added `disabled` prop support. |
+| `packages/ui/src/components/form/field/field-checkbox.vue` | **Synced** | Forwarded `disabled` prop to internal checkbox. |
+| `packages/ui/src/components/form/combobox/combobox.vue` | **Synced** | Refined height (`h-9`) and z-index handling. |
+| `packages/stage-pages/src/pages/settings/data/status.ts` | **New** | Added status reporting utility for settings. |
 
-| File | Change Summary |
+---
+
+## 🟡 Deferred / Pending
+These files remain at the alpha.15 baseline due to significant logic drift or rejected features.
+
+| File | Reason for Deferral |
 | :--- | :--- |
-| `apps/stage-pocket/vite.config.ts` | Fixes `@tresjs/core` import and sets `server.fs.strict: false`. |
-| `apps/stage-tamagotchi/electron.vite.config.ts` | Fixes `@tresjs/core` import and sets `server.fs.strict: false`. |
-| `apps/stage-web/vite.config.ts` | Fixes `@tresjs/core` import and sets `server.fs.strict: false`. |
-| `eslint.config.js` | Adds `CLAUDE.md` to ignore list for cleaner linting. |
-| `pnpm-workspace.yaml` | Adds `enableGlobalVirtualStore` and peerDeps fixes for `vue-sonner`, etc. |
+| `packages/stage-ui/src/stores/llm.ts` | **Refactor Drift**: Massive shift in tool discovery logic. Needs manual splice. |
+| `packages/stage-ui/src/stores/chat.ts` | **Serialization**: Internal message state changes. |
+| `packages/stage-ui/src/composables/use-analytics.ts` | **Rejected**: Telemetry/Analytics are explicitly ignored. |
+| `packages/plugin-sdk/**/*` | **Arch Review**: Major permission model rewrite. |
 
-### 🟡 `hand-merge` (Selective Integration)
-These files involve core logic where the fork has diverged.
+---
 
-| File | Change Summary |
-| :--- | :--- |
-| `packages/stage-ui/src/stores/llm.ts` | **Critical**: Adds message flattening logic in `sanitizeMessages` for DeepSeek/OpenAI compatibility. |
-
-### 🔵 `review` (Further Inspection Needed)
-Files that change core dependency mappings or lockfiles.
-
-| File | Change Summary |
-| :--- | :--- |
-| `pnpm-lock.yaml` | Updated dependencies (huggingface, eslint, intlify). |
-
-### ⚪ `ignore` (No Action Required)
-Unrelated churn or documentation specific to upstream.
-
-| File | Change Summary |
-| :--- | :--- |
-| `.github/workflows/ci.yml` | Workflow updates. |
-| `.github/workflows/deploy-cloudflare-workers-preview-prepare.yml` | Deployment infra. |
-| `.github/workflows/deploy-cloudflare-workers.yml` | Deployment infra. |
-| `docs/content/zh-Hans/index.md` | Translation updates. |
-| `packages/i18n/src/locales/zh-Hans/docs/theme.yaml` | i18n churn. |
-| `packages/i18n/src/locales/zh-Hant/docs/theme.yaml` | i18n churn. |
-
-## Next Steps
-1. Perform **hand-merge** of `llm.ts` logic into the fork's state.
-2. **Replace** the build configurations and workspace settings to resolve FS strict errors.
-3. Update version metadata in the fork to reflect sync up to `4671cea`.
+## 🚀 Next Sync Objectives
+1. Perform additive YAML sync (merge new keys only).
+2. Side-by-side review of the new Vision Engine.
+3. Hand-merge structural updates to Model Settings layout if needed.
