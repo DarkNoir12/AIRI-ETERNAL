@@ -1,7 +1,8 @@
+<script setup lang="ts">
+import { REPLICATE_PRESETS } from '@proj-airi/stage-shared'
 import { useArtistryStore } from '@proj-airi/stage-ui/stores/modules/artistry'
 import { FieldInput } from '@proj-airi/ui'
 import { Select } from '@proj-airi/ui/components/form'
-import { REPLICATE_PRESETS } from '@proj-airi/stage-shared'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -19,40 +20,6 @@ const { t } = useI18n()
 
 const artistryStore = useArtistryStore()
 const comfyuiWorkflows = computed(() => artistryStore.comfyuiSavedWorkflows || [])
-    cost: '$1 / 188 imgs',
-    prompt: 'high quality, masterpiece, hirez, absurdres, anime style, detailed background, atmospheric, beautifully shaded,',
-    preset: {
-      vae: 'default',
-      seed: -1,
-      model: 'Anillustrious-v4',
-      steps: 30,
-      width: 1024,
-      height: 1024,
-      refiner: false,
-      upscale: 'Original',
-      cfg_scale: 7,
-      clip_skip: 2,
-      pag_scale: 0,
-      scheduler: 'Euler a beta',
-      adetailer_face: false,
-      adetailer_hand: false,
-      refiner_prompt: '',
-      negative_prompt: 'nsfw, naked',
-      adetailer_person: false,
-      guidance_rescale: 1,
-      refiner_strength: 0.8,
-      prepend_preprompt: true,
-      prompt_conjunction: true,
-      adetailer_face_prompt: '',
-      adetailer_hand_prompt: '',
-      adetailer_person_prompt: '',
-      negative_prompt_conjunction: false,
-      adetailer_face_negative_prompt: '',
-      adetailer_hand_negative_prompt: '',
-      adetailer_person_negative_prompt: '',
-    },
-  },
-]
 
 function handleModelSelect(model: any) {
   selectedArtistryModel.value = model.id
