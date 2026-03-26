@@ -72,8 +72,35 @@ export class ComfyUIProvider implements ArtistryProvider {
     this.updateStatus(jobId, { status: 'running', actionLabel: 'Preparing workflow...' })
 
     try {
+      // 0. Handle potential image and prompt upload bidirectional flow
+      let finalExtra = { ...request.extra }
+      const extraStr = JSON.stringify(finalExtra)
+      const hasImagePlaceholder = extraStr.includes('{{IMAGE}}')
+      const hasPromptPlaceholder = extraStr.includes('{{PROMPT}}')
+
+      if (hasImagePlaceholder && request.extra?.image) {
+        log.log(`[ComfyUI] Bidirectional flow detected. Uploading texture for job ${jobId}...`)
+        this.updateStatus(jobId, { status: 'running', actionLabel: 'Uploading texture to ComfyUI...' })
+        try {
+          const uploadedName = await this.uploadImage(request.extra.image)
+          log.log(`[ComfyUI] Texture uploaded as: ${uploadedName}`)
+          finalExtra = this.replacePlaceholders(finalExtra, {
+            '{{IMAGE}}': uploadedName,
+            '{{PROMPT}}': request.prompt || '',
+          })
+        }
+        catch (e: any) {
+          log.error(`[ComfyUI] Texture upload failed: ${e.message}`)
+        }
+      }
+      else if (hasPromptPlaceholder) {
+        finalExtra = this.replacePlaceholders(finalExtra, {
+          '{{PROMPT}}': request.prompt || '',
+        })
+      }
+
       // 1. Apply overrides to the workflow template
-      const resolvedPrompt = this.applyOverrides(template, request)
+      const resolvedPrompt = this.applyOverrides(template, { ...request, extra: finalExtra })
       log.log(`[ComfyUI] Resolved prompt for ${jobId}:`, JSON.stringify(resolvedPrompt, null, 2))
 
       // 2. POST /prompt to queue the workflow
@@ -213,7 +240,9 @@ export class ComfyUIProvider implements ArtistryProvider {
     const overrides: Record<string, Record<string, any>> = {}
 
     // The main prompt text goes into the first exposed "text" field we find
-    if (request.prompt) {
+    // COMPAT: If the user ALREADY used a {{PROMPT}} placeholder in the extra params, we skip this auto-injection
+    const hasPromptPlaceholder = JSON.stringify(request.extra).includes('{{PROMPT}}')
+    if (request.prompt && !hasPromptPlaceholder) {
       for (const [nodeTitle, fields] of Object.entries(template.exposedFields)) {
         if (fields.includes('text')) {
           if (!overrides[nodeTitle])
@@ -283,5 +312,55 @@ export class ComfyUIProvider implements ArtistryProvider {
 
   async getStatus(jobId: string): Promise<ArtistryJobStatus> {
     return this.jobResults.get(jobId) || { status: 'queued' }
+  }
+
+  private async uploadImage(base64Data: string): Promise<string> {
+    // 1. Clean data URL prefix if present
+    const base64 = base64Data.replace(/^data:image\/\w+;base64,/, '')
+    const buffer = Buffer.from(base64, 'base64')
+
+    // 2. Prepare multipart form data
+    const formData = new FormData()
+    const fileName = `vhack_${Date.now()}.png`
+
+    // Electron/Node 18+ fetch handles Blobs in FormData
+    const blob = new Blob([buffer], { type: 'image/png' })
+    formData.append('image', blob, fileName)
+    formData.append('overwrite', 'true')
+
+    const response = await fetch(`${this.serverUrl}/upload/image`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.text()
+      throw new Error(`ComfyUI upload failed: ${error}`)
+    }
+
+    const data = await response.json()
+    return data.name // Returns the filename in ComfyUI's input folder
+  }
+
+  private replacePlaceholders(obj: any, replacements: Record<string, string>): any {
+    if (typeof obj === 'string') {
+      let result = obj
+      for (const [placeholder, value] of Object.entries(replacements)) {
+        result = result.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value)
+      }
+      return result
+    }
+
+    if (Array.isArray(obj))
+      return obj.map(item => this.replacePlaceholders(item, replacements))
+
+    if (obj !== null && typeof obj === 'object') {
+      const newObj: any = {}
+      for (const [key, value] of Object.entries(obj)) {
+        newObj[key] = this.replacePlaceholders(value, replacements)
+      }
+      return newObj
+    }
+    return obj
   }
 }

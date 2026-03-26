@@ -55,13 +55,18 @@ export class ReplicateProvider implements ArtistryProvider {
     const base64Image = request.extra?.image || ''
 
     // 1. Start with defaults
+    const hasPromptPlaceholder = JSON.stringify(request.extra).includes('{{PROMPT}}')
     let inputOptions: Record<string, any> = {
-      prompt: request.prompt || '',
       go_fast: request.extra?.go_fast ?? true,
       aspect_ratio: request.extra?.aspect_ratio ?? this.aspectRatio,
       output_format: request.extra?.output_format ?? 'webp',
       output_quality: request.extra?.output_quality ?? 80,
       num_inference_steps: request.extra?.num_inference_steps ?? this.inferenceSteps,
+    }
+
+    // Default prompt injection if NO placeholder is used in overrides
+    if (request.prompt && !hasPromptPlaceholder) {
+      inputOptions.prompt = request.prompt
     }
 
     // 2. Merge overrides from the "JSON Parameters" textarea if present
@@ -70,24 +75,31 @@ export class ReplicateProvider implements ArtistryProvider {
       inputOptions = { ...inputOptions, ...rest }
     }
 
-    // 3. Recursive placeholder replacement for {{IMAGE}}
-    const injectImage = (obj: any): any => {
+    // 3. Recursive placeholder replacement for {{IMAGE}} and {{PROMPT}}
+    const replacePlaceholders = (obj: any): any => {
       if (typeof obj === 'string') {
-        if (obj === '{{IMAGE}}')
-          return base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`
-        return obj
+        let result = obj
+        // Handle image replacement
+        if (result.includes('{{IMAGE}}')) {
+          const dataUrl = base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`
+          result = result.replace(/\{\{IMAGE\}\}/g, dataUrl)
+        }
+        // Handle prompt replacement
+        result = result.replace(/\{\{PROMPT\}\}/g, request.prompt || '')
+        return result
       }
       if (Array.isArray(obj))
-        return obj.map(injectImage)
+        return obj.map(replacePlaceholders)
       if (typeof obj === 'object' && obj !== null) {
         const newObj: any = {}
-        for (const key in obj) newObj[key] = injectImage(obj[key])
+        for (const key in obj)
+          newObj[key] = replacePlaceholders(obj[key])
         return newObj
       }
       return obj
     }
 
-    inputOptions = injectImage(inputOptions)
+    inputOptions = replacePlaceholders(inputOptions)
 
     log.log(`[Replicate] Generating with model ${model}. Input keys: ${Object.keys(inputOptions).join(', ')}`)
 

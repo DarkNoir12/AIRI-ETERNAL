@@ -746,6 +746,9 @@ onMounted(() => {
                     JSON Parameters
                   </div>
                   <textarea v-model="aiReplicateParams" class="h-16 w-full resize-none border border-white/10 rounded-md bg-black/40 p-2 text-[8px] text-white font-mono outline-none" />
+                  <div class="mt-0.5 text-[7px] text-emerald-400/60 font-bold uppercase italic">
+                    Hint: Use {{ IMAGE }} and {{ PROMPT }} placeholders
+                  </div>
                 </div>
               </div>
 
@@ -767,6 +770,9 @@ onMounted(() => {
                   <div class="text-[8px] text-neutral-400 font-bold uppercase">
                     JSON Parameters
                   </div><textarea v-model="aiComfyParams" class="h-16 w-full resize-none border border-white/10 rounded-md bg-black/40 p-2 text-[8px] text-white font-mono outline-none" />
+                  <div class="mt-0.5 text-[7px] text-emerald-400/60 font-bold uppercase italic">
+                    Hint: Use {{ IMAGE }} and {{ PROMPT }} placeholders
+                  </div>
                 </div>
               </div>
             </div>
