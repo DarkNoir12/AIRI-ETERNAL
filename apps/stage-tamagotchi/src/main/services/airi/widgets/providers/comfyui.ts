@@ -73,34 +73,40 @@ export class ComfyUIProvider implements ArtistryProvider {
 
     try {
       // 0. Handle potential image and prompt upload bidirectional flow
-      let finalExtra = { ...request.extra }
-      const extraStr = JSON.stringify(finalExtra)
-      const hasImagePlaceholder = extraStr.includes('{{IMAGE}}')
-      const hasPromptPlaceholder = extraStr.includes('{{PROMPT}}')
+      const extraStr = JSON.stringify(request.extra || {})
+      const workflowStr = JSON.stringify(template.workflow || {})
+      const hasImagePlaceholder = extraStr.includes('{{IMAGE}}') || workflowStr.includes('{{IMAGE}}')
+      const hasPromptPlaceholder = extraStr.includes('{{PROMPT}}') || workflowStr.includes('{{PROMPT}}')
 
+      let uploadedImageName = ''
       if (hasImagePlaceholder && request.extra?.image) {
         log.log(`[ComfyUI] Bidirectional flow detected. Uploading texture for job ${jobId}...`)
         this.updateStatus(jobId, { status: 'running', actionLabel: 'Uploading texture to ComfyUI...' })
         try {
-          const uploadedName = await this.uploadImage(request.extra.image)
-          log.log(`[ComfyUI] Texture uploaded as: ${uploadedName}`)
-          finalExtra = this.replacePlaceholders(finalExtra, {
-            '{{IMAGE}}': uploadedName,
-            '{{PROMPT}}': request.prompt || '',
-          })
+          uploadedImageName = await this.uploadImage(request.extra.image)
+          log.log(`[ComfyUI] Texture uploaded as: ${uploadedImageName}`)
         }
         catch (e: any) {
           log.error(`[ComfyUI] Texture upload failed: ${e.message}`)
         }
       }
-      else if (hasPromptPlaceholder) {
-        finalExtra = this.replacePlaceholders(finalExtra, {
+
+      // 1. Apply overrides to the workflow template (standard injection)
+      let resolvedPrompt = this.applyOverrides(template, request)
+
+      // 2. Perform final placeholder resolution across the ENTIRE resolved prompt
+      if (hasImagePlaceholder || hasPromptPlaceholder) {
+        log.log(`[ComfyUI] Performing final placeholder resolution for ${jobId}...`)
+        const replacements: Record<string, string> = {
           '{{PROMPT}}': request.prompt || '',
-        })
+        }
+        if (uploadedImageName) {
+          replacements['{{IMAGE}}'] = uploadedImageName
+        }
+
+        resolvedPrompt = this.replacePlaceholders(resolvedPrompt, replacements)
       }
 
-      // 1. Apply overrides to the workflow template
-      const resolvedPrompt = this.applyOverrides(template, { ...request, extra: finalExtra })
       log.log(`[ComfyUI] Resolved prompt for ${jobId}:`, JSON.stringify(resolvedPrompt, null, 2))
 
       // 2. POST /prompt to queue the workflow

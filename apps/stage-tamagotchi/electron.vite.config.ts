@@ -113,6 +113,7 @@ export default defineConfig({
         '@vueuse/motion',
         'popmotion',
         'uncrypto',
+        'three',
       ],
       exclude: [
         // Internal Packages
@@ -159,6 +160,7 @@ export default defineConfig({
         { find: 'node:crypto', replacement: resolve(join(import.meta.dirname, 'src', 'renderer', 'shims', 'node-crypto.ts')) },
         { find: 'crypto', replacement: resolve(join(import.meta.dirname, 'src', 'renderer', 'shims', 'node-crypto.ts')) },
         { find: 'tslib', replacement: require.resolve('tslib/tslib.es6.js') },
+        { find: 'three', replacement: resolve(join(import.meta.dirname, 'node_modules', 'three')) },
       ],
     },
     ssr: {
