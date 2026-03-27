@@ -196,7 +196,7 @@ watch([baseUrl], refetch, { immediate: true, deep: true })
           </p>
 
           <Button
-            variant="outline"
+            variant="secondary-muted"
             as="a"
             :href="verificationUrl"
             target="_blank"

@@ -22,7 +22,12 @@ export const providerGoogleGenerativeAI = defineProvider<GoogleGenerativeConfig>
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.google-generative-ai.title'),
   description: 'ai.google.dev',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.google-generative-ai.description'),
-  tasks: ['chat'],
+  tasks: ['chat', 'vision'],
+  business: () => ({
+    pricing: 'free',
+    deployment: 'cloud',
+    beginnerRecommended: true,
+  }),
   icon: 'i-lobe-icons:gemini',
   iconColor: 'i-lobe-icons:gemini-color',
 

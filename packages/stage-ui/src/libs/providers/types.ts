@@ -157,6 +157,9 @@ export interface ProviderDefinition<TConfig extends any = any> {
     }
   }
   business?: (contextOptions: { t: ComposerTranslation }) => {
+    pricing?: 'free' | 'paid'
+    deployment?: 'local' | 'cloud'
+    beginnerRecommended?: boolean
     troubleshooting?: {
       validators?: {
         openaiCompatibleCheckConnectivity?: {

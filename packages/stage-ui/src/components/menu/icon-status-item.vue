@@ -7,6 +7,9 @@ const props = defineProps<{
   iconImage?: string
   to: string
   configured?: boolean
+  pricing?: 'free' | 'paid'
+  deployment?: 'local' | 'cloud'
+  beginnerRecommended?: boolean
 }>()
 </script>
 
@@ -74,9 +77,95 @@ const props = defineProps<{
         >
       </template>
     </RouterLink>
-    <div p-2>
-      <div v-if="props.configured" size-4 bg="green-500" rounded-full shadow="lg" />
-      <div v-else size-4 border="2 neutral-200 dark:neutral-700" rounded-full bg="white dark:neutral-900" />
+    <div
+      flex="~ row items-center justify-between"
+      p-2
+    >
+      <div
+        flex="~ row items-center gap-1.5"
+        px-1
+      >
+        <template v-if="props.pricing === 'free'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-1',
+              'rounded-lg bg-green-500/10 px-1.5 py-0.5',
+              'text-xs font-semibold text-green-600',
+              'dark:bg-green-500/20 dark:text-green-400',
+            ]"
+          >
+            <div i-solar:wad-of-money-bold-duotone text-xs />
+            <span>Free</span>
+          </div>
+        </template>
+        <template v-else-if="props.pricing === 'paid'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-1',
+              'rounded-lg bg-amber-500/10 px-1.5 py-0.5',
+              'text-xs font-semibold text-amber-600',
+              'dark:bg-amber-500/20 dark:text-amber-400',
+            ]"
+          >
+            <div i-solar:card-2-bold-duotone text-xs />
+            <span>Paid</span>
+          </div>
+        </template>
+
+        <template v-if="props.deployment === 'local'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-1',
+              'rounded-lg bg-blue-500/10 px-1.5 py-0.5',
+              'text-xs font-semibold text-blue-600',
+              'dark:bg-blue-500/20 dark:text-blue-400',
+            ]"
+          >
+            <div i-solar:laptop-bold-duotone text-xs />
+            <span>Local</span>
+          </div>
+        </template>
+        <template v-else-if="props.deployment === 'cloud'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-1',
+              'rounded-lg bg-purple-500/10 px-1.5 py-0.5',
+              'text-xs font-semibold text-purple-600',
+              'dark:bg-purple-500/20 dark:text-purple-400',
+            ]"
+          >
+            <div i-solar:cloud-bold-duotone text-xs />
+            <span>Cloud</span>
+          </div>
+        </template>
+
+        <template v-if="props.beginnerRecommended">
+          <div
+            :class="[
+              'flex flex-row items-center gap-1',
+              'rounded-lg bg-pink-500/10 px-1.5 py-0.5',
+              'text-xs font-semibold text-pink-600',
+              'dark:bg-pink-500/20 dark:text-pink-400',
+            ]"
+          >
+            <div i-solar:star-bold-duotone text-xs />
+            <span>Suggested</span>
+          </div>
+        </template>
+      </div>
+
+      <div
+        v-if="props.configured"
+
+        size-4 rounded-full bg-green-500 shadow-lg
+      />
+      <div
+        v-else
+        size-4
+        border="2 neutral-200 dark:neutral-700"
+        rounded-full
+        bg="white dark:neutral-900"
+      />
     </div>
   </div>
 </template>

@@ -500,10 +500,32 @@ pages:
       chat: Text generation model providers. e.g. OpenRouter, OpenAI, Ollama.
       Speech: Speech (text-to-speech) model providers. e.g. ElevenLabs, Azure Speech.
       Transcription: Transcription (speech-to-text) model providers. e.g. Whisper.cpp, OpenAI, Azure Speech
-    helpinfo:
-      title: First time here?
-      description: |
-        AIRI requires at least one {chat} provider to be configured to think, and behave properly. You could think of it as the brain of the characters living in AIRI system.
+    onboarding:
+      chat:
+        title: New to Chat?
+        description: For a quick start, we recommend <b>Google Gemini</b> (Free Cloud) or <b>OpenRouter</b> (Unified Cloud). If you prefer privacy and have a GPU, use <b>Ollama</b> or <b>LM Studio</b> for a local experience.
+      speech:
+        title: Need a Voice?
+        description: Try <b>Deepgram</b> or <b>Azure Speech</b> for high-quality cloud voices with free tiers. For a completely local and free solution, use the <b>Web Speech API</b> or <b>Kokoro TTS</b>.
+      transcription:
+        title: Voice-to-Text?
+        description: We recommend <b>Deepgram STT</b> for blazing fast cloud transcription. For local use, <b>Web Speech API</b> (Browser) or <b>Local Whisper</b> are excellent free choices.
+      artistry:
+        title: Generate Art?
+        description: The standard for local AI art is <b>ComfyUI</b>. If you prefer cloud-based generation, <b>Replicate</b> offers a wide variety of models with pay-as-you-go pricing.
+      vision:
+        title: See the World?
+        description: Use <b>Google Gemini</b> for powerful and free cloud-based vision. Local options like <b>Ollama</b> and <b>LM Studio</b> also support vision-capable models (VLMs).
+      start_here: Start here
+    filters:
+      pricing: Pricing
+      deployment: Deployment
+      all: All
+      free: Free
+      paid: Paid
+      local: Local
+      cloud: Cloud
+      suggested: Suggested
     speech:
       app_local_audio:
         title: App (Local) Audio Settings

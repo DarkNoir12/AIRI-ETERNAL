@@ -124,6 +124,11 @@ export function convertProviderDefinitionToMetadata(
   const category = getCategoryFromTasks(definition.tasks)
   const schemaDefaults = extractSchemaDefaults(definition, t)
 
+  const business = definition.business?.({ t })
+  const pricing = business?.pricing
+  const deployment = business?.deployment
+  const beginnerRecommended = business?.beginnerRecommended
+
   return {
     id: definition.id,
     order: definition.order,
@@ -137,6 +142,9 @@ export function convertProviderDefinitionToMetadata(
     iconColor: definition.iconColor,
     iconImage: definition.iconImage,
     isAvailableBy: definition.isAvailableBy,
+    pricing,
+    deployment,
+    beginnerRecommended,
     defaultOptions: () => {
       if (Object.keys(schemaDefaults).length > 0) {
         return { ...schemaDefaults }

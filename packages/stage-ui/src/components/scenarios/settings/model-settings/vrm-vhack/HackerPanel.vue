@@ -47,6 +47,7 @@ const isExporting = ref(false)
 const aiError = ref<string | null>(null)
 const showPresets = ref(false)
 const selectedCategory = ref<string | null>(null)
+const nodeFilter = ref('')
 
 const activePresets = computed(() => {
   if (!selectedCategory.value)
@@ -158,13 +159,35 @@ const nodes = computed(() => {
   const result: any[] = []
   activeVrm.value.scene.traverse((node: any) => {
     if (node.type === 'Mesh' || node.type === 'SkinnedMesh') {
-      result.push({ name: node.name || 'Unnamed Mesh', type: node.type, visible: node.visible, uuid: node.uuid, node })
+      const mat = Array.isArray(node.material) ? node.material[0] : node.material
+      const matName = mat ? mat.name : 'No Material'
+
+      const searchTerm = nodeFilter.value.toLowerCase()
+      const isMatch = node.name?.toLowerCase().includes(searchTerm) || matName.toLowerCase().includes(searchTerm)
+
+      if (isMatch) {
+        result.push({
+          name: node.name || 'Unnamed Mesh',
+          matName,
+          type: node.type,
+          visible: node.visible,
+          uuid: node.uuid,
+          node,
+        })
+      }
     }
   })
   return result
 })
 
-function toggleVisibility(item: any) { vhackStore.toggleNodeVisibility(item.uuid, item.node) }
+function toggleVisibility(item: any, event?: MouseEvent) {
+  if (event?.ctrlKey) {
+    vhackStore.focusNode(item.uuid, nodes.value)
+  }
+  else {
+    vhackStore.toggleNodeVisibility(item.uuid, item.node)
+  }
+}
 
 function selectNode(item: any) {
   vhackStore.selectedNodeName = item.name
@@ -646,9 +669,13 @@ onMounted(() => {
       <div v-if="activeTab === 'tree'" class="space-y-1">
         <div v-for="node in nodes" :key="node.uuid" class="group flex cursor-pointer items-center justify-between border border-transparent rounded-lg p-2 text-xs transition hover:border-white/5 hover:bg-white/5" :class="{ 'bg-emerald-500/10 border-emerald-500/30': vhackStore.selectedNodeName === node.name }" @click="selectNode(node)">
           <div class="flex items-center gap-2 truncate">
-            <div :class="[node.type === 'Mesh' ? 'i-solar:box-bold-duotone text-blue-400' : 'i-solar:user-bold-duotone text-purple-400']" /><span :class="[vhackStore.selectedNodeName === node.name ? 'text-emerald-400 font-bold' : 'text-neutral-300']">{{ node.name }}</span>
+            <div :class="[node.type === 'Mesh' ? 'i-solar:box-bold-duotone text-blue-400' : 'i-solar:user-bold-duotone text-purple-400']" />
+            <div class="flex flex-col truncate">
+              <span :class="[vhackStore.selectedNodeName === node.name ? 'text-emerald-400 font-bold' : 'text-neutral-300']">{{ node.name }}</span>
+              <span class="text-xs text-neutral-500 font-medium italic opacity-60">({{ node.matName }})</span>
+            </div>
           </div>
-          <button class="rounded p-1 transition hover:bg-white/10" @click.stop="toggleVisibility(node)">
+          <button class="rounded p-1 transition hover:bg-white/10" @click.stop="e => toggleVisibility(node, e)">
             <div :class="[!vhackStore.hiddenNodeUuids.has(node.uuid) ? 'i-solar:eye-bold-duotone text-emerald-400' : 'i-solar:eye-closed-bold-duotone text-red-500']" />
           </button>
         </div>
@@ -918,6 +945,26 @@ onMounted(() => {
       <div class="flex items-center justify-between px-1 text-[10px] text-neutral-500 font-bold uppercase">
         <span>Status</span><span :class="activeVrm ? 'text-emerald-500' : 'text-red-500'">{{ activeVrm ? 'CONNECTED' : 'OFFLINE' }}</span>
       </div>
+
+      <!-- Search Filter (Moved to Footer) -->
+      <div v-if="activeTab === 'tree'" class="relative mb-1">
+        <div i-solar:magnifer-linear class="absolute left-3 top-1/2 shrink-0 translate-y-[-50%] text-neutral-500" />
+        <input
+          v-model="nodeFilter"
+          placeholder="Filter nodes..."
+          class="w-full border border-white/10 rounded-xl bg-white/5 py-2 pl-9 pr-3 text-[10px] text-white outline-none focus:border-emerald-500/50"
+        >
+      </div>
+
+      <div v-if="activeTab === 'tree'" class="grid grid-cols-2 gap-2">
+        <Button variant="secondary" size="sm" class="h-7 border-emerald-500/20 bg-emerald-500/5 text-[9px] font-black uppercase shadow-emerald-500/5 hover:bg-emerald-500/10" :disabled="!activeVrm" @click="vhackStore.showAll(nodes)">
+          Show All
+        </Button>
+        <Button variant="secondary" size="sm" class="h-7 border-red-500/20 bg-red-500/5 text-[9px] font-black uppercase shadow-red-500/5 hover:bg-red-500/10" :disabled="!activeVrm" @click="vhackStore.hideAll(nodes)">
+          Hide All
+        </Button>
+      </div>
+
       <Button variant="primary" size="sm" class="w-full bg-emerald-500 text-xs text-black font-black tracking-widest uppercase shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:bg-emerald-400" :disabled="!activeVrm || isExporting" @click="exportVrm">
         <div v-if="isExporting" i-solar:spinner-bold class="mr-2 animate-spin" />
         {{ isExporting ? 'Packaging...' : 'Download Modified VRM' }}

@@ -158,6 +158,9 @@ export interface ProviderMetadata {
    * In case of having image instead of icon, you can specify the image URL here.
    */
   iconImage?: string
+  pricing?: 'free' | 'paid'
+  deployment?: 'local' | 'cloud'
+  beginnerRecommended?: boolean
   defaultOptions?: () => Record<string, unknown>
   createProvider: (
     config: Record<string, unknown>,
@@ -352,6 +355,9 @@ export const useProvidersStore = defineStore('providers', () => {
       icon: 'i-lobe-icons:huggingface',
       description: 'https://github.com/huggingface/candle',
       category: 'speech',
+      pricing: 'free',
+      deployment: 'local',
+      beginnerRecommended: true,
       tasks: ['text-to-speech', 'tts'],
       isAvailableBy: isStageTamagotchi,
       creator: createOpenAI,
@@ -472,6 +478,8 @@ export const useProvidersStore = defineStore('providers', () => {
       icon: 'i-lobe-icons:openai',
       description: 'openai.com',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       defaultBaseUrl: 'https://api.openai.com/v1/',
       creator: createOpenAI,
@@ -647,6 +655,8 @@ export const useProvidersStore = defineStore('providers', () => {
       icon: 'i-lobe-icons:openai',
       description: 'Connect to any API that follows the OpenAI specification.',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       capabilities: {
         listVoices: async (config: Record<string, unknown>) => {
@@ -744,6 +754,9 @@ export const useProvidersStore = defineStore('providers', () => {
       icon: 'i-solar:microphone-3-bold-duotone',
       description: 'Local Chatterbox TTS server with preset-aware voice management.',
       category: 'speech',
+      pricing: 'free',
+      deployment: 'local',
+      beginnerRecommended: true,
       tasks: ['text-to-speech'],
       defaultBaseUrl: 'http://127.0.0.1:8090/v1/',
       capabilities: {
@@ -1038,6 +1051,8 @@ export const useProvidersStore = defineStore('providers', () => {
     'aliyun-nls-transcription': {
       id: 'aliyun-nls-transcription',
       category: 'transcription',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['speech-to-text', 'automatic-speech-recognition', 'asr', 'stt', 'streaming-transcription'],
       nameKey: 'settings.pages.providers.provider.aliyun-nls.title',
       name: 'Aliyun NLS',
@@ -1127,6 +1142,9 @@ export const useProvidersStore = defineStore('providers', () => {
     'browser-web-speech-api': {
       id: 'browser-web-speech-api',
       category: 'transcription',
+      pricing: 'free',
+      deployment: 'local',
+      beginnerRecommended: true,
       tasks: ['speech-to-text', 'automatic-speech-recognition', 'asr', 'stt', 'streaming-transcription'],
       nameKey: 'settings.pages.providers.provider.browser-web-speech-api.title',
       name: 'Web Speech API (Browser)',
@@ -1203,6 +1221,8 @@ export const useProvidersStore = defineStore('providers', () => {
     'elevenlabs': {
       id: 'elevenlabs',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.elevenlabs.title',
       name: 'ElevenLabs',
@@ -1300,6 +1320,9 @@ export const useProvidersStore = defineStore('providers', () => {
     'deepgram-tts': {
       id: 'deepgram-tts',
       category: 'speech',
+      pricing: 'free',
+      deployment: 'cloud',
+      beginnerRecommended: true,
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.deepgram-tts.title',
       name: 'Deepgram',
@@ -1384,6 +1407,9 @@ export const useProvidersStore = defineStore('providers', () => {
     'deepgram-transcription': buildOpenAICompatibleProvider({
       id: 'deepgram-transcription',
       name: 'Deepgram STT (Nova)',
+      pricing: 'free',
+      deployment: 'cloud',
+      beginnerRecommended: true,
       nameKey: 'settings.pages.providers.provider.deepgram-transcription.title',
       descriptionKey: 'settings.pages.providers.provider.deepgram-transcription.description',
       icon: 'i-simple-icons:deepgram',
@@ -1427,6 +1453,9 @@ export const useProvidersStore = defineStore('providers', () => {
     'microsoft-speech': {
       id: 'microsoft-speech',
       category: 'speech',
+      pricing: 'free',
+      deployment: 'cloud',
+      beginnerRecommended: true,
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.microsoft-speech.title',
       name: 'Microsoft / Azure Speech',
@@ -1492,6 +1521,8 @@ export const useProvidersStore = defineStore('providers', () => {
     'index-tts-vllm': {
       id: 'index-tts-vllm',
       category: 'speech',
+      pricing: 'free',
+      deployment: 'local',
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.index-tts-vllm.title',
       name: 'Index-TTS by Bilibili',
@@ -1583,6 +1614,8 @@ export const useProvidersStore = defineStore('providers', () => {
     'alibaba-cloud-model-studio': {
       id: 'alibaba-cloud-model-studio',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.alibaba-cloud-model-studio.title',
       name: 'Alibaba Cloud Model Studio',
@@ -1657,6 +1690,8 @@ export const useProvidersStore = defineStore('providers', () => {
     'volcengine': {
       id: 'volcengine',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.volcengine.title',
       name: 'settings.pages.providers.provider.volcengine.title',
@@ -1723,6 +1758,8 @@ export const useProvidersStore = defineStore('providers', () => {
     'openrouter-audio-speech': {
       id: 'openrouter-audio-speech',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.openrouter-audio-speech.title',
       name: 'OpenRouter',
@@ -1934,6 +1971,8 @@ export const useProvidersStore = defineStore('providers', () => {
       icon: 'i-lobe-icons:cometapi',
       description: 'cometapi.com',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       defaultBaseUrl: 'https://api.cometapi.com/v1/',
       creator: (apiKey, baseURL = 'https://api.cometapi.com/v1/') => merge(
@@ -2051,6 +2090,8 @@ export const useProvidersStore = defineStore('providers', () => {
       icon: 'i-lobe-icons:xai',
       description: 'x.ai',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       defaultBaseUrl: 'https://api.x.ai/v1/',
       creator: (apiKey, baseURL = 'https://api.x.ai/v1/') => merge(
@@ -2482,6 +2523,8 @@ export const useProvidersStore = defineStore('providers', () => {
     'player2-speech': {
       id: 'player2-speech',
       category: 'speech',
+      pricing: 'paid',
+      deployment: 'cloud',
       tasks: ['text-to-speech'],
       nameKey: 'settings.pages.providers.provider.player2.title',
       name: 'Player2 Speech',

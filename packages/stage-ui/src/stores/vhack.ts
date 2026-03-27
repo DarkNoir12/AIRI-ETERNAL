@@ -49,6 +49,37 @@ export const useVHackStore = defineStore('vhack', () => {
       hiddenNodeUuids.value.add(uuid)
       node.visible = false
     }
+    hiddenNodeUuids.value = new Set(hiddenNodeUuids.value)
+  }
+
+  function showAll(nodes: any[]) {
+    nodes.forEach((item) => {
+      item.node.visible = true
+      hiddenNodeUuids.value.delete(item.uuid)
+    })
+    hiddenNodeUuids.value = new Set(hiddenNodeUuids.value)
+  }
+
+  function hideAll(nodes: any[]) {
+    nodes.forEach((item) => {
+      item.node.visible = false
+      hiddenNodeUuids.value.add(item.uuid)
+    })
+    hiddenNodeUuids.value = new Set(hiddenNodeUuids.value)
+  }
+
+  function focusNode(targetUuid: string, nodes: any[]) {
+    nodes.forEach((item) => {
+      if (item.uuid === targetUuid) {
+        item.node.visible = true
+        hiddenNodeUuids.value.delete(item.uuid)
+      }
+      else {
+        item.node.visible = false
+        hiddenNodeUuids.value.add(item.uuid)
+      }
+    })
+    hiddenNodeUuids.value = new Set(hiddenNodeUuids.value)
   }
 
   function setSourceArrayBuffer(buffer: ArrayBuffer) {
@@ -93,6 +124,9 @@ export const useVHackStore = defineStore('vhack', () => {
     toggleHackerMode,
     closeHackerMode,
     toggleNodeVisibility,
+    showAll,
+    hideAll,
+    focusNode,
     resetState,
   }
 })

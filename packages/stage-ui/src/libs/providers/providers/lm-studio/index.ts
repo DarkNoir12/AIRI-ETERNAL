@@ -65,4 +65,9 @@ export const providerLmStudio = defineProvider<LMStudioConfig>({
         `Failed to reach LM Studio server, error: ${errorMessage} occurred.\n\nMake sure LM Studio is running and the local server is started. You can start the local server in LM Studio by going to the 'Local Server' tab and clicking 'Start Server'.`,
     }),
   },
+  business: () => ({
+    pricing: 'free',
+    deployment: 'local',
+    beginnerRecommended: true,
+  }),
 })

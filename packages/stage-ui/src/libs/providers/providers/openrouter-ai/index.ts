@@ -50,4 +50,9 @@ export const providerOpenRouterAI = defineProvider<OpenRouterConfig>({
       checks: ['connectivity', 'model_list'],
     }),
   },
+  business: () => ({
+    pricing: 'free',
+    deployment: 'cloud',
+    beginnerRecommended: true,
+  }),
 })
