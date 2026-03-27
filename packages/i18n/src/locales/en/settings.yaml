@@ -102,8 +102,6 @@ groups:
     title: Character & Scene
   intelligence:
     title: Intelligence
-  information:
-    title: Information
 pages:
   chat:
     title: Chat

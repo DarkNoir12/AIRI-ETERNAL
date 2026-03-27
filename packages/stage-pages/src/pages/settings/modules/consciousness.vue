@@ -295,6 +295,8 @@ meta:
   layout: settings
   titleKey: settings.pages.modules.consciousness.title
   subtitleKey: settings.title
+  settingsEntry: true
+  order: 7
   stageTransition:
     name: slide
 </route>

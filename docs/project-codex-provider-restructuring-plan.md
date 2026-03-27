@@ -6,6 +6,10 @@ This document describes the full intended end-state for restructuring `packages/
 
 Read this after `docs/arch-provider-store-current-structure.md`.
 
+Current Codex handoff reference for remaining provider work:
+
+- `CODEX_THREAD_ID`: `019d2d50-0173-7280-a3f1-8ede3442721a`
+
 It is not intended to imply that the entire architecture should be implemented in one pass. The recommended execution strategy is incremental:
 
 - use this document as the target architecture

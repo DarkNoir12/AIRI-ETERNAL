@@ -657,6 +657,8 @@ meta:
   layout: settings
   titleKey: settings.pages.modules.speech.title
   subtitleKey: settings.title
+  settingsEntry: true
+  order: 8
   stageTransition:
     name: slide
 </route>

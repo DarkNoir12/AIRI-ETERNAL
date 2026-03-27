@@ -291,7 +291,7 @@ meta:
   descriptionKey: settings.pages.data.description
   icon: i-solar:database-bold-duotone
   settingsEntry: true
-  order: 7
+  order: 11
   stageTransition:
     name: slide
     pageSpecificAvailable: true

@@ -50,6 +50,12 @@ const settingsGroups = computed(() => [
         icon: 'i-solar:people-nearby-bold-duotone',
         to: '/settings/models',
       },
+      {
+        title: t('settings.pages.memory.title'),
+        description: t('settings.pages.memory.description'),
+        icon: 'i-solar:leaf-bold-duotone',
+        to: '/settings/memory',
+      },
     ],
   },
   {
@@ -71,24 +77,6 @@ const settingsGroups = computed(() => [
     ],
   },
   {
-    id: 'information',
-    title: 'INFORMATION',
-    items: [
-      {
-        title: t('settings.pages.memory.title'),
-        description: t('settings.pages.memory.description'),
-        icon: 'i-solar:leaf-bold-duotone',
-        to: '/settings/memory',
-      },
-      {
-        title: t('settings.pages.data.title'),
-        description: t('settings.pages.data.description'),
-        icon: 'i-solar:database-bold-duotone',
-        to: '/settings/data',
-      },
-    ],
-  },
-  {
     id: 'system',
     title: 'SYSTEM',
     items: [
@@ -97,6 +85,12 @@ const settingsGroups = computed(() => [
         description: t('settings.pages.system.description'),
         icon: 'i-solar:filters-bold-duotone',
         to: '/settings/system',
+      },
+      {
+        title: t('settings.pages.data.title'),
+        description: t('settings.pages.data.description'),
+        icon: 'i-solar:database-bold-duotone',
+        to: '/settings/data',
       },
     ],
   },
