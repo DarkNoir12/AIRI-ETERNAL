@@ -596,7 +596,7 @@ pages:
         description: AWS Ecosystem - Access Titan, Claude, and Llama on AWS
       qwen-portal:
         title: Qwen Portal
-        description: Alibaba Cloud Native - Best-in-class Chinese and coding models
+        description: 适度的免费额度，无需 API 密钥，优秀的角色扮演模型
       anthropic:
         description: Claude Specialist - Most helpful and harmless reasoning
         title: Anthropic | Claude

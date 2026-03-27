@@ -8,6 +8,8 @@ import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRo
 import { onMounted, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { getIpcRenderer, getPlatform } from '../utils/electron'
+
 const props = defineProps<{
   sourcesOptions: SourcesOptions
 }>()
@@ -24,11 +26,11 @@ const {
   selectWithSource,
   checkMacOSPermission,
   requestMacOSPermission,
-} = useElectronScreenCapture(window.electron.ipcRenderer, sourcesOptions)
+} = useElectronScreenCapture(getIpcRenderer(), sourcesOptions)
 const focused = useWindowFocus()
 
 async function checkPermissions() {
-  if (window.platform === 'darwin') {
+  if (getPlatform() === 'darwin') {
     const status = await checkMacOSPermission()
     hasPermissions.value = status === 'granted'
   }
@@ -41,7 +43,7 @@ async function checkPermissions() {
 }
 
 async function requestPermission() {
-  if (window.platform === 'darwin') {
+  if (getPlatform() === 'darwin') {
     await requestMacOSPermission()
   }
 }

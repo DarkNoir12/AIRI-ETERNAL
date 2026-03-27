@@ -815,7 +815,7 @@ pages:
         title: MiniMax Global
       qwen-portal:
         title: Qwen Portal
-        description: Alibaba Cloud Native - Best-in-class Chinese and coding models
+        description: Moderate free usage tier, no API key needed, decent roleplaying model
         oauth:
           title: Qwen Authorization
           start: Authorize

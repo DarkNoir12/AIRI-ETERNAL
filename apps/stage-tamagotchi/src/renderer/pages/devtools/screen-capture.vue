@@ -9,6 +9,8 @@ import { useI18n } from 'vue-i18n'
 
 import WithScreenCapture from '../../components/WithScreenCapture.vue'
 
+import { getIpcRenderer } from '../../utils/electron'
+
 interface ScreenCaptureSource extends SerializableDesktopCapturerSource {
   appIconURL?: string
   thumbnailURL?: string
@@ -31,7 +33,7 @@ const { t } = useI18n()
 const {
   getSources,
   selectWithSource,
-} = useElectronScreenCapture(window.electron.ipcRenderer, sourcesOptions)
+} = useElectronScreenCapture(getIpcRenderer(), sourcesOptions)
 
 const categoryOptions = [
   { label: 'Applications', value: 'applications', icon: 'i-solar:window-frame-line-duotone' },

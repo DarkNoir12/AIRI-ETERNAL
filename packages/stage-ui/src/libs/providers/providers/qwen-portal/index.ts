@@ -27,14 +27,15 @@ export const providerQwenPortal = defineProvider<QwenPortalConfig>({
   id: 'qwen-portal',
   name: 'Qwen Portal',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.qwen-portal.title'),
-  description: 'Alibaba Cloud Native - Best-in-class Chinese and coding models',
+  description: 'Moderate free usage tier, no API key needed, decent roleplaying model',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.qwen-portal.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:qwen',
   iconColor: '#6058F8',
   business: () => ({
-    pricing: 'paid',
+    pricing: 'free',
     deployment: 'cloud',
+    beginnerRecommended: true,
   }),
 
   createProviderConfig: ({ t }) => qwenPortalConfigSchema.extend({

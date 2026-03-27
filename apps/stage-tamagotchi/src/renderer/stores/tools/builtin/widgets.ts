@@ -7,6 +7,7 @@ import { tool } from '@xsai/tool'
 import { z } from 'zod'
 
 import { widgetsAdd, widgetsClear, widgetsOpenWindow, widgetsPrepareWindow, widgetsRemove, widgetsUpdate } from '../../../../shared/eventa'
+import { getIpcRenderer } from '../../../utils/electron'
 
 type SizePreset = 's' | 'm' | 'l'
 
@@ -57,7 +58,7 @@ export type WidgetInvokers = ReturnType<typeof createInvokers>
 let cachedInvokers: WidgetInvokers | undefined
 
 function createInvokers() {
-  const { context } = createContext(window.electron.ipcRenderer)
+  const { context } = createContext(getIpcRenderer())
 
   return {
     prepareWindow: defineInvoke(context, widgetsPrepareWindow),

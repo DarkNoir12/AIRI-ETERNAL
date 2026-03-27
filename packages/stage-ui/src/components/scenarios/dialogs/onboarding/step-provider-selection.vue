@@ -3,7 +3,7 @@ import type { ProviderMetadata } from '../../../../stores/providers'
 import type { OnboardingStepNextHandler, OnboardingStepPrevHandler } from './types'
 
 import { Button } from '@proj-airi/ui'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { RadioCardDetail } from '../../../menu'
@@ -19,6 +19,17 @@ interface Props {
 const props = defineProps<Props>()
 const { t } = useI18n()
 
+const deploymentFilter = ref<'all' | 'local' | 'cloud'>('all')
+const pricingFilter = ref<'all' | 'free' | 'paid'>('all')
+
+const filteredProviders = computed(() => {
+  return props.availableProviders.filter((p) => {
+    const matchDeployment = deploymentFilter.value === 'all' || p.deployment === deploymentFilter.value
+    const matchPricing = pricingFilter.value === 'all' || p.pricing === pricingFilter.value
+    return matchDeployment && matchPricing
+  })
+})
+
 const selectedProviderIdModel = computed({
   get: () => props.selectedProviderId,
   set: (providerId: string) => {
@@ -27,10 +38,22 @@ const selectedProviderIdModel = computed({
       props.onSelectProvider(provider)
   },
 })
+
+const deploymentOptions = [
+  { label: 'All', value: 'all' },
+  { label: 'Cloud', value: 'cloud' },
+  { label: 'Local', value: 'local' },
+] as const
+
+const pricingOptions = [
+  { label: 'All', value: 'all' },
+  { label: 'Free', value: 'free' },
+  { label: 'Paid', value: 'paid' },
+] as const
 </script>
 
 <template>
-  <div h-full flex flex-col gap-4>
+  <div h-full flex flex-col gap-4 overflow-hidden>
     <div sticky top-0 z-100 flex flex-shrink-0 items-center gap-2>
       <button outline-none @click="props.onPrevious">
         <div class="i-solar:alt-arrow-left-line-duotone h-5 w-5" />
@@ -40,10 +63,56 @@ const selectedProviderIdModel = computed({
       </h2>
       <div class="h-5 w-5" />
     </div>
-    <div class="flex-1 overflow-y-auto">
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+    <div flex flex-col gap-3 px-1>
+      <!-- Filters -->
+      <div flex flex-wrap items-center gap-x-6 gap-y-3>
+        <!-- Deployment Filter -->
+        <div flex flex-col gap-1.5>
+          <span text-xs text-neutral-500 font-medium tracking-wider uppercase dark:text-neutral-400>Deployment</span>
+          <div flex items-center gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800>
+            <button
+              v-for="opt in deploymentOptions"
+              :key="opt.value"
+              rounded-md px-3 py-1 text-xs font-medium transition-all
+              :class="[
+                deploymentFilter === opt.value
+                  ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-white'
+                  : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+              ]"
+              @click="deploymentFilter = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Pricing Filter -->
+        <div flex flex-col gap-1.5>
+          <span text-xs text-neutral-500 font-medium tracking-wider uppercase dark:text-neutral-400>Pricing</span>
+          <div flex items-center gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800>
+            <button
+              v-for="opt in pricingOptions"
+              :key="opt.value"
+              rounded-md px-3 py-1 text-xs font-medium transition-all
+              :class="[
+                pricingFilter === opt.value
+                  ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-white'
+                  : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200',
+              ]"
+              @click="pricingFilter = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-1">
+      <div v-if="filteredProviders.length > 0" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <RadioCardDetail
-          v-for="provider in props.availableProviders"
+          v-for="provider in filteredProviders"
           :id="provider.id"
           :key="provider.id"
           v-model="selectedProviderIdModel"
@@ -57,7 +126,15 @@ const selectedProviderIdModel = computed({
           @click="props.onSelectProvider(provider)"
         />
       </div>
+      <div v-else h-40 flex flex-col items-center justify-center gap-2 text-neutral-500>
+        <div class="i-solar:shield-warning-line-duotone h-10 w-10 opacity-50" />
+        <span text-sm italic>No providers match your current filters.</span>
+        <button text-xs underline @click="deploymentFilter = 'all'; pricingFilter = 'all'">
+          Clear filters
+        </button>
+      </div>
     </div>
+
     <Button
       :label="t('settings.dialogs.onboarding.next')"
       :disabled="!selectedProviderIdModel"

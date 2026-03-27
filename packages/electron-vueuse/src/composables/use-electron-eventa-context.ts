@@ -9,21 +9,21 @@ type IpcRendererLike = Parameters<typeof createContext>[0]
 
 let sharedContext: EventaContext | undefined
 
-function resolveIpcRenderer(ipcRenderer?: IpcRendererLike): IpcRendererLike {
+function resolveIpcRenderer(ipcRenderer?: IpcRendererLike): IpcRendererLike | undefined {
   if (ipcRenderer) {
     return ipcRenderer
   }
 
-  const globalIpcRenderer = (globalThis as { window?: { electron?: { ipcRenderer?: IpcRendererLike } } }).window?.electron?.ipcRenderer
-  if (!globalIpcRenderer) {
-    throw new Error('Electron ipcRenderer is not available. Pass it explicitly to useElectronEventaContext().')
-  }
-
-  return globalIpcRenderer
+  return (globalThis as { window?: { electron?: { ipcRenderer?: IpcRendererLike } } }).window?.electron?.ipcRenderer
 }
 
-export function getElectronEventaContext(ipcRenderer?: IpcRendererLike): EventaContext {
-  sharedContext ??= createContext(resolveIpcRenderer(ipcRenderer)).context
+export function getElectronEventaContext(ipcRenderer?: IpcRendererLike): EventaContext | undefined {
+  const resolved = resolveIpcRenderer(ipcRenderer)
+  if (!resolved) {
+    return undefined
+  }
+
+  sharedContext ??= createContext(resolved).context
   return sharedContext
 }
 
@@ -32,7 +32,16 @@ export function useElectronEventaContext(ipcRenderer?: IpcRendererLike) {
 }
 
 export function useElectronEventaInvoke<Res, Req = undefined, ResErr = Error, ReqErr = Error>(invoke: InvokeEventa<Res, Req, ResErr, ReqErr>, context?: EventaContext) {
-  return defineInvoke(context ?? getElectronEventaContext(), invoke)
+  const ctx = context ?? getElectronEventaContext()
+
+  if (!ctx) {
+    return (async () => {
+      console.warn('Electron IPC is not available in this environment. This invoke will do nothing.')
+      throw new Error('Electron IPC not available')
+    }) as any
+  }
+
+  return defineInvoke(ctx, invoke)
 }
 
 export function resetElectronEventaContextForTesting() {

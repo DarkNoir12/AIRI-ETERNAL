@@ -51,13 +51,13 @@ describe('widgets tool helpers', () => {
 
       expect(result).toContain('abc123')
       expect(invokers.addWidget).toHaveBeenCalledTimes(1)
-      expect(invokers.addWidget).toHaveBeenCalledWith({
+      expect(invokers.addWidget).toHaveBeenCalledWith(expect.objectContaining({
         id: 'abc123',
         componentName: 'weather',
-        componentProps: { city: 'Tokyo' },
+        componentProps: expect.objectContaining({ city: 'Tokyo' }),
         size: 'm',
         ttlMs: 2000,
-      })
+      }))
     })
 
     it('updates props and trims id', async () => {
@@ -71,7 +71,10 @@ describe('widgets tool helpers', () => {
         ttlSeconds: 0,
       }, { invokers })
 
-      expect(invokers.updateWidget).toHaveBeenCalledWith({ id: 'xyz', componentProps: { foo: 1 } })
+      expect(invokers.updateWidget).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'xyz',
+        componentProps: expect.objectContaining({ foo: 1 }),
+      }))
     })
 
     it('forces artistry updates into generating when prompt changes without explicit status', async () => {

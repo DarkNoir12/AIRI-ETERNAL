@@ -38,6 +38,11 @@ export const useStageWindowLifecycleStore = defineStore('stageWindowLifecycle', 
     initialized = true
 
     const context = getElectronEventaContext()
+    if (!context) {
+      console.warn('[StageWindowLifecycle] Electron context not available, skipping bridge initialization.')
+      return
+    }
+
     context.on(electronWindowLifecycleChanged, (event) => {
       if (!event?.body)
         return

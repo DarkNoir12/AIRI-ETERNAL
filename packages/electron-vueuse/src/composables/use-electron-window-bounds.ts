@@ -18,6 +18,9 @@ function initializeWindowBoundsTracking() {
 
   initialized = true
   const context = getElectronEventaContext()
+  if (!context) {
+    return
+  }
 
   context.on(bounds, (event) => {
     if (!event || !event.body)

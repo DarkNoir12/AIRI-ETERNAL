@@ -7,6 +7,7 @@ import { tool } from '@xsai/tool'
 import { z } from 'zod'
 
 import { artistryGenerateHeadless, widgetsAdd } from '../../../../shared/eventa'
+import { getIpcRenderer } from '../../../utils/electron'
 
 function getArtistryConfig() {
   try {
@@ -32,7 +33,7 @@ function getArtistryConfig() {
   }
 }
 
-const { context } = createContext(window.electron.ipcRenderer)
+const { context } = createContext(getIpcRenderer())
 const generateHeadless = defineInvoke(context, artistryGenerateHeadless)
 const addWidget = defineInvoke(context, widgetsAdd)
 

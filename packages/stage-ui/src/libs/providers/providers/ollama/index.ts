@@ -178,7 +178,6 @@ export const providerOllama = defineProvider<OllamaConfig>({
   business: ({ t }) => ({
     pricing: 'free',
     deployment: 'local',
-    beginnerRecommended: true,
     troubleshooting: {
       validators: {
         openaiCompatibleCheckConnectivity: {

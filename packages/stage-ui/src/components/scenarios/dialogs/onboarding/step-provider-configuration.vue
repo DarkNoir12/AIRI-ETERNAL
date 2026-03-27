@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useProvidersStore } from '../../../../stores/providers'
 import { Alert } from '../../../misc'
-import { ProviderAccountIdInput } from '../../../scenarios/providers'
+import { ProviderAccountIdInput, ProviderQwenOAuthSection } from '../../../scenarios/providers'
 
 interface Props {
   selectedProviderId: string
@@ -34,6 +34,7 @@ const validation = ref<'unchecked' | 'pending' | 'succeed' | 'failed'>('unchecke
 const validationError = ref<any>()
 
 const isAmazonBedrock = computed(() => props.selectedProvider?.id === 'amazon-bedrock')
+const isQwenPortal = computed(() => props.selectedProvider?.id === 'qwen-portal')
 
 // Initialize form with default values when provider changes
 function initializeForm() {
@@ -71,7 +72,7 @@ const needsApiKey = computed(() => {
   // Amazon Bedrock uses its own fields (Access Key ID + Secret Access Key)
   if (isAmazonBedrock.value)
     return false
-  return props.selectedProvider.id !== 'ollama' && props.selectedProvider.id !== 'player2'
+  return props.selectedProvider.id !== 'ollama' && props.selectedProvider.id !== 'player2' && props.selectedProvider.id !== 'qwen-portal'
 })
 
 const needsBaseUrl = computed(() => {
@@ -255,6 +256,11 @@ initializeForm()
             :label="t('settings.pages.providers.provider.amazon-bedrock.config.region.label')"
             :description="t('settings.pages.providers.provider.amazon-bedrock.config.region.description')"
           />
+        </template>
+
+        <!-- Qwen Portal OAuth -->
+        <template v-else-if="isQwenPortal">
+          <ProviderQwenOAuthSection />
         </template>
 
         <!-- Standard fields for other providers -->
