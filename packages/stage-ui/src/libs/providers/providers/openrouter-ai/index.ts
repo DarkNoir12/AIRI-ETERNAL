@@ -20,7 +20,7 @@ export const providerOpenRouterAI = defineProvider<OpenRouterConfig>({
   order: 0,
   name: 'OpenRouter',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.openrouter.title'),
-  description: 'openrouter.ai',
+  description: 'The Unified Interface - Access dozens of free & paid models',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.openrouter.description'),
   tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:openrouter',
@@ -51,7 +51,7 @@ export const providerOpenRouterAI = defineProvider<OpenRouterConfig>({
     }),
   },
   business: () => ({
-    pricing: 'free',
+    pricing: 'paid',
     deployment: 'cloud',
     beginnerRecommended: true,
   }),

@@ -209,11 +209,15 @@ export const providerAmazonBedrock = defineProvider<AmazonBedrockConfig>({
   order: 18,
   name: 'Amazon Bedrock',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.amazon-bedrock.title'),
-  description: 'aws.amazon.com/bedrock',
+  description: 'AWS Ecosystem - Access Titan, Claude, and Llama on AWS',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.amazon-bedrock.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:aws',
   iconColor: 'i-lobe-icons:aws-color',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => amazonBedrockConfigSchema.extend({
     accessKeyId: amazonBedrockConfigSchema.shape.accessKeyId.meta({

@@ -20,6 +20,7 @@ Focuses on immersion, transparency, and reducing the "black box" nature of AI in
 A full-featured card creation, configuration, and portability layer.
 
 - **Per-Character LLM Generation Settings**: Each AIRI card can override the global LLM provider, model, temperature, top-p, and max tokens via a dedicated **Generation** tab. Designed with future SillyTavern preset import compatibility in mind.
+- **V-Hack / Mutation Studio Foundation**: Model settings now include a native **V-Hack-style editing surface** for AI-assisted texture and mutation workflows, expanding AIRI from pure card configuration into in-app visual experimentation.
 - **AIRI JSON Export**: A full-fidelity native JSON format (`airi-card` v1) that preserves all extensions (modules, artistry, acting, heartbeats). **Does not include personal chat history or private data** — only the configured character settings, ensuring cards are safe to share.
 - **Background Bundling on Export**: The character's currently active background/scene is exported **with the card**, so anyone who imports it gets the background automatically applied.
 - **SillyTavern PNG Import/Export**: Full `chara_card_v2` compatibility, allowing users to **import existing community cards** and export AIRI cards as shareable PNGs with embedded metadata and a framed portrait preview.
@@ -43,6 +44,7 @@ A structured pipeline that maps AI dialogue tokens into real-time VRM/Live2D exp
 ## 4. VRM Animation Ecosystem
 A fully customizable idle and performance animation system for VRM models.
 
+- **Revamped VRM Settings Panel**: The VRM model settings surface has been reorganized into a cleaner, more structured editing experience for animations, expressions, and model controls.
 - **24 Built-In VRMA Presets**: An expanded library of **24 type-safe, standardized English-named** animation presets selectable via a dropdown in Model Settings, with cross-fade transitions.
 - **Per-Character Animation Palettes**: Each character card can be configured with a **subset of the 24 presets** that the idle sampler will cycle through, rather than using the full library. This allows personality-specific animation curation (e.g., calm poses for one character, energetic dances for another).
 - **ACT-Triggered Animations**: AI characters can trigger specific animations on-demand via ACT tokens, with automatic cross-fade back to the user's chosen idle on completion.
@@ -82,8 +84,10 @@ A complete redesign of the image generation pipeline, focusing on performance an
 - **Native ComfyUI API Support**: Direct, high-speed HTTP integration with any local or network **ComfyUI instance**. No middleware, CLI bridges, or WSL requirements.
 - **Replicate Cloud Support**: First-class integration with **Replicate's API** as a remote generation provider. Pricing transparency is built into the UI — models are sorted with cost-per-generation visible, and starting at **$5 for ~1,600 images** on their cheapest models, it's a great option for users who can't render locally.
 - **Interactive Gallery Widget**: A premium "Flip Card" display with **front-face** image preview, **back-face** generation metadata (Prompt, Remix ID, Render Time), and one-click **"Set as Background"**.
+- **NanoBanana Provider Support**: Added **NanoBanana** as another first-class artistry backend alongside Replicate and ComfyUI, widening the generation and mutation toolset available to AIRI.
 - **"Bring Your Own Workflow" (BYOW)**: Users can upload any `workflow_api.json` from ComfyUI and visually map specific nodes (prompts, seeds, LoRA weights) to be **controllable by the AI**.
 - **Workflow Templates & Presets**: Save and name complex node graphs as reusable templates. Different AI characters can be assigned **unique generation "personalities"** and prompt prefixes.
+- **Bidirectional `{{PROMPT}}` / `{{IMAGE}}` Placeholders**: Artistry workflows can now reuse prompt text and source images through explicit placeholders, enabling cleaner remix and image-conditioned generation flows across provider backends.
 - **Automated Image Handoff**: Generated art is instantly archived into the character-scoped **Image Journal**, ensuring no creation is lost across sessions.
 
 ---
@@ -109,6 +113,7 @@ Custom provider integrations not present in the upstream project.
     - **Semantic Speech Pipeline**: End-to-end flow from ACT token parsing → provider-side text preprocessing → mannerism transformation → TTS synthesis.
 - **Deepgram STT (Nova-2/Nova-3)**: Native integration for high-speed transcription with a secure **main-process JWT-based CORS bypass** for the Electron environment.
 - **DeepSeek / GLM-4 Streaming**: Added streaming support for `reasoning-delta` events and hardened the categorizer against **malformed tag typos** to prevent prompt stalls.
+- **Qwen Portal Provider**: Added a first-class **Qwen Portal** integration with dedicated OAuth plumbing through the unified provider registry.
 
 ---
 
@@ -146,6 +151,7 @@ Internal hardening to ensure the app remains a stable, performant "Daily Driver.
 - **Environment Guardrails**: Strict enforcement of **Node.js >= 20.14.0** and **pnpm >= 10.0.0** via `.npmrc` to prevent the `tsdown` build crashes found in modern dependencies.
 - **Identity-Guarded Character Switching**: Suppresses redundant model reloads and duplicate toasts when card metadata updates **without an actual model switch**.
 - **Tray Position Restore**: Auto-restores last window position from a saved snapshot on startup.
+- **Provider Onboarding & Metadata UX**: The provider settings surface now includes more beginner-friendly onboarding cues and richer provider metadata presentation to make initial setup easier to understand.
 
 ---
 

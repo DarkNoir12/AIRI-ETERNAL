@@ -63,9 +63,9 @@ export const providerOllama = defineProvider<OllamaConfig>({
   order: 2,
   name: 'Ollama',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.ollama.title'),
-  description: 'Local Ollama server for fast model iteration.',
+  description: 'Private & Local - Run Llama, Mistral, and more on your machine',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.ollama.description'),
-  tasks: ['chat', 'vision'],
+  tasks: ['chat'],
   icon: 'i-lobe-icons:ollama',
 
   createProviderConfig: ({ t }) => ollamaConfigSchema.extend({

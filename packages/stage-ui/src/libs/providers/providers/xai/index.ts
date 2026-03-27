@@ -19,10 +19,14 @@ export const providerXAI = defineProvider<XAIConfig>({
   id: 'xai',
   name: 'xAI',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.xai.title'),
-  description: 'x.ai',
+  description: 'Grok Native - Real-time access to X/Twitter data',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.xai.description'),
-  tasks: ['chat'],
+  tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:xai',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => xaiConfigSchema.extend({
     apiKey: xaiConfigSchema.shape.apiKey.meta({

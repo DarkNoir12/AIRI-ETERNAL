@@ -20,11 +20,15 @@ export const provider302AI = defineProvider<AI302Config>({
   order: 7,
   name: '302.AI',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.302-ai.title'),
-  description: '302.ai',
+  description: 'Resource Hub - Pay-as-you-go access to all major AI brands',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.302-ai.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:ai302',
   iconColor: 'i-lobe-icons:ai302-color',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => ai302ConfigSchema.extend({
     apiKey: ai302ConfigSchema.shape.apiKey.meta({

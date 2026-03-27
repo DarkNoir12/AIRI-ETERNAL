@@ -19,10 +19,14 @@ export const providerCerebrasAI = defineProvider<CerebrasConfig>({
   id: 'cerebras-ai',
   name: 'Cerebras',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.cerebras.title'),
-  description: 'cerebras.ai',
+  description: '1M Free Tokens/Day - Insanely fast LPU inference',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.cerebras.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:cerebras',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
   iconColor: 'i-lobe-icons:cerebras-color',
 
   createProviderConfig: ({ t }) => cerebrasConfigSchema.extend({

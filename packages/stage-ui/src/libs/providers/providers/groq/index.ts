@@ -19,10 +19,14 @@ export const providerGroq = defineProvider<GroqConfig>({
   id: 'groq',
   name: 'Groq',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.groq.title'),
-  description: 'groq.com',
+  description: 'Fastest on Earth - 400+ t/s via LPU (Free Tier available)',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.groq.description'),
-  tasks: ['chat'],
+  tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:groq',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => groqConfigSchema.extend({
     apiKey: groqConfigSchema.shape.apiKey.meta({

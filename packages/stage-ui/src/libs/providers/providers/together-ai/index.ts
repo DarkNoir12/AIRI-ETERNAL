@@ -19,10 +19,14 @@ export const providerTogetherAI = defineProvider<TogetherConfig>({
   id: 'together-ai',
   name: 'Together.ai',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.together.title'),
-  description: 'together.ai',
+  description: 'Open Model Fast Lane - Cost-effective access to fast open-source inference',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.together.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:together',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
   iconColor: 'i-lobe-icons:together-color',
 
   createProviderConfig: ({ t }) => togetherConfigSchema.extend({

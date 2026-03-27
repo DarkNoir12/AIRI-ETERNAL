@@ -41,10 +41,14 @@ export const providerAnthropic = defineProvider<AnthropicConfig>({
   order: 6,
   name: 'Anthropic',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.anthropic.title'),
-  description: 'anthropic.com',
+  description: 'Claude Specialist - Most helpful and harmless reasoning',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.anthropic.description'),
-  tasks: ['chat'],
-  icon: 'i-lobe-icons:claude',
+  tasks: ['chat', 'vision'],
+  icon: 'i-lobe-icons:anthropic',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
   iconColor: 'i-lobe-icons:claude-color',
 
   createProviderConfig: ({ t }) => anthropicConfigSchema.extend({

@@ -14,6 +14,9 @@ withDefaults(defineProps<{
   customInputValue?: string
   customInputPlaceholder?: string
   showCustomInput?: boolean
+  pricing?: 'free' | 'paid'
+  deployment?: 'local' | 'cloud'
+  beginnerRecommended?: boolean
 }>(), {
   deprecated: false,
   showExpandCollapse: true,
@@ -138,6 +141,77 @@ function toggleExpansion() {
             <div i-solar:alt-arrow-down-linear ml-0.5 text-xs />
           </div>
         </button>
+      </div>
+
+      <!-- Business Metadata Badges -->
+      <div v-if="pricing || deployment || beginnerRecommended" class="mt-1 flex flex-wrap gap-1.5">
+        <template v-if="pricing === 'free'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-0.5',
+              'rounded-lg bg-green-500/10 px-1.5 py-0.5',
+              'text-[10px] font-semibold text-green-600',
+              'dark:bg-green-500/20 dark:text-green-400',
+            ]"
+          >
+            <div i-solar:wad-of-money-bold-duotone text-[10px] />
+            <span>Free</span>
+          </div>
+        </template>
+        <template v-else-if="pricing === 'paid'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-0.5',
+              'rounded-lg bg-amber-500/10 px-1.5 py-0.5',
+              'text-[10px] font-semibold text-amber-600',
+              'dark:bg-amber-500/20 dark:text-amber-400',
+            ]"
+          >
+            <div i-solar:card-2-bold-duotone text-[10px] />
+            <span>Paid</span>
+          </div>
+        </template>
+
+        <template v-if="deployment === 'local'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-0.5',
+              'rounded-lg bg-blue-500/10 px-1.5 py-0.5',
+              'text-[10px] font-semibold text-blue-600',
+              'dark:bg-blue-500/20 dark:text-blue-400',
+            ]"
+          >
+            <div i-solar:laptop-bold-duotone text-[10px] />
+            <span>Local</span>
+          </div>
+        </template>
+        <template v-else-if="deployment === 'cloud'">
+          <div
+            :class="[
+              'flex flex-row items-center gap-0.5',
+              'rounded-lg bg-purple-500/10 px-1.5 py-0.5',
+              'text-[10px] font-semibold text-purple-600',
+              'dark:bg-purple-500/20 dark:text-purple-400',
+            ]"
+          >
+            <div i-solar:cloud-bold-duotone text-[10px] />
+            <span>Cloud</span>
+          </div>
+        </template>
+
+        <template v-if="beginnerRecommended">
+          <div
+            :class="[
+              'flex flex-row items-center gap-0.5',
+              'rounded-lg bg-pink-500/10 px-1.5 py-0.5',
+              'text-[10px] font-semibold text-pink-600',
+              'dark:bg-pink-500/20 dark:text-pink-400',
+            ]"
+          >
+            <div i-solar:star-bold-duotone text-[10px] />
+            <span>Suggested</span>
+          </div>
+        </template>
       </div>
 
       <!-- Custom model input field -->

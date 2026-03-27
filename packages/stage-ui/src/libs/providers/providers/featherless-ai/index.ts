@@ -19,10 +19,14 @@ export const providerFeatherlessAI = defineProvider<FeatherlessConfig>({
   id: 'featherless-ai',
   name: 'Featherless.ai',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.featherless.title'),
-  description: 'featherless.ai',
+  description: 'Unlimited Tokens - Flat $10/mo fee for 6,700+ models',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.featherless.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:featherless-color',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => featherlessConfigSchema.extend({
     apiKey: featherlessConfigSchema.shape.apiKey.meta({

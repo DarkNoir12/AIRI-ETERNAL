@@ -19,11 +19,15 @@ export const providerNovitaAI = defineProvider<NovitaConfig>({
   id: 'novita-ai',
   name: 'Novita',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.novita.title'),
-  description: 'novita.ai',
+  description: 'Scalable Cloud - 10,000+ models with ultra-fast, low-latency inference',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.novita.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:novita',
   iconColor: 'i-lobe-icons:novita-color',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => novitaConfigSchema.extend({
     apiKey: novitaConfigSchema.shape.apiKey.meta({

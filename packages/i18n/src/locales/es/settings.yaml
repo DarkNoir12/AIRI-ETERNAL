@@ -568,21 +568,27 @@ pages:
     provider:
       app-local-audio-transcription:
         title: App (Local)
-        description: https://github.com/moeru-ai/xsai-transformers
+        description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: App (Local)
-        description: https://github.com/moeru-ai/xsai-transformers
+        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
       browser-local-audio-transcription:
         title: Navegador (Local)
-        description: https://github.com/moeru-ai/xsai-transformers
+        description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: Navegador (Local)
-        description: https://github.com/moeru-ai/xsai-transformers
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
       alibaba-cloud-model-studio:
-        description: bailian.console.aliyun.com
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
         title: Alibaba Cloud Model Studio
+      amazon-bedrock:
+        title: Amazon Bedrock
+        description: AWS Ecosystem - Access Titan, Claude, and Llama on AWS
+      qwen-portal:
+        title: Qwen Portal
+        description: Alibaba Cloud Native - Best-in-class Chinese and coding models
       anthropic:
-        description: anthropic.com
+        description: Claude Specialist - Most helpful and harmless reasoning
         title: Anthropic | Claude
         helpinfo:
           title: Antes de comenzar
@@ -597,7 +603,7 @@ pages:
               Si necesitas usar este proveedor, necesitarás un backend proxy dedicado como una Función Serverless ejecutándose en
             part6: o algunos servicios de bypass de CORS para evitar las restricciones de CORS.
       cloudflare-workers-ai:
-        description: cloudflare.com
+        description: AI on the Edge - 10k free Neurons/day across many models
         fields:
           field:
             account-id:
@@ -623,16 +629,16 @@ pages:
               description: Ajustar el volumen del habla
               label: Volumen
       deepgram-tts:
-        description: deepgram.com
+        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
         title: Deepgram
       speech-noop:
         title: None
         description: No speech output.
       deepseek:
-        description: deepseek.com
+        description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: DeepSeek
       elevenlabs:
-        description: elevenlabs.io
+        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -671,7 +677,7 @@ pages:
             error-missing-api-key: Por favor ingresa una clave API para probar la voz.
         title: ElevenLabs
       kokoro-local:
-        description: Texto local de voz usando Kokoro-82M.
+        description: Native AI - Local text-to-speech using Kokoro-82M
         fields:
           field:
             model:
@@ -696,10 +702,10 @@ pages:
           title: Voice Playground
         title: Kokoro TTS (Local)
       fireworks:
-        description: fireworks.ai
+        description: Speed-Optimized - $1 free credit for premium model hosting
         title: Fireworks.ai
       microsoft-speech:
-        description: speech.microsoft.com
+        description: Enterprise Standard - Massive library of high-quality neural voices
         fields:
           field:
             region:
@@ -707,75 +713,75 @@ pages:
               label: Región
         title: Microsoft / Azure Speech
       index-tts-vllm:
-        description: https://index-tts.github.io/
+        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
         title: Bilibili / IndexTTS
         callout_indextts2_unavailable_title: Limited Support
         callout_indextts2_unavailable: Support for IndexTTS2 is currently unavailable. Please use IndexTTS.
       azure-ai-foundry:
-        description: Azure AI Foundry
+        description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI Foundry
       minimax:
-        description: minimaxi.com
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
         title: MiniMax
       minimax-global:
-        description: minimax.io
+        description: Aggressive Pricing - High-performance LLMs at market-low rates
         title: MiniMax Global
       mistral:
-        description: mistral.ai
+        description: European Open-Weights - High-efficiency, low-latency models
         title: Mistral
       moonshot:
-        description: moonshot.ai
+        description: Long-Context Specialist - Kimi Chat with 256k context window
         title: Moonshot AI
       modelscope:
-        description: modelscope.cn
+        description: Open-Source Hub - 2k free daily API calls for open models
         title: ModelScope
       novita:
-        description: novita.ai
+        description: Scalable Cloud - 10,000+ models with ultra-fast, low-latency inference
         title: Novita
       ollama:
-        description: ollama.ai
+        description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: openai.com
+        description: Industry Standard - Reliable flagship models for chat, coding, and vision
         title: OpenAI
       openai-compatible:
-        description: OpenAI Compatible
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
         title: OpenAI Compatible
       nvidia:
-        description: build.nvidia.com
+        description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
         title: NVIDIA NIM
       n1n:
-        description: n1n.ai - High-performance AI API provider.
+        description: Enterprise Gateway - Unified billing for 500+ global models
         title: n1n
       openrouter:
-        description: openrouter.ai
+        description: The Unified Interface - Access dozens of free & paid models
         title: OpenRouter
       perplexity:
-        description: perplexity.ai
+        description: Search-Augmented - Real-time web-connected intelligence
         title: Perplexity
       player2:
         description: player2.game
         title: Player2
       together:
-        description: together.ai
+        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
         title: Together.ai
       google-generative-ai:
-        description: gemini.google.com
+        description: Gemini Integration - Native Google ecosystem intelligence
         title: Google Gemini
       groq:
-        description: groq.com
+        description: Fastest on Earth - 400+ t/s via LPU (Free Tier available)
         title: Groq
       featherless:
-        description: featherless.ai
+        description: Unlimited Tokens - Flat $10/mo fee for 6,700+ models
         title: Featherless AI
       lm-studio:
-        description: lmstudio.ai
+        description: Local Desktop GUI - Serve any GGUF model locally
         title: LM Studio
       vllm:
-        description: vllm.ai
+        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: volcengine.com
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
         fields:
           field:
             appId:
@@ -783,35 +789,49 @@ pages:
               label: ID de App
         title: Volcano Engine
       xai:
-        description: x.ai
+        description: Grok Native - Real-time access to X/Twitter data
         title: xAI
       xai-audio-speech:
-        description: x.ai - Grok Text-to-Speech
+        description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: x.ai - Grok Speech-to-Text
+        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
-        description: 302.AI
+        description: Resource Hub - Pay-as-you-go access to all major AI brands
         title: 302.AI
       comet-api:
-        description: CometAPI.com
+        description: GenAI Observability - Free tier for model evaluation
         title: Comet API
+      openai-audio-speech:
+        description: Industry Standard - Reliable flagship TTS voices from OpenAI
+      openai-compatible-audio-speech:
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+      player2-speech:
+        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+      comet-api-speech:
+        description: Unified Speech Gateway - Hosted speech models through Comet API
+      chatterbox:
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        title: Chatterbox
+      openrouter-audio-speech:
+        description: Unified Speech Gateway - Access partner TTS models through OpenRouter
+        title: OpenRouter
       cerebras:
-        description: cerebras.ai
+        description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Aliyun NLS
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
         title: Aliyun NLS
       browser-web-speech-api:
-        description: Browser-native STT (requires Chrome/Edge/Safari)
+        description: Browser-native dictation (OS-dependent)
         title: Web Speech API
       transcriptions:
         playground:
           title: Playground de Transcripción
       aihubmix:
         title: AIHubMix
-        description: https://aihubmix.com (10% off)
+        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
     title: Proveedores
   connection:
     description: Configure WebSocket server connection
@@ -1027,3 +1047,12 @@ wip:
   title: Work in Progress
   description: >-
     This feature is currently under development and not yet publicly available. Check back in future updates for this functionality.
+
+      openai-audio-transcription:
+        description: Industry Standard - Reliable and widely compatible Whisper API
+      openai-compatible-audio-transcription:
+        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
+      aliyun-nls-transcription:
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+      comet-api-transcription:
+        description: Enterprise-grade cloud transcription

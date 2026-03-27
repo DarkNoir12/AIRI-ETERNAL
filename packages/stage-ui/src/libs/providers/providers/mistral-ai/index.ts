@@ -19,10 +19,14 @@ export const providerMistralAI = defineProvider<MistralConfig>({
   id: 'mistral-ai',
   name: 'Mistral',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.mistral.title'),
-  description: 'mistral.ai',
+  description: 'European Open-Weights - High-efficiency, low-latency models',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.mistral.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:mistral',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
   iconColor: 'i-lobe-icons:mistral-color',
 
   createProviderConfig: ({ t }) => mistralConfigSchema.extend({

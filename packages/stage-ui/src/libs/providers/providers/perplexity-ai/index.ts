@@ -21,10 +21,14 @@ export const providerPerplexityAI = defineProvider<PerplexityConfig>({
   id: 'perplexity-ai',
   name: 'Perplexity',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.perplexity.title'),
-  description: 'perplexity.ai',
+  description: 'Search-Augmented - Real-time web-connected intelligence',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.perplexity.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:perplexity',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
   iconColor: 'i-lobe-icons:perplexity-color',
 
   createProviderConfig: ({ t }) => perplexityConfigSchema.extend({

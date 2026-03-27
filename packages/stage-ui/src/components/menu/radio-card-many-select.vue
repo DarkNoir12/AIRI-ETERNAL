@@ -10,6 +10,9 @@ interface Item {
   description?: string
   deprecated?: boolean
   customizable?: boolean
+  pricing?: 'free' | 'paid'
+  deployment?: 'local' | 'cloud'
+  beginnerRecommended?: boolean
 }
 
 interface Props {
@@ -175,6 +178,9 @@ function updateCustomValue(value: string) {
             :show-custom-input="item.customizable"
             :custom-input-value="customValue"
             :custom-input-placeholder="customInputPlaceholder"
+            :pricing="item.pricing"
+            :deployment="item.deployment"
+            :beginner-recommended="item.beginnerRecommended"
             name="radio-card-detail-many-select"
             class="snap-start"
             @update:custom-input-value="updateCustomValue($event)"

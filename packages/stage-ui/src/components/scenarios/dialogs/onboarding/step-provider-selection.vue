@@ -51,6 +51,9 @@ const selectedProviderIdModel = computed({
           :value="provider.id"
           :title="provider.localizedName || provider.id"
           :description="provider.localizedDescription || ''"
+          :pricing="provider.pricing"
+          :deployment="provider.deployment"
+          :beginner-recommended="provider.beginnerRecommended"
           @click="props.onSelectProvider(provider)"
         />
       </div>

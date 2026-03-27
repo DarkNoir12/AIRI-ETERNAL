@@ -19,10 +19,14 @@ export const providerFireworksAI = defineProvider<FireworksConfig>({
   id: 'fireworks-ai',
   name: 'Fireworks.ai',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.fireworks.title'),
-  description: 'fireworks.ai',
+  description: 'Speed-Optimized - $1 free credit for premium model hosting',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.fireworks.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:fireworks',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
   iconColor: 'i-lobe-icons:fireworks-color',
 
   createProviderConfig: ({ t }) => fireworksConfigSchema.extend({

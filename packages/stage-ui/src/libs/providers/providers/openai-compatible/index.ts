@@ -21,10 +21,14 @@ export const providerOpenAICompatible = defineProvider<OpenAICompatibleConfig>({
   order: 4,
   name: 'OpenAI Compatible',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.openai-compatible.title'),
-  description: 'OpenAI-compatible chat APIs with API key authentication.',
+  description: 'Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.openai-compatible.description'),
   tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:openai',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => openAICompatibleConfigSchema.extend({
     apiKey: openAICompatibleConfigSchema.shape.apiKey.meta({

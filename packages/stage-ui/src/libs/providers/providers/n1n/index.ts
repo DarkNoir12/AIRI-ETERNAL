@@ -21,10 +21,14 @@ export const providerN1N = defineProvider<N1NConfig>({
   order: 9,
   name: 'n1n',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.n1n.title'),
-  description: 'n1n.ai - High-performance AI API provider.',
+  description: 'Enterprise Gateway - Unified billing for 500+ global models',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.n1n.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:openai',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => n1nConfigSchema.extend({
     apiKey: n1nConfigSchema.shape.apiKey.meta({

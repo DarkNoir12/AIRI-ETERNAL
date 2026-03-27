@@ -7,11 +7,15 @@ export const providerCloudflareWorkersAI = defineProvider({
   id: 'cloudflare-workers-ai',
   name: 'Cloudflare Workers AI',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.cloudflare-workers-ai.title'),
-  description: 'Cloudflare Workers AI with account-scoped credentials.',
+  description: 'AI on the Edge - 10k free Neurons/day across many models',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.cloudflare-workers-ai.description'),
   tasks: ['chat'],
   icon: 'i-simple-icons:cloudflare',
   iconColor: 'i-lobe-icons:cloudflare-color',
+  business: () => ({
+    pricing: 'free',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => z.object({
     apiKey: z.string().meta({

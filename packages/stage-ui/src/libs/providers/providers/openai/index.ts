@@ -20,10 +20,14 @@ export const providerOpenAI = defineProvider<OpenAICompatibleConfig>({
   order: 5,
   name: 'OpenAI',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.openai.title'),
-  description: 'OpenAI',
+  description: 'Industry Standard - Reliable flagship models for chat, coding, and vision',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.openai.description'),
   tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:openai',
+  business: () => ({
+    pricing: 'paid',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => openAICompatibleConfigSchema.extend({
     apiKey: openAICompatibleConfigSchema.shape.apiKey.meta({

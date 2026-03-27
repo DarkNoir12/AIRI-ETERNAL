@@ -19,11 +19,15 @@ export const providerCometAPI = defineProvider<CometApiConfig>({
   id: 'comet-api',
   name: 'CometAPI',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.comet-api.title'),
-  description: 'cometapi.com',
+  description: 'GenAI Observability - Free tier for model evaluation',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.comet-api.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:cometapi',
   iconColor: 'i-lobe-icons:cometapi-color',
+  business: () => ({
+    pricing: 'free',
+    deployment: 'cloud',
+  }),
 
   createProviderConfig: ({ t }) => cometApiConfigSchema.extend({
     apiKey: cometApiConfigSchema.shape.apiKey.meta({

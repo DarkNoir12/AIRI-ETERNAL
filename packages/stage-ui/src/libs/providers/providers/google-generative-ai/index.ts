@@ -20,15 +20,14 @@ export const providerGoogleGenerativeAI = defineProvider<GoogleGenerativeConfig>
   order: 8,
   name: 'Google Gemini',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.google-generative-ai.title'),
-  description: 'ai.google.dev',
+  description: 'Gemini Integration - Native Google ecosystem intelligence',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.google-generative-ai.description'),
   tasks: ['chat', 'vision'],
+  icon: 'i-lobe-icons:google',
   business: () => ({
-    pricing: 'free',
+    pricing: 'paid',
     deployment: 'cloud',
-    beginnerRecommended: true,
   }),
-  icon: 'i-lobe-icons:gemini',
   iconColor: 'i-lobe-icons:gemini-color',
 
   createProviderConfig: ({ t }) => googleGenerativeConfigSchema.extend({

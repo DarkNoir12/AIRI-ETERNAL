@@ -21,7 +21,7 @@ export const providerLmStudio = defineProvider<LMStudioConfig>({
   order: 3,
   name: 'LM Studio',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.lm-studio.title'),
-  description: 'LM Studio',
+  description: 'Local Desktop GUI - Serve any GGUF model locally',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.lm-studio.description'),
   tasks: ['chat', 'vision'],
   icon: 'i-lobe-icons:lmstudio',
