@@ -32,6 +32,18 @@ dialogs:
     select-model: Choose model
     no-models: No available models
     no-models-help: Please return to the previous step and check your API key, or check the network connection.
+    starter:
+      title: Choose your Starter
+      description: Select a companion to begin your journey.
+      relu: ReLU
+      relu_desc: A soulful connection that evolves alongside your data and heart.
+      aria: Dr. Aria
+      aria_desc: A brilliant, sharp-witted guide managing the AIRI research layer.
+      lupin: Lupin
+      lupin_desc: A loyal wolf-girl with fierce instincts and a protective heart.
+      import: Custom
+      import_desc: Import your own soul from .json or .png character cards.
+      footer: 'Explore more incredible community creations or import your own later:'
     permissions:
       title: Notifications
       description: You can allow notifications now or continue and set it up later.

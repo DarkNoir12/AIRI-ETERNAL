@@ -573,6 +573,64 @@ export const useAiriCardStore = defineStore('airi-card', () => {
       activeCardId.value = 'default'
   }
 
+  async function seedDefaults(selectedId: string) {
+    const nextCards = new Map(cards.value)
+    let changed = false
+
+    if (!nextCards.has('aria')) {
+      const aria = compactCard({
+        name: 'Dr. Aria',
+        creator: 'AIRI',
+        version: '1.0.0',
+        description: SystemPromptV2(
+          t('base.prompt.prefix'),
+          t('base.prompt.suffix'),
+        ).content,
+        extensions: {
+          airi: {
+            modules: {
+              displayModelId: 'preset-vrm-1',
+            },
+          },
+        },
+      } as any)
+      nextCards.set('aria', aria)
+      changed = true
+    }
+
+    if (!nextCards.has('lupin')) {
+      const lupin = compactCard({
+        name: 'Lupin',
+        creator: 'AIRI',
+        version: '1.0.0',
+        description: SystemPromptV2(
+          t('base.prompt.prefix'),
+          t('base.prompt.suffix'),
+        ).content,
+        extensions: {
+          airi: {
+            modules: {
+              displayModelId: 'preset-vrm-2',
+            },
+          },
+        },
+      } as any)
+      nextCards.set('lupin', lupin)
+      changed = true
+    }
+
+    if (changed) {
+      cards.value = nextCards
+    }
+
+    if (selectedId && nextCards.has(selectedId)) {
+      await activateCard(selectedId, true)
+    }
+    else {
+      await activateCard('default', true)
+    }
+  }
+
   watch(activeCard, async (newCard: AiriCard | undefined) => {
     await applyCardState(newCard)
   })
@@ -595,6 +653,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
     getCardDisplayModelId,
     resetState,
     initialize,
+    seedDefaults,
 
     currentModels: computed(() => {
       return {

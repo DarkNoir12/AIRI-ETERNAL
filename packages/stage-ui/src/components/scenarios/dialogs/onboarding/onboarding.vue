@@ -11,11 +11,13 @@ import type {
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref } from 'vue'
 
+import StepCharacterSelection from './step-character-selection.vue'
 import StepModelSelection from './step-model-selection.vue'
 import StepProviderConfiguration from './step-provider-configuration.vue'
 import StepProviderSelection from './step-provider-selection.vue'
 import StepWelcome from './step-welcome.vue'
 
+import { useAiriCardStore } from '../../../../stores/modules/airi-card'
 import { useConsciousnessStore } from '../../../../stores/modules/consciousness'
 import { useProvidersStore } from '../../../../stores/providers'
 
@@ -35,6 +37,7 @@ const pendingProviderConfig = ref<ProviderConfigData | null>(null)
 const providersStore = useProvidersStore()
 const { providers, allChatProvidersMetadata } = storeToRefs(providersStore)
 const consciousnessStore = useConsciousnessStore()
+const airiCardStore = useAiriCardStore()
 const {
   activeProvider,
 } = storeToRefs(consciousnessStore)
@@ -53,6 +56,7 @@ const availableProviders = computed(() => {
 
 // Selected provider and form data
 const selectedProviderId = ref('')
+const selectedCharacterId = ref('default')
 
 // Computed selected provider
 const selectedProvider = computed(() => {
@@ -152,6 +156,21 @@ const allSteps = computed<OnboardingStep[]>(() => {
     {
       id: 'model-selection',
       component: StepModelSelection,
+    },
+    {
+      id: 'character-selection',
+      component: StepCharacterSelection,
+      props: () => ({
+        selectedCharacterId: selectedCharacterId.value,
+        onSelectCharacter: (id: string) => {
+          selectedCharacterId.value = id
+        },
+      }),
+      beforeNext: async () => {
+        await airiCardStore.seedDefaults(selectedCharacterId.value)
+        await airiCardStore.activateCard(selectedCharacterId.value)
+        return true
+      },
     },
   ]
 
