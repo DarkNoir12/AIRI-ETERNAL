@@ -91,7 +91,19 @@ export const useSpeechStore = defineStore('speech', () => {
     speechProviderError.value = null
 
     try {
-      const voices = await providersStore.getProviderMetadata(provider).capabilities.listVoices?.(providersStore.getProviderConfig(provider)) || []
+      const config = providersStore.getProviderConfig(provider)
+      const metadata = providersStore.getProviderMetadata(provider)
+
+      // Only attempt to fetch voices if the provider is actually configured
+      if (metadata.validators?.validateProviderConfig) {
+        const validation = await metadata.validators.validateProviderConfig(config)
+        if (!validation.valid) {
+          console.warn(`[Speech] Skipping voice fetch for unconfigured provider: ${provider}`)
+          return []
+        }
+      }
+
+      const voices = await metadata.capabilities.listVoices?.(config) || []
       // Reassign to trigger reactivity when adding/updating provider entries
       availableVoices.value = {
         ...availableVoices.value,

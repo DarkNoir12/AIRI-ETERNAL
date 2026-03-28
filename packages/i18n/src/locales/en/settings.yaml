@@ -222,6 +222,21 @@ pages:
         export: Export chats
         import: Import chats
         delete: Delete all chat sessions
+      characters:
+        title: Characters
+        description: Bulk export or import your character collection.
+        export: Export characters
+        import: Import characters
+      memory:
+        title: Memory & Journal
+        description: Backup short-term summaries and long-term journal entries.
+        export: Export memory
+        import: Import memory
+      backgrounds:
+        title: Backgrounds
+        description: Export or import your scene gallery (including images).
+        export: Export backgrounds
+        import: Import backgrounds
       models:
         title: Models
         description: Remove imported Live2D/VRM models.
@@ -251,7 +266,13 @@ pages:
     status:
       exported: Chat sessions exported.
       imported: Chat sessions imported.
-      import_error: Failed to import chat sessions. Please check the file format.
+      characters_exported: Character collection exported.
+      characters_imported: Character collection imported.
+      memory_exported: Memory and journal data exported.
+      memory_imported: Memory and journal data imported.
+      backgrounds_exported: Background gallery exported.
+      backgrounds_imported: Background gallery imported.
+      import_error: Failed to import data. Please check the file format.
       chats_deleted: Chat sessions deleted.
       models_deleted: Models deleted.
       modules_reset: Module settings reset.

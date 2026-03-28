@@ -491,5 +491,6 @@ export const useShortTermMemoryStore = defineStore('short-term-memory', () => {
     rebuildFromHistory,
     rebuildToday,
     ensureYesterdayBlock,
+    persist,
   }
 })

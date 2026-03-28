@@ -13,6 +13,12 @@ const {
   deleteAllChatSessions,
   exportChatSessions,
   importChatSessions,
+  exportAllCharacters,
+  importAllCharacters,
+  exportMemory,
+  importMemory,
+  exportBackgrounds,
+  importBackgrounds,
   deleteAllData,
   resetDesktopApplicationState,
 } = useDataMaintenance()
@@ -21,6 +27,7 @@ const statusMessage = ref('')
 const statusTone = ref<'neutral' | 'success' | 'error'>('neutral')
 const importError = ref('')
 const importFileInput = ref<HTMLInputElement>()
+const importType = ref<'chats' | 'characters' | 'memory' | 'backgrounds'>('chats')
 const isDesktop = computed(() => isStageTamagotchi())
 
 function setStatus(message: string, tone: 'neutral' | 'success' | 'error' = 'success') {
@@ -39,13 +46,33 @@ async function runAction(action: () => Promise<void> | void, successKey: string)
   }
 }
 
-async function triggerExport() {
+async function triggerExport(type: 'chats' | 'characters' | 'memory' | 'backgrounds') {
   try {
-    const blob = await exportChatSessions()
+    let blob: Blob
+    let filename: string
+
+    switch (type) {
+      case 'characters':
+        blob = await exportAllCharacters()
+        filename = `airi-characters-${new Date().toISOString()}.json`
+        break
+      case 'memory':
+        blob = await exportMemory()
+        filename = `airi-memory-${new Date().toISOString()}.json`
+        break
+      case 'backgrounds':
+        blob = await exportBackgrounds()
+        filename = `airi-backgrounds-${new Date().toISOString()}.json`
+        break
+      default:
+        blob = await exportChatSessions()
+        filename = `airi-chat-sessions-${new Date().toISOString()}.json`
+    }
+
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = `airi-chat-sessions-${new Date().toISOString()}.json`
+    anchor.download = filename
     anchor.click()
     URL.revokeObjectURL(url)
     setStatus(t('settings.pages.data.status.exported'))
@@ -56,8 +83,9 @@ async function triggerExport() {
   }
 }
 
-function triggerImportPicker() {
+function triggerImportPicker(type: 'chats' | 'characters' | 'memory' | 'backgrounds') {
   importError.value = ''
+  importType.value = type
   importFileInput.value?.click()
 }
 
@@ -70,7 +98,21 @@ async function handleImport(event: Event) {
   try {
     const raw = await file.text()
     const parsed = JSON.parse(raw) as Record<string, unknown>
-    await importChatSessions(parsed)
+
+    switch (importType.value) {
+      case 'characters':
+        await importAllCharacters(parsed)
+        break
+      case 'memory':
+        await importMemory(parsed)
+        break
+      case 'backgrounds':
+        await importBackgrounds(parsed)
+        break
+      default:
+        await importChatSessions(parsed)
+    }
+
     setStatus(t('settings.pages.data.status.imported'))
     importError.value = ''
   }
@@ -99,10 +141,10 @@ async function handleImport(event: Event) {
         </div>
         <div class="flex flex-col items-start gap-2 sm:items-end">
           <div class="flex flex-wrap gap-2">
-            <Button variant="secondary" @click="triggerExport">
+            <Button variant="secondary" @click="triggerExport('chats')">
               {{ t('settings.pages.data.sections.chats.export') }}
             </Button>
-            <Button variant="primary" @click="triggerImportPicker">
+            <Button variant="primary" @click="triggerImportPicker('chats')">
               {{ t('settings.pages.data.sections.chats.import') }}
             </Button>
           </div>
@@ -124,6 +166,78 @@ async function handleImport(event: Event) {
       <p v-if="importError" class="text-sm text-red-500">
         {{ importError }}
       </p>
+    </div>
+
+    <!-- Characters -->
+    <div class="border-2 border-neutral-200/50 rounded-xl bg-white/70 p-4 shadow-sm dark:border-neutral-800/60 dark:bg-neutral-900/60">
+      <div class="grid grid-cols-1 items-start gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div class="flex flex-col gap-1 md:max-w-[560px]">
+          <div class="text-lg font-medium">
+            {{ t('settings.pages.data.sections.characters.title') }}
+          </div>
+          <p class="text-sm text-neutral-600 dark:text-neutral-400">
+            {{ t('settings.pages.data.sections.characters.description') }}
+          </p>
+        </div>
+        <div class="flex flex-col items-start gap-2 sm:items-end">
+          <div class="flex flex-wrap gap-2">
+            <Button variant="secondary" @click="triggerExport('characters')">
+              {{ t('settings.pages.data.sections.characters.export') }}
+            </Button>
+            <Button variant="primary" @click="triggerImportPicker('characters')">
+              {{ t('settings.pages.data.sections.characters.import') }}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Memory -->
+    <div class="border-2 border-neutral-200/50 rounded-xl bg-white/70 p-4 shadow-sm dark:border-neutral-800/60 dark:bg-neutral-900/60">
+      <div class="grid grid-cols-1 items-start gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div class="flex flex-col gap-1 md:max-w-[560px]">
+          <div class="text-lg font-medium">
+            {{ t('settings.pages.data.sections.memory.title') }}
+          </div>
+          <p class="text-sm text-neutral-600 dark:text-neutral-400">
+            {{ t('settings.pages.data.sections.memory.description') }}
+          </p>
+        </div>
+        <div class="flex flex-col items-start gap-2 sm:items-end">
+          <div class="flex flex-wrap gap-2">
+            <Button variant="secondary" @click="triggerExport('memory')">
+              {{ t('settings.pages.data.sections.memory.export') }}
+            </Button>
+            <Button variant="primary" @click="triggerImportPicker('memory')">
+              {{ t('settings.pages.data.sections.memory.import') }}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Backgrounds -->
+    <div class="border-2 border-neutral-200/50 rounded-xl bg-white/70 p-4 shadow-sm dark:border-neutral-800/60 dark:bg-neutral-900/60">
+      <div class="grid grid-cols-1 items-start gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div class="flex flex-col gap-1 md:max-w-[560px]">
+          <div class="text-lg font-medium">
+            {{ t('settings.pages.data.sections.backgrounds.title') }}
+          </div>
+          <p class="text-sm text-neutral-600 dark:text-neutral-400">
+            {{ t('settings.pages.data.sections.backgrounds.description') }}
+          </p>
+        </div>
+        <div class="flex flex-col items-start gap-2 sm:items-end">
+          <div class="flex flex-wrap gap-2">
+            <Button variant="secondary" @click="triggerExport('backgrounds')">
+              {{ t('settings.pages.data.sections.backgrounds.export') }}
+            </Button>
+            <Button variant="primary" @click="triggerImportPicker('backgrounds')">
+              {{ t('settings.pages.data.sections.backgrounds.import') }}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="border-2 border-neutral-200/50 rounded-xl bg-white/70 p-4 shadow-sm dark:border-neutral-800/60 dark:bg-neutral-900/60">

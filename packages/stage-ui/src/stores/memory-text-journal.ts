@@ -180,5 +180,6 @@ export const useTextJournalStore = defineStore('text-journal', () => {
     createEntry,
     seedActiveCharacterEntry,
     searchEntries,
+    persist,
   }
 })

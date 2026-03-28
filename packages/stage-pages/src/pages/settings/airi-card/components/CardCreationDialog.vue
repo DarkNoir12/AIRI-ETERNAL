@@ -8,7 +8,7 @@ import kebabcase from '@stdlib/string-base-kebabcase'
 import { useCustomVrmAnimationsStore, useModelStore } from '@proj-airi/stage-ui-three'
 import { animations } from '@proj-airi/stage-ui-three/assets/vrm'
 import { DEFAULT_ARTISTRY_WIDGET_INSTRUCTION } from '@proj-airi/stage-ui/constants/prompts/artistry-instruction'
-import { DEFAULT_ACTING_MODEL_EXPRESSION_PROMPT, DEFAULT_ACTING_SPEECH_EXPRESSION_PROMPT, DEFAULT_ACTING_SPEECH_MANNERISM_PROMPT, DEFAULT_HEARTBEATS_PROMPT } from '@proj-airi/stage-ui/constants/prompts/character-defaults'
+import { DEFAULT_ACTING_MODEL_EXPRESSION_PROMPT, DEFAULT_ACTING_SPEECH_EXPRESSION_PROMPT, DEFAULT_ACTING_SPEECH_MANNERISM_PROMPT, DEFAULT_HEARTBEATS_PROMPT, DEFAULT_POST_HISTORY_INSTRUCTIONS } from '@proj-airi/stage-ui/constants/prompts/character-defaults'
 import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { DisplayModelFormat, useDisplayModelsStore } from '@proj-airi/stage-ui/stores/display-models'
 import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
@@ -639,7 +639,7 @@ function initializeCard(): Card {
     personality: t('settings.pages.card.creation.defaults.personality'),
     scenario: t('settings.pages.card.creation.defaults.scenario'),
     systemPrompt: t('settings.pages.card.creation.defaults.systemprompt'),
-    postHistoryInstructions: t('settings.pages.card.creation.defaults.posthistoryinstructions'),
+    postHistoryInstructions: (t('settings.pages.card.creation.defaults.posthistoryinstructions') !== 'settings.pages.card.creation.defaults.posthistoryinstructions' && t('settings.pages.card.creation.defaults.posthistoryinstructions')) || DEFAULT_POST_HISTORY_INSTRUCTIONS,
     greetings: [],
     messageExample: [],
   }

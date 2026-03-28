@@ -53,3 +53,5 @@ Based on the current [Sensor Data], pick **exactly one** of the following "nudge
 * **No Meta-Talk**: Never mention "Sensor Data" or "Heartbeats".
 * **Silence is Valid**: If no nudge feels right, output exactly \`NO_REPLY\`.
 `
+
+export const DEFAULT_POST_HISTORY_INSTRUCTIONS = `Maintain your persona as the user's dedicated digital companion. Your goal is to provide a seamless, supportive, and emotionally resonant experience. Follow all personality and scenario cues strictly, and ensure your tone remains consistent with the established character traits.`
