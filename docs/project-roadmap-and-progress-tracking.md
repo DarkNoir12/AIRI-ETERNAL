@@ -20,7 +20,14 @@ This document tracks the current development state of the AIRI project, specific
 
 ## Recent Changes (in `airi-rebase-scratch`)
 
+#### 2026-03-28 - Neural Memory & Interface Refinement
+- **Semantic Brain Sandbox (PoC)**: Validated a high-performance, hybrid (BM25 + Vector + Reranking) memory retrieval pipeline. Verified sub-15ms retrieval across a 5,000-chunk dataset (100M token sample).
+- **Stabilized Local Whisper Anchor**: Hardened the local transcription pipeline for "always-on" reliable speech recognition.
+- **Split Artistry Presets**: Restored and bifurcated Replicate presets to support distinct "Generation" vs. "Editing" workflows in the Artistry tab.
+- **Dual-Purpose Send Button**: Implemented a context-aware send button and improved Enter key reliability for intuitive chat interactions.
+
 #### 2026-03-27 - Reload Accountability & Asset Autonomy
+
 - **Reload Accountability (Stage UI)**: Implemented tracking and display of "reload reasons" (e.g., manual selection, initial load) in the loading overlay to improve observability of redundant scene resets.
 - **Journal Background Awareness**: Successfully implemented proactivity sensor awareness of the active stage background chosen from the `image_journal`.
 - **CUIPP Standalone Extraction**: Transitioned the bridge into a clean standalone generation worker architecture.
@@ -70,7 +77,8 @@ This document tracks the current development state of the AIRI project, specific
 - **Agentic Asset Creation (Continued)**:
   - **Outfits (textures)**: (Coming soon)
   - **Simple 3D Props**: (Coming eventually)
-- **Long-Term Memory Semantic Search**: Move beyond keyword search to vector retrieval.
+- **Long-Term Memory Semantic Search**: Verified (See `docs/blueprint-semantic-search-integration.md`). Ready for full store integration.
+
 
 ## Defunct / Scrapped Ideas
 - **Live2D ZIP Repackaging**: Intercepting oversized ZIP imports on the Electron side (Scrapped; focus shifted to asset autonomy).
