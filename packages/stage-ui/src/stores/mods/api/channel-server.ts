@@ -19,6 +19,10 @@ export const useModsServerChannelStore = defineStore('mods:channels:proj-airi:se
 
   const defaultWebSocketUrl = import.meta.env.VITE_AIRI_WS_URL || 'ws://localhost:6121/ws'
   const websocketUrl = useLocalStorage('settings/connection/websocket-url', defaultWebSocketUrl)
+  const authToken = useLocalStorage('settings/connection/auth-token', '')
+
+  const callerId = isStageWeb() ? 'stage-web' : isStageTamagotchi() ? 'stage-tamagotchi' : 'stage-web'
+  const purpose = 'Primary application interface for AIRI.'
 
   const basePossibleEvents: Array<keyof WebSocketEvents> = [
     'context:update',
@@ -52,7 +56,9 @@ export const useModsServerChannelStore = defineStore('mods:channels:proj-airi:se
       client.value = new Client({
         name: isStageWeb() ? WebSocketEventSource.StageWeb : isStageTamagotchi() ? WebSocketEventSource.StageTamagotchi : WebSocketEventSource.StageWeb,
         url: websocketUrl.value || defaultWebSocketUrl,
-        token: options?.token,
+        token: options?.token ?? authToken.value,
+        caller: callerId,
+        purpose,
         possibleEvents,
         onAnyMessage: (event) => {
           useWebSocketInspectorStore().add('incoming', event)

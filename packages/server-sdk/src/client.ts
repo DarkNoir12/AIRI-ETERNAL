@@ -29,6 +29,8 @@ export interface ClientOptions<C = undefined> {
     readTimeout?: number
     message?: MessageHeartbeat | string
   }
+  caller?: string
+  purpose?: string
   onError?: (error: unknown) => void
   onClose?: () => void
   autoConnect?: boolean
@@ -85,6 +87,8 @@ export class Client<C = undefined> {
         readTimeout: 30_000,
         message: MessageHeartbeat.Ping,
       },
+      caller: undefined,
+      purpose: undefined,
       ...options,
       identity,
     }
@@ -272,7 +276,11 @@ export class Client<C = undefined> {
     if (this.opts.token) {
       this.send({
         type: 'module:authenticate',
-        data: { token: this.opts.token },
+        data: {
+          token: this.opts.token,
+          caller: this.opts.caller,
+          purpose: this.opts.purpose,
+        },
       })
     }
   }
@@ -454,6 +462,7 @@ export class Client<C = undefined> {
       ws.close()
     }
 
+    await sleep(5000)
     await this.connect()
   }
 }

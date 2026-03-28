@@ -27,10 +27,11 @@ export async function activate(context: vscode.ExtensionContext) {
   const isEnabled = config.get<boolean>('enabled', true)
   const contextLines = config.get<number>('contextLines', 5)
   const sendInterval = config.get<number>('sendInterval', 3000)
+  const gatewayToken = config.get<string>('gatewayToken', '')
 
   // Initialize
   const vscodeContext = injeca.provide('vscode:context', () => context)
-  const client = injeca.provide('proj-airi:client', () => new Client())
+  const client = injeca.provide('proj-airi:client', () => new Client(gatewayToken))
   const contextCollector = injeca.provide('self:context-collector', () => new ContextCollector(contextLines))
   const eventListeners = injeca.provide('self:event-listeners', () => [] as vscode.Disposable[])
   const controlLoopInterval = injeca.provide('self:control-loop:interval:send', () => {
@@ -82,6 +83,24 @@ async function setup(params: {
       window.showWarningMessage('AIRI Server Channel connection failed!')
     }
   }
+
+  // Handle configuration changes
+  workspace.onDidChangeConfiguration(async (e) => {
+    if (e.affectsConfiguration('airi-vscode.sendInterval') || e.affectsConfiguration('airi-vscode.gatewayToken')) {
+      const config = workspace.getConfiguration('airi-vscode')
+      const newInterval = config.get<number>('sendInterval', 3000)
+      const newToken = config.get<string>('gatewayToken', '')
+
+      params.client.setToken(newToken)
+      params.sendInterval = newInterval
+
+      if (params.isEnabled) {
+        params.client.disconnect()
+        await params.client.connect()
+        await registerListeners({ ...params })
+      }
+    }
+  })
 
   // Register commands
   params.vscodeContext.subscriptions.push(

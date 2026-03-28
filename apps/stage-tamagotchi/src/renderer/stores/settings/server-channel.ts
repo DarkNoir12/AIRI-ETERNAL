@@ -7,24 +7,37 @@ import { electronApplyServerChannelConfig, electronGetServerChannelConfig } from
 
 export const useServerChannelSettingsStore = defineStore('tamagotchi-server-channel-settings', () => {
   const websocketTlsConfig = useLocalStorage<{ cert?: string, key?: string, passphrase?: string } | null | undefined>('settings/server-channel/websocket-tls-config', null)
+  const hostname = useLocalStorage<string>('settings/server-channel/hostname', '127.0.0.1')
+  const authToken = useLocalStorage<string>('settings/server-channel/auth-token', '')
 
   const getServerChannelConfig = useElectronEventaInvoke(electronGetServerChannelConfig)
   const applyServerChannelConfig = useElectronEventaInvoke(electronApplyServerChannelConfig)
 
-  const serverChannelConfig = useAsyncState(getServerChannelConfig, null as { websocketTlsConfig?: any } | null)
+  const serverChannelConfig = useAsyncState(getServerChannelConfig, null as any)
 
-  watch(websocketTlsConfig, async (newValue) => {
-    // websocketTlsConfig.value = newValue // Remove this, it's redundant and could loop
-    await applyServerChannelConfig({ websocketTlsConfig: newValue ? {} : null })
+  watch([websocketTlsConfig, hostname, authToken], async ([newTls, newHost, newAuth]) => {
+    await applyServerChannelConfig({
+      websocketTlsConfig: newTls ? {} : null,
+      hostname: newHost,
+      authToken: newAuth,
+    })
   })
 
   watch(serverChannelConfig.state, (newConfig) => {
     if (newConfig?.websocketTlsConfig !== undefined) {
       websocketTlsConfig.value = newConfig.websocketTlsConfig
     }
+    if (newConfig?.hostname !== undefined) {
+      hostname.value = newConfig.hostname
+    }
+    if (newConfig?.authToken !== undefined) {
+      authToken.value = newConfig.authToken
+    }
   })
 
   return {
     websocketTlsConfig,
+    hostname,
+    authToken,
   }
 })

@@ -9,9 +9,19 @@ import { nanoid } from 'nanoid'
 export class Client {
   private client: ServerClient<Events> | null = null
 
+  constructor(private token: string = '') {}
+
+  setToken(token: string): void {
+    this.token = token
+  }
+
   async connect(): Promise<boolean> {
     try {
-      this.client = new ServerClient<Events>({ name: 'proj-airi:plugin-vscode' })
+      this.client = new ServerClient<Events>({
+        name: 'proj-airi:plugin-vscode',
+        url: 'ws://127.0.0.1:6121',
+        token: this.token,
+      })
       await this.client.connect()
       useLogger().log('AIRI connected to Server Channel')
       return true

@@ -108,7 +108,11 @@ export function normalizeLoggerConfig(options?: AppOptions) {
 
 export function setupApp(options?: AppOptions): { app: H3, closeAllPeers: () => void } {
   const instanceId = options?.instanceId || optionOrEnv(undefined, 'SERVER_INSTANCE_ID', nanoid())
-  const authToken = optionOrEnv(options?.auth?.token, 'AUTHENTICATION_TOKEN', '')
+  let authToken = optionOrEnv(options?.auth?.token, 'AUTHENTICATION_TOKEN', '')
+  const isTokenGenerated = !authToken
+  if (isTokenGenerated) {
+    authToken = nanoid()
+  }
 
   const { appLogLevel, appLogFormat, websocketLogLevel, websocketLogFormat } = normalizeLoggerConfig(options)
 
@@ -118,6 +122,13 @@ export function setupApp(options?: AppOptions): { app: H3, closeAllPeers: () => 
   const app = new H3({
     onError: error => appLogger.withError(error).error('an error occurred'),
   })
+
+  if (isTokenGenerated) {
+    appLogger.warn('No authentication token provided via options or AUTHENTICATION_TOKEN env.')
+    appLogger.warn('A secure App Key (Auth Token) has been automatically generated for this session.')
+    appLogger.log(`>>> APP KEY: ${authToken} <<<`)
+    appLogger.warn('Please use this key in your client settings (e.g. Stage UI -> Settings -> Connection -> App Key) to connect.')
+  }
 
   const peers = new Map<string, AuthenticatedPeer>()
   const peersByModule = new Map<string, Map<number | undefined, AuthenticatedPeer>>()
@@ -250,13 +261,10 @@ export function setupApp(options?: AppOptions): { app: H3, closeAllPeers: () => 
 
   app.get('/ws', defineWebSocketHandler({
     open: (peer) => {
-      if (authToken) {
-        peers.set(peer.id, { peer, authenticated: false, name: '', lastHeartbeatAt: Date.now() })
-      }
-      else {
-        send(peer, RESPONSES.authenticated(instanceId))
-        peers.set(peer.id, { peer, authenticated: true, name: '', lastHeartbeatAt: Date.now() })
-        sendRegistrySync(peer)
+      peers.set(peer.id, { peer, authenticated: false, name: '', lastHeartbeatAt: Date.now() })
+
+      if (!authToken) {
+        logger.warn('No AUTHENTICATION_TOKEN provided. Gateway will only accept empty tokens for authentication. This is INSECURE.')
       }
 
       logger.withFields({ peer: peer.id, activePeers: peers.size }).log('[TESTING] connected')
@@ -318,6 +326,13 @@ export function setupApp(options?: AppOptions): { app: H3, closeAllPeers: () => 
         }
       }
 
+      if (!authenticatedPeer?.authenticated && event.type !== 'module:authenticate' && event.type !== 'transport:connection:heartbeat') {
+        const error = RESPONSES.error('not authenticated', instanceId, event.metadata?.event.id)
+        send(peer, error)
+
+        return
+      }
+
       switch (event.type) {
         case 'transport:connection:heartbeat': {
           const p = peers.get(peer.id)
@@ -345,17 +360,34 @@ export function setupApp(options?: AppOptions): { app: H3, closeAllPeers: () => 
         }
 
         case 'module:authenticate': {
+          const { caller, purpose } = event.data as { caller?: string, purpose?: string }
+
           if (authToken && event.data.token !== authToken) {
-            logger.withFields({ peer: peer.id, peerRemote: peer.remoteAddress, peerRequest: peer.request.url }).log('authentication failed')
+            logger.withFields({
+              peer: peer.id,
+              peerRemote: peer.remoteAddress,
+              peerRequest: peer.request.url,
+              caller,
+              purpose,
+            }).warn('authentication failed: invalid token')
             send(peer, RESPONSES.error('invalid token', instanceId, event.metadata?.event.id))
 
             return
           }
 
+          logger.withFields({
+            peer: peer.id,
+            peerRemote: peer.remoteAddress,
+            caller,
+            purpose,
+          }).log('authenticated')
+
           send(peer, RESPONSES.authenticated(instanceId, event.metadata?.event.id))
           const p = peers.get(peer.id)
           if (p) {
             p.authenticated = true
+            p.caller = caller
+            p.purpose = purpose
           }
 
           sendRegistrySync(peer, event.metadata?.event.id)

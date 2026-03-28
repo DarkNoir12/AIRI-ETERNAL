@@ -128,7 +128,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
   })
 
   const sensorPayload = computed(() => {
-    const config = activeCard.value?.extensions?.airi?.heartbeat
+    const config = activeCard.value?.extensions?.airi?.heartbeats
     const activeBackgroundId = activeCard.value?.extensions?.airi?.modules?.activeBackgroundId
     const resolvedDefaultBackgroundName = activeBackgroundId && activeBackgroundId !== 'none'
       ? (backgroundStore.entries.get(activeBackgroundId)?.title ?? 'unknown')
@@ -221,7 +221,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
       return
     }
 
-    const config = activeCard.value?.extensions?.airi?.heartbeat
+    const config = activeCard.value?.extensions?.airi?.heartbeats
     if (!config?.enabled && !options?.force) {
       // eslint-disable-next-line no-console
       console.log('[Proactivity] Aborted: Heartbeats are disabled for this card.', { config })

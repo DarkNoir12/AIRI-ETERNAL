@@ -503,6 +503,8 @@ export type WithOutputSource<Source extends keyof OutputSource> = {
 
 interface ModuleAuthenticateEvent {
   token: string
+  caller?: string
+  purpose?: string
 }
 
 interface ModuleAuthenticatedEvent {

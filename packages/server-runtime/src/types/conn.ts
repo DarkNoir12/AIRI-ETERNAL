@@ -30,6 +30,8 @@ export enum WebSocketReadyState {
 
 export interface AuthenticatedPeer extends NamedPeer {
   authenticated: boolean
+  caller?: string
+  purpose?: string
   identity?: MetadataEventSource
   lastHeartbeatAt?: number
   healthy?: boolean

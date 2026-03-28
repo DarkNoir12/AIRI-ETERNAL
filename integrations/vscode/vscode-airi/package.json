@@ -55,6 +55,11 @@
           "type": "number",
           "default": 3000,
           "description": "Interval in milliseconds to send updates (0 for real-time)"
+        },
+        "airi-vscode.gatewayToken": {
+          "type": "string",
+          "default": "",
+          "description": "AIRI Gateway application key (leave blank to fallback to unauthenticated connections)"
         }
       }
     }

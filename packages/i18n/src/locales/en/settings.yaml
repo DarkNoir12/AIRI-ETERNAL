@@ -978,6 +978,14 @@ pages:
   connection:
     description: Configure WebSocket server connection
     title: Connection
+    websocket-url:
+      label: WebSocket URL
+      description: The URL of the WebSocket server.
+      placeholder: ws://localhost:3000
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
   system:
     color-scheme:
       description: Change the color scheme of the stage.
@@ -1174,8 +1182,14 @@ vrm:
     skybox-intensity: SkyBox Intensity
     skybox-specular-mix: Specular Mix
 websocket-secure-enabled:
-  title: Enable Secure WebSocket (WSS)
-  description: Enable WSS (WebSocket Secure) to allow HTTPS connections for mobile (pocket) in development mode. This will automatically generate a self-signed certificate.
+  title: Secure AIRI Gateway Connection (WSS)
+  description: Start the AIRI Gateway over WSS (WebSocket Secure). When disabled, WebSockets are unencrypted (WS).
+server-hostname:
+  title: AIRI Gateway Hostname
+  description: Set zero (0.0.0.0) to bind to all available IP addresses on your WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local security.
+server-auth-token:
+  title: Application Gateway Key
+  description: Security key to authenticate clients connecting to your node over the network. If empty, the gateway will not require authentication.
 wip:
   title: Work in Progress
   description: This feature is currently under development and not yet publicly available. Check back in future updates for this functionality.

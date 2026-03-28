@@ -1,7 +1,7 @@
-import type { Server, ServerOptions } from '@proj-airi/server-runtime/server'
+import type { Server } from '@proj-airi/server-runtime/server'
 import type { Lifecycle } from 'injeca'
 
-import { X509Certificate } from 'node:crypto'
+import { randomUUID, X509Certificate } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { Socket } from 'node:net'
 import { join } from 'node:path'
@@ -25,6 +25,8 @@ import {
 import { createConfig } from '../../../libs/electron/persistence'
 
 const channelServerConfigSchema = object({
+  hostname: optional(string()),
+  authToken: optional(string()),
   tlsConfig: optional(nullable(object({
     cert: optional(string()),
     key: optional(string()),
@@ -33,11 +35,15 @@ const channelServerConfigSchema = object({
 })
 
 const channelServerInvokeConfigSchema = z.object({
+  hostname: z.string().optional(),
+  authToken: z.string().optional(),
   tlsConfig: z.object({ }).nullable().optional(),
 }).strict()
 
 const channelServerConfigStore = createConfig('server-channel', 'config.json', channelServerConfigSchema, {
   default: {
+    hostname: '127.0.0.1',
+    authToken: '',
     tlsConfig: null,
   },
   autoHeal: true,
@@ -47,11 +53,11 @@ function getServerChannelPort() {
   return env.SERVER_CHANNEL_PORT ? Number.parseInt(env.SERVER_CHANNEL_PORT) : 6121
 }
 
-async function getChannelServerConfig(): Promise<ServerOptions> {
-  return channelServerConfigStore.get() || { tlsConfig: null }
+async function getChannelServerConfig() {
+  return channelServerConfigStore.get() as { hostname?: string, authToken?: string, tlsConfig?: any } || { hostname: '127.0.0.1', authToken: '', tlsConfig: null }
 }
 
-async function normalizeChannelServerOptions(payload: unknown, fallback?: ServerOptions) {
+async function normalizeChannelServerOptions(payload: unknown, fallback?: any) {
   if (!fallback) {
     fallback = await getChannelServerConfig()
   }
@@ -62,6 +68,8 @@ async function normalizeChannelServerOptions(payload: unknown, fallback?: Server
   }
 
   return {
+    hostname: parsed.data.hostname ?? fallback.hostname,
+    authToken: parsed.data.authToken ?? fallback.authToken,
     tlsConfig: typeof parsed.data.tlsConfig === 'undefined' ? null : parsed.data.tlsConfig,
   }
 }
@@ -206,10 +214,16 @@ export async function setupServerChannel(params: { lifecycle: Lifecycle }): Prom
 
   const storedConfig = await getChannelServerConfig()
 
+  if (!storedConfig.authToken) {
+    storedConfig.authToken = randomUUID()
+    channelServerConfigStore.update(storedConfig)
+  }
+
   const serverChannel = createServer({
     ...storedConfig,
+    auth: { token: storedConfig.authToken },
     port: getServerChannelPort(),
-    hostname: env.SERVER_RUNTIME_HOSTNAME || '0.0.0.0',
+    hostname: storedConfig.hostname || env.SERVER_RUNTIME_HOSTNAME || '127.0.0.1',
     tlsConfig: storedConfig.tlsConfig ? await getOrCreateCertificate() : null,
   })
 
