@@ -61,6 +61,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
+import { appLocalAudioTranscription } from '../libs/providers/providers/transcription/app-local-audio-transcription'
 import { getKokoroWorker } from '../workers/kokoro'
 import { getDefaultKokoroModel, KOKORO_MODELS, kokoroModelsToModelInfo } from '../workers/kokoro/constants'
 import { createAliyunNLSProvider as createAliyunNlsStreamProvider } from './providers/aliyun/stream-transcription'
@@ -160,36 +161,7 @@ export const useProvidersStore = defineStore('providers', () => {
         },
       },
     }),
-    'app-local-audio-transcription': buildOpenAICompatibleProvider({
-      id: 'app-local-audio-transcription',
-      name: 'App (Local)',
-      nameKey: 'settings.pages.providers.provider.app-local-audio-transcription.title',
-      descriptionKey: 'settings.pages.providers.provider.app-local-audio-transcription.description',
-      icon: 'i-lobe-icons:huggingface',
-      description: 'Native AI - High-performance local Whisper transcription',
-      category: 'transcription',
-      tasks: ['speech-to-text', 'automatic-speech-recognition', 'asr', 'stt'],
-      isAvailableBy: isStageTamagotchi,
-      creator: createOpenAI,
-      validation: [],
-      validators: {
-        validateProviderConfig: (config) => {
-          if (!config.baseUrl) {
-            return {
-              errors: [new Error('Base URL is required.')],
-              reason: 'Base URL is required. This is likely a bug, report to developers on https://github.com/moeru-ai/airi/issues.',
-              valid: false,
-            }
-          }
-
-          return {
-            errors: [],
-            reason: '',
-            valid: true,
-          }
-        },
-      },
-    }),
+    'app-local-audio-transcription': appLocalAudioTranscription as any,
     'browser-local-audio-speech': buildOpenAICompatibleProvider({
       id: 'browser-local-audio-speech',
       name: 'Browser (Local)',
@@ -220,7 +192,7 @@ export const useProvidersStore = defineStore('providers', () => {
         },
       },
     }),
-    'browser-local-audio-transcription': buildOpenAICompatibleProvider({
+    'browser-local-audio-transcription': {
       id: 'browser-local-audio-transcription',
       name: 'Browser (Local)',
       nameKey: 'settings.pages.providers.provider.browser-local-audio-transcription.title',
@@ -230,26 +202,25 @@ export const useProvidersStore = defineStore('providers', () => {
       category: 'transcription',
       tasks: ['speech-to-text', 'automatic-speech-recognition', 'asr', 'stt'],
       isAvailableBy: isBrowserAndMemoryEnough,
-      creator: createOpenAI,
-      validation: [],
-      validators: {
-        validateProviderConfig: (config) => {
-          if (!config.baseUrl) {
-            return {
-              errors: [new Error('Base URL is required.')],
-              reason: 'Base URL is required. This is likely a bug, report to developers on https://github.com/moeru-ai/airi/issues.',
-              valid: false,
-            }
-          }
-
-          return {
-            errors: [],
-            reason: '',
-            valid: true,
-          }
-        },
+      defaultOptions: () => ({}),
+      createProvider: async () => ({
+        transcription: () => ({
+          baseURL: 'http://browser-local-audio-transcription.invalid/v1/',
+          model: 'noop',
+        }),
+      }),
+      capabilities: {
+        listModels: async () => [],
+        listVoices: async () => [],
       },
-    }),
+      validators: {
+        validateProviderConfig: () => ({
+          errors: [],
+          reason: '',
+          valid: true,
+        }),
+      },
+    },
     'openai-audio-speech': buildOpenAICompatibleProvider({
       id: 'openai-audio-speech',
       name: 'OpenAI',

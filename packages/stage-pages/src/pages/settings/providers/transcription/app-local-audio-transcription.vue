@@ -1,38 +1,194 @@
 <script setup lang="ts">
+import {
+  TranscriptionPlayground,
+  TranscriptionProviderSettings,
+} from '@proj-airi/stage-ui/components'
+import { getWhisperWorker, WHISPER_MODELS } from '@proj-airi/stage-ui/libs/workers/whisper'
 import { useHearingStore } from '@proj-airi/stage-ui/stores/modules/hearing'
+import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
+import { Button, FieldSelect, Progress } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
-import { useI18n } from 'vue-i18n'
+import { computed, onMounted, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 
-const { t } = useI18n()
 const hearingStore = useHearingStore()
-const { transcriptionProviderSettings } = storeToRefs(hearingStore)
+const providersStore = useProvidersStore()
+const { providers } = storeToRefs(providersStore)
+
+// Provider metadata
+const providerId = 'app-local-audio-transcription'
+const defaultModel = WHISPER_MODELS[0].id
+
+// Local state for model management
+const loadingProgress = ref(0)
+const isDownloading = ref(false)
+const downloadingModel = ref('')
+const cachedModels = ref<Set<string>>(new Set())
+
+// Model selection (synced with provider settings)
+const model = computed({
+  get: () => providers.value[providerId]?.model as string | undefined || defaultModel,
+  set: (value) => {
+    if (!providers.value[providerId])
+      providers.value[providerId] = {}
+    providers.value[providerId].model = value
+    hearingStore.activeTranscriptionModel = value
+  },
+})
+
+// Check cached models on mount
+async function checkCache() {
+  const cached = localStorage.getItem('airi/whisper/cached-models')
+  if (cached) {
+    cachedModels.value = new Set(JSON.parse(cached))
+  }
+}
+
+async function downloadModel(modelId: string) {
+  if (isDownloading.value)
+    return
+
+  isDownloading.value = true
+  downloadingModel.value = modelId
+  loadingProgress.value = 0
+
+  try {
+    const worker = await getWhisperWorker()
+    const id = Math.random().toString(36).substring(7)
+
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data.id === id) {
+        if (e.data.type === 'PROGRESS') {
+          loadingProgress.value = e.data.progress
+        }
+        else if (e.data.type === 'LOADED') {
+          worker.removeEventListener('message', handleMessage)
+          isDownloading.value = false
+          cachedModels.value.add(modelId)
+          localStorage.setItem('airi/whisper/cached-models', JSON.stringify([...cachedModels.value]))
+          toast.success(`Model ${modelId} loaded successfully`)
+        }
+        else if (e.data.type === 'ERROR') {
+          worker.removeEventListener('message', handleMessage)
+          isDownloading.value = false
+          toast.error(`Failed to load model: ${e.data.error}`)
+        }
+      }
+    }
+
+    worker.addEventListener('message', handleMessage)
+    worker.postMessage({ type: 'LOAD', id, model: modelId })
+  }
+  catch (err) {
+    isDownloading.value = false
+    toast.error('Failed to initialize worker')
+    console.error(err)
+  }
+}
+
+// Generate transcription handler for the playground
+async function handleGenerateTranscription(file: File) {
+  const provider = await providersStore.getProviderInstance(providerId) as any
+  if (!provider) {
+    throw new Error('Failed to initialize transcription provider')
+  }
+
+  // Ensure model is cached before starting transcription
+  if (!cachedModels.value.has(model.value)) {
+    toast.info(`Downloading ${model.value} model...`)
+    await downloadModel(model.value)
+    // Wait for download to finish (this is a bit crude but works for the playground)
+    while (isDownloading.value) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+    if (!cachedModels.value.has(model.value)) {
+      throw new Error('Model download failed')
+    }
+  }
+
+  return await hearingStore.transcription(
+    providerId,
+    provider,
+    model.value,
+    file,
+    'json',
+  )
+}
+
+onMounted(async () => {
+  await checkCache()
+  // Ensure the provider is selected in the store
+  if (!hearingStore.activeTranscriptionProvider) {
+    hearingStore.activeTranscriptionProvider = providerId
+  }
+  if (!hearingStore.activeTranscriptionModel) {
+    hearingStore.activeTranscriptionModel = model.value
+  }
+})
+
+watch(model, async () => {
+  const providerConfig = providersStore.getProviderConfig(providerId)
+  providerConfig.model = model.value
+})
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-2">
-      <div class="text-sm font-bold opacity-50">
-        {{ t('settings.providers.transcription.app_local_audio.title') }}
-      </div>
-      <div class="text-xs opacity-50">
-        {{ t('settings.providers.transcription.app_local_audio.description') }}
-      </div>
-    </div>
+  <TranscriptionProviderSettings
+    :provider-id="providerId"
+    :default-model="defaultModel"
+  >
+    <template #basic-settings>
+      <!-- Model selection -->
+      <FieldSelect
+        v-model="model"
+        label="Model"
+        description="Select the local Whisper model to use (Tiny/Base/Small)"
+        :options="WHISPER_MODELS.map(m => ({
+          value: m.id,
+          label: `${m.name} (${m.size})`,
+          disabled: isDownloading && downloadingModel !== m.id,
+        }))"
+        placeholder="Select a model..."
+      />
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div class="flex flex-col gap-1.5">
-        <label class="text-xs font-bold opacity-50">
-          {{ t('settings.providers.transcription.app_local_audio.device_id') }}
-        </label>
-        <input
-          v-model="transcriptionProviderSettings['app-local-audio-transcription'].deviceId"
-          type="text"
-          class="w-full border border-neutral-200 rounded-lg bg-neutral-100 px-3 py-2 text-sm outline-none dark:border-neutral-800 dark:bg-neutral-800"
-          :placeholder="t('settings.providers.transcription.app_local_audio.device_id_placeholder')"
-        >
+      <!-- Model Download Status -->
+      <div v-if="model" class="mt-4">
+        <div v-if="isDownloading && downloadingModel === model" :class="['p-4 rounded-xl bg-white/5 border border-white/10']">
+          <div :class="['flex justify-between text-xs mb-2 opacity-60']">
+            <span class="font-medium">Downloading {{ model }}...</span>
+            <span>{{ Math.round(loadingProgress) }}%</span>
+          </div>
+          <Progress :progress="loadingProgress" :class="['h-2']" />
+        </div>
+        <div v-else-if="!cachedModels.has(model)" :class="['p-4 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between']">
+          <div class="flex items-center gap-2 text-sm">
+            <div class="i-lucide:info text-primary" />
+            <span>Model not cached locally</span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            :disabled="isDownloading"
+            @click="downloadModel(model)"
+          >
+            <div class="i-lucide:download mr-1" />
+            Download
+          </Button>
+        </div>
+        <div v-else :class="['p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-center gap-2 text-sm text-emerald-500']">
+          <div class="i-lucide:check-circle" />
+          <span>Model is ready and cached</span>
+        </div>
       </div>
-    </div>
-  </div>
+    </template>
+
+    <template #playground>
+      <TranscriptionPlayground
+        :generate-transcription="handleGenerateTranscription"
+        :api-key-configured="true"
+      />
+    </template>
+  </TranscriptionProviderSettings>
 </template>
 
 <route lang="yaml">
@@ -41,3 +197,16 @@ meta:
   stageTransition:
     name: slide
 </route>
+
+<style scoped>
+.animate-ping {
+  animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+</style>
