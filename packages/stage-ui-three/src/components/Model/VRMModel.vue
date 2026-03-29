@@ -118,6 +118,7 @@ const emit = defineEmits<{
   (e: 'loaded', value: { modelIdentity?: string, modelSrc: string }): void
   (e: 'binaryLoaded', value: ArrayBuffer): void
   (e: 'finished'): void
+  (e: 'playStatus', value: { duration: number, url: string }): void
 }>()
 
 const {
@@ -705,29 +706,39 @@ onMounted(async () => {
       }
 
       const newAction = vrmAnimationMixer.value.clipAction(clip)
+      const fadeDuration = 0.8 // Premium cross-fade
+
       if (idleCycleEnabled.value) {
         newAction.setLoop(LoopOnce, 1)
-        newAction.clampWhenFinished = true
       }
       else {
         newAction.setLoop(LoopRepeat, Infinity)
-        newAction.clampWhenFinished = false
       }
 
+      newAction.clampWhenFinished = true
       newAction.reset()
       newAction.setEffectiveWeight(1)
-      newAction.fadeIn(0.1)
       newAction.play()
 
+      // Emit duration for the proactive scheduler in Stage.vue
+      emit('playStatus', {
+        duration: clip.duration,
+        url: newAnimUrl,
+      })
+
       if (currentAction.value && currentAction.value !== newAction) {
-        currentAction.value.fadeOut(0.1)
+        newAction.crossFadeFrom(currentAction.value, fadeDuration, true)
       }
+      else {
+        newAction.fadeIn(fadeDuration)
+      }
+
       currentAction.value = newAction
     }
     catch (err) {
       console.error('[VRMModel] Failed to switch idle animation:', err)
     }
-  })
+  }, { immediate: true })
 })
 
 onUnmounted(() => {

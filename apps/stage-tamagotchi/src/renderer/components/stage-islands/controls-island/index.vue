@@ -24,6 +24,9 @@ import {
   electronWindowSetAlwaysOnTop,
 } from '../../../../shared/eventa'
 
+const emit = defineEmits<{
+  (e: 'take-photo'): void
+}>()
 const { isDark, toggleDark } = useTheme()
 const { t } = useI18n()
 
@@ -34,7 +37,7 @@ const cardStore = useAiriCardStore()
 const customVrmAnimationsStore = useCustomVrmAnimationsStore()
 const context = useElectronEventaContext()
 const { enabled } = storeToRefs(settingsAudioDeviceStore)
-const { alwaysOnTop, controlsIslandIconSize } = storeToRefs(settingsStore)
+const { alwaysOnTop, controlsIslandIconSize, stageModelRenderer } = storeToRefs(settingsStore)
 const { activeCard, activeCardId } = storeToRefs(cardStore)
 const { favoriteExpression, activeExpressions, vrmIdleAnimation } = storeToRefs(modelStore)
 
@@ -97,6 +100,11 @@ function handleViewGallery() {
 
 function handleManageProfiles() {
   openSettings({ route: '/settings/airi-card' })
+  expanded.value = false
+}
+
+function handleTakePhoto() {
+  emit('take-photo')
   expanded.value = false
 }
 
@@ -270,7 +278,7 @@ function triggerWardrobeItem(id: string) {
               <!-- Row 1: Communication -->
               <ControlButtonTooltip disable-hoverable-content>
                 <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'profiles'">
-                  <div i-solar:emoji-funny-square-broken :class="adjustStyleClasses.icon" text="sky-600 dark:sky-400" />
+                  <div i-solar:users-group-rounded-outline :class="adjustStyleClasses.icon" text="sky-600 dark:sky-400" />
                 </ControlButton>
                 <template #tooltip>
                   {{ t('tamagotchi.stage.controls-island.switch-profile') }}
@@ -304,17 +312,29 @@ function triggerWardrobeItem(id: string) {
 
               <!-- Row 2: Persona & Performance -->
               <ControlButtonTooltip>
-                <ControlButton :button-style="adjustStyleClasses.button" @click="cycleAnimation">
+                <ControlButton
+                  :button-style="[
+                    adjustStyleClasses.button,
+                    stageModelRenderer === 'live2d' ? 'opacity-30 cursor-not-allowed filter-grayscale' : '',
+                  ]"
+                  :disabled="stageModelRenderer === 'live2d'"
+                  @click="cycleAnimation"
+                >
                   <div i-solar:running-2-linear :class="adjustStyleClasses.icon" text="amber-500" />
                 </ControlButton>
                 <template #tooltip>
-                  {{ t('tamagotchi.stage.controls-island.cycle-animation') }}: {{ currentIdleAnimationLabel }}
+                  <template v-if="stageModelRenderer === 'live2d'">
+                    Not Supported (Live2D)
+                  </template>
+                  <template v-else>
+                    {{ t('tamagotchi.stage.controls-island.cycle-animation') }}: {{ currentIdleAnimationLabel }}
+                  </template>
                 </template>
               </ControlButtonTooltip>
 
               <ControlButtonTooltip>
                 <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'emotions'">
-                  <div i-solar:emoji-funny-square-outline :class="adjustStyleClasses.icon" text="amber-500" />
+                  <div i-solar:mask-happly-outline :class="adjustStyleClasses.icon" text="amber-500" />
                 </ControlButton>
                 <template #tooltip>
                   Emotions
@@ -536,7 +556,19 @@ function triggerWardrobeItem(id: string) {
               </div>
 
               <!-- Fixed Utility Row -->
-              <div grid grid-cols-3 gap-2 border-t border-neutral-200 border-solid pt-2 dark:border-neutral-800>
+              <div grid grid-cols-4 gap-2 border-t border-neutral-200 border-solid pt-2 dark:border-neutral-800>
+                <ControlButtonTooltip>
+                  <ControlButton
+                    :button-style="adjustStyleClasses.button"
+                    @click="handleTakePhoto"
+                  >
+                    <div i-solar:camera-outline :class="adjustStyleClasses.icon" text="amber-500" />
+                  </ControlButton>
+                  <template #tooltip>
+                    Photo Mode
+                  </template>
+                </ControlButtonTooltip>
+
                 <ControlButtonTooltip>
                   <ControlButton
                     :button-style="adjustStyleClasses.button"

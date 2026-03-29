@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CursorFloating } from '@proj-airi/stage-ui/components'
+import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { useDisplayModelsStore } from '@proj-airi/stage-ui/stores/display-models'
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuPortal, DropdownMenuRoot, DropdownMenuTrigger } from 'reka-ui'
 import { computed } from 'vue'
@@ -27,7 +28,25 @@ const emit = defineEmits<{
 }>()
 
 const displayModelsStore = useDisplayModelsStore()
+const backgroundStore = useBackgroundStore()
+
+const latestSelfie = computed(() => {
+  const entries = backgroundStore.getCharacterJournalEntries(props.id)
+  const selfies = entries.filter(e => e.type === 'selfie')
+  if (selfies.length === 0)
+    return null
+
+  // Sort by createdAt descending to get the absolute latest at index 0
+  const sorted = [...selfies].sort((a, b) => b.createdAt - a.createdAt)
+  const latest = sorted[0]
+  return backgroundStore.getBackgroundUrl(latest.id)
+})
+
 const portrait = computed(() => {
+  // Priority: Latest Selfie > Model Preview
+  if (latestSelfie.value)
+    return latestSelfie.value
+
   if (!props.displayModelId)
     return null
   const model = displayModelsStore.displayModels.find(m => m.id === props.displayModelId)
@@ -106,7 +125,7 @@ const portrait = computed(() => {
         <div v-if="portrait" class="relative h-full w-full">
           <img
             :src="portrait"
-            class="h-full w-full object-cover object-[center_15%]"
+            class="h-full w-full object-cover object-[50%_15%]"
             alt="Portrait"
           >
           <div class="absolute inset-x-0 bottom-0 from-black/80 via-black/40 to-transparent bg-gradient-to-t p-3">

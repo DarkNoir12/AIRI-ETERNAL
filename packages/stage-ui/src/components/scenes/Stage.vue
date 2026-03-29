@@ -147,6 +147,37 @@ const { currentMotion, availableExpressions: live2dExpressions, expressionData: 
 const temporaryVrma = ref<string | null>(null)
 let temporaryVrmaTimeout: ReturnType<typeof setTimeout> | null = null
 
+// Scheduler logic for seamless idle transitions
+let schedulerTimer: ReturnType<typeof setTimeout> | null = null
+let watchdogTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearAnimationTimers() {
+  if (schedulerTimer) {
+    clearTimeout(schedulerTimer)
+    schedulerTimer = null
+  }
+  if (watchdogTimer) {
+    clearTimeout(watchdogTimer)
+    watchdogTimer = null
+  }
+}
+
+function handleAnimationPlayStatus(status: { duration: number, url: string }) {
+  clearAnimationTimers()
+
+  // Schedule next animation 0.8s before this one ends (cross-fade window)
+  const delay = Math.max(0, (status.duration - 0.8) * 1000)
+  schedulerTimer = setTimeout(() => {
+    handleAnimationFinished()
+  }, delay)
+
+  // Safety watchdog: force a cycle if we get stuck for > 20s
+  watchdogTimer = setTimeout(() => {
+    console.warn('[Stage] Animation watchdog triggered (20s stall detected)')
+    handleAnimationFinished()
+  }, 20000)
+}
+
 const vrmActiveAnimation = computed(() => {
   const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
   let baseKey = vrmStore.vrmIdleAnimation
@@ -721,6 +752,9 @@ function handleAnimationFinished() {
   if (stageModelRenderer.value !== 'vrm')
     return
 
+  // Clear timers to prevent race conditions
+  clearAnimationTimers()
+
   // Resume idle from ACT performance
   if (temporaryVrma.value) {
     temporaryVrma.value = null
@@ -748,8 +782,12 @@ function handleAnimationFinished() {
     else {
       const selection = otherKeys.length > 0 ? otherKeys : finalKeys
       const randomKey = selection[Math.floor(Math.random() * selection.length)]
-      if (randomKey) {
+      if (randomKey && vrmStore.vrmIdleAnimation !== randomKey) {
         vrmStore.vrmIdleAnimation = randomKey
+      }
+      else if (randomKey === vrmStore.vrmIdleAnimation && otherKeys.length > 0) {
+        // Fallback safety if random picked the same one somehow
+        vrmStore.vrmIdleAnimation = otherKeys[0]
       }
     }
   }
@@ -799,6 +837,56 @@ function readRenderTargetRegionAtClientPoint(clientX: number, clientY: number, r
   return vrmViewerRef.value?.readRenderTargetRegionAtClientPoint?.(clientX, clientY, radius) ?? null
 }
 
+async function captureFrame() {
+  const charBlob = await (stageModelRenderer.value === 'live2d'
+    ? live2dSceneRef.value?.captureFrame()
+    : vrmViewerRef.value?.captureFrame())
+
+  if (!activeBackgroundUrl.value || !charBlob)
+    return charBlob
+
+  try {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx)
+      return charBlob
+
+    // Load background image
+    const bgImg = new Image()
+    bgImg.crossOrigin = 'anonymous'
+    bgImg.src = activeBackgroundUrl.value
+    await new Promise((resolve, reject) => {
+      bgImg.onload = resolve
+      bgImg.onerror = reject
+    })
+
+    // Load character frame
+    const charImg = await createImageBitmap(charBlob)
+
+    // Match canvas size to the captured frame (respects DPI/Render Scale)
+    canvas.width = charImg.width
+    canvas.height = charImg.height
+
+    // Draw background with "cover" logic
+    const scale = Math.max(canvas.width / bgImg.width, canvas.height / bgImg.height)
+    const w = bgImg.width * scale
+    const h = bgImg.height * scale
+    const x = (canvas.width - w) / 2
+    const y = (canvas.height - h) / 2
+
+    ctx.drawImage(bgImg, x, y, w, h)
+
+    // Draw character on top
+    ctx.drawImage(charImg, 0, 0)
+
+    return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+  }
+  catch (error) {
+    console.error('[Stage] Failed to composite photo with background:', error)
+    return charBlob // Fallback to character-only
+  }
+}
+
 onUnmounted(() => {
   if (lipSyncLoopId.value) {
     cancelAnimationFrame(lipSyncLoopId.value)
@@ -815,6 +903,7 @@ onUnmounted(() => {
 
 defineExpose({
   canvasElement,
+  captureFrame,
   readRenderTargetRegionAtClientPoint,
 })
 </script>
@@ -874,7 +963,9 @@ defineExpose({
         :show-axes="stageViewControlsEnabled"
         :current-audio-source="currentAudioSource"
         @error="console.error"
-        @binary-loaded="vhackStore.setSourceArrayBuffer" @finished="handleAnimationFinished"
+        @binary-loaded="vhackStore.setSourceArrayBuffer"
+        @finished="handleAnimationFinished"
+        @play-status="handleAnimationPlayStatus"
       />
     </div>
   </div>

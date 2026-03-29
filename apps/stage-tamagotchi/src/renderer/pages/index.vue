@@ -16,6 +16,7 @@ import { WidgetStage } from '@proj-airi/stage-ui/components/scenes'
 import { useAudioRecorder } from '@proj-airi/stage-ui/composables/audio/audio-recorder'
 import { useCanvasPixelIsTransparentAtPoint } from '@proj-airi/stage-ui/composables/canvas-alpha'
 import { useVAD } from '@proj-airi/stage-ui/stores/ai/models/vad'
+import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { useChatOrchestratorStore } from '@proj-airi/stage-ui/stores/chat'
 import { useLive2d } from '@proj-airi/stage-ui/stores/live2d'
 import { useLLM } from '@proj-airi/stage-ui/stores/llm'
@@ -111,6 +112,59 @@ const { pause, resume } = watch(isTransparent, (transparent) => {
 
 const isLocked = ref(false)
 provide('isLocked', isLocked)
+
+const isFlashing = ref(false)
+const isCountingDown = ref(false)
+const backgroundStore = useBackgroundStore()
+
+async function handleTakePhoto() {
+  const t = toast.info('Image taken will be saved to image journal', {
+    duration: 5000,
+  })
+
+  // Start Countdown
+  isCountingDown.value = true
+
+  try {
+    // 3-2-1 Countdown
+    for (let i = 3; i > 0; i--) {
+      toast.info(`Taking photo in ${i}...`, { id: t })
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+
+    // Capture Toast feedback
+    toast.info('📸 Capturing...', { id: t })
+
+    // Flash
+    isFlashing.value = true
+
+    // Wait a bit for the flash to start
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // Capture Blob
+    const blob = await widgetStageRef.value?.captureFrame()
+    if (!blob)
+      throw new Error('Failed to capture stage image')
+
+    const dateStr = new Date().toLocaleString()
+    const title = `Selfie - ${dateStr}`
+
+    await backgroundStore.addBackground('selfie', blob, title)
+
+    toast.success('Photo saved to journal!', { id: t })
+  }
+  catch (err) {
+    console.error('[Photo Mode] Capture failed:', err)
+    toast.error('Failed to capture photo', { id: t })
+  }
+  finally {
+    isCountingDown.value = false
+    // Delay flash end slightly for visual feedback
+    setTimeout(() => {
+      isFlashing.value = false
+    }, 300)
+  }
+}
 
 const getMainWindowConfig = useElectronEventaInvoke(electronGetMainWindowConfig)
 
@@ -475,6 +529,9 @@ watch([stream, () => vadLoaded.value], async ([s, loaded]) => {
 </script>
 
 <template>
+  <!-- Camera Flash Overlay -->
+  <div v-show="isFlashing" class="animate-camera-flash pointer-events-none fixed inset-0 z-9999" />
+
   <div
     max-h="[100vh]"
     max-w="[100vw]"
@@ -514,6 +571,7 @@ watch([stream, () => vadLoaded.value], async ([s, loaded]) => {
         <ControlsIsland
           ref="controlsIslandRef"
           :is-locked="isLocked"
+          @take-photo="handleTakePhoto"
         />
       </div>
     </div>
@@ -587,6 +645,38 @@ watch([stream, () => vadLoaded.value], async ([s, loaded]) => {
           'h-full w-full animate-flash animate-duration-3s animate-count-infinite b-4 rounded-2xl',
         ]"
       />
+    </div>
+  </Transition>
+
+  <!-- Viewfinder Overlay -->
+  <Transition
+    enter-active-class="transition-all duration-500 ease-out"
+    enter-from-class="opacity-0 scale-105"
+    enter-to-class="opacity-100 scale-100"
+    leave-active-class="transition-all duration-300 ease-in"
+    leave-from-class="opacity-100 scale-100"
+    leave-to-class="opacity-0 scale-95"
+  >
+    <div
+      v-if="isCountingDown"
+      class="pointer-events-none fixed inset-0 z-50 flex items-start justify-center"
+    >
+      <div
+        class="relative mt-24 w-85% border-4 border-primary-500/50 rounded-2xl border-dashed"
+        :style="{ aspectRatio: '16 / 9' }"
+      >
+        <!-- Viewfinder Corners -->
+        <div class="absolute h-8 w-8 border-l-6 border-t-6 border-primary-500 rounded-tl-lg -left-2 -top-2" />
+        <div class="absolute h-8 w-8 border-r-6 border-t-6 border-primary-500 rounded-tr-lg -right-2 -top-2" />
+        <div class="absolute h-8 w-8 border-b-6 border-l-6 border-primary-500 rounded-bl-lg -bottom-2 -left-2" />
+        <div class="absolute h-8 w-8 border-b-6 border-r-6 border-primary-500 rounded-br-lg -bottom-2 -right-2" />
+
+        <!-- Label -->
+        <div class="absolute left-1/2 flex items-center gap-2 rounded-full bg-primary-500 px-4 py-1 text-xs text-white font-black tracking-widest uppercase shadow-lg -top-10 -translate-x-1/2">
+          <div i-solar:camera-bold text-sm />
+          AIRI Card Viewfinder (15% Offset)
+        </div>
+      </div>
     </div>
   </Transition>
 </template>

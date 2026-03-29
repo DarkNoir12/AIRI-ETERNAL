@@ -254,6 +254,19 @@ async function handleRefreshGallery() {
   }
 }
 
+async function handleDownloadEntry(id: string, title: string) {
+  const url = backgroundStore.getBackgroundUrl(id)
+  if (!url)
+    return
+
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${title || 'image'}.png`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 // Active tab state - set to first available tab by default
 const activeTab = computed({
   get: () => {
@@ -608,6 +621,13 @@ function getModuleDisplayValue(value: string | undefined, defaultValue: string |
                     >
                       <div :class="activeBackgroundId === entry.id ? 'i-solar:pin-bold' : 'i-solar:pin-linear'" />
                       {{ activeBackgroundId === entry.id ? 'ACTIVE BG' : 'SET AS BG' }}
+                    </button>
+                    <button
+                      class="flex items-center gap-1 rounded-full bg-blue-500/80 px-3 py-1.5 text-[10px] text-white font-bold backdrop-blur-md transition-all active:scale-95 hover:bg-blue-500"
+                      @click="handleDownloadEntry(entry.id, entry.title)"
+                    >
+                      <div class="i-solar:download-square-linear" />
+                      DOWNLOAD
                     </button>
                     <button
                       class="flex items-center gap-1 rounded-full bg-red-500/80 px-3 py-1.5 text-[10px] text-white font-bold backdrop-blur-md transition-all active:scale-95 hover:bg-red-500"
