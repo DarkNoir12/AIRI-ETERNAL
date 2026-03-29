@@ -302,21 +302,20 @@ export function setupApp(options?: AppOptions): { app: H3, closeAllPeers: () => 
         return
       }
 
-      if (event.type !== 'output:gen-ai:chat:complete') {
-        logger.withFields({
-          peer: peer.id,
-          peerAuthenticated: authenticatedPeer?.authenticated,
-          peerModule: authenticatedPeer?.name,
-          peerModuleIndex: authenticatedPeer?.index,
-        }).log('received event', { type: event.type })
+      const logFields = {
+        peer: peer.id,
+        peerAuthenticated: authenticatedPeer?.authenticated,
+        peerName: authenticatedPeer?.name,
+        peerIndex: authenticatedPeer?.index,
+        peerIdentity: authenticatedPeer?.identity,
+        eventSource: event.metadata?.source,
+      }
+
+      if (event.type === 'transport:connection:heartbeat' || event.type === 'output:gen-ai:chat:complete') {
+        logger.withFields(logFields).debug('received event', { type: event.type })
       }
       else {
-        logger.withFields({
-          peer: peer.id,
-          peerAuthenticated: authenticatedPeer?.authenticated,
-          peerModule: authenticatedPeer?.name,
-          peerModuleIndex: authenticatedPeer?.index,
-        }).debug('received event', { type: event.type })
+        logger.withFields(logFields).log('received event', { type: event.type })
       }
 
       if (authenticatedPeer) {
