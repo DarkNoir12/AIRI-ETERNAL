@@ -685,49 +685,125 @@ export const useProvidersStore = defineStore('providers', () => {
         region: 'us-east-1',
         voice: 'Ivy',
       }),
+      createProvider: async (config) => {
+        const accessKeyId = typeof config.apiKey === 'string' ? config.apiKey.trim() : ''
+        const secretAccessKey = typeof config.secretAccessKey === 'string' ? config.secretAccessKey.trim() : ''
+        const region = typeof config.region === 'string' ? config.region.trim() : 'us-east-1'
+
+        if (!accessKeyId || !secretAccessKey) {
+          throw new Error('AWS credentials (Access Key ID and Secret Access Key) are required.')
+        }
+
+        const client = new AwsClient({
+          accessKeyId,
+          secretAccessKey,
+          region,
+          service: 'polly',
+        })
+
+        return {
+          speech: (model: string, _extraOptions?: any) => {
+            return {
+              // We'll ignore the automatic URL construction of generateSpeech
+              baseURL: `https://polly.${region}.amazonaws.com/v1/`,
+              model,
+              headers: {},
+              async fetch(_url: string | URL | Request, options?: RequestInit) {
+                // Transform to Native Polly Format
+                const pollyUrl = `https://polly.${region}.amazonaws.com/v1/speech`
+
+                let pollyBody = ''
+                try {
+                  const body = JSON.parse(options?.body as string)
+                  pollyBody = JSON.stringify({
+                    Engine: body.model || 'neural',
+                    OutputFormat: 'mp3',
+                    Text: body.input,
+                    VoiceId: body.voice || 'Ivy',
+                  })
+                }
+                catch (e) {
+                  logWarn('Failed to parse speech body for transformation:', e)
+                  pollyBody = options?.body as string
+                }
+
+                const signed = await client.sign(pollyUrl, {
+                  ...options,
+                  method: 'POST',
+                  body: pollyBody,
+                })
+                return fetch(signed)
+              },
+            }
+          },
+        } as SpeechProviderWithExtraOptions<string, any>
+      },
       capabilities: {
         listVoices: async (config: Record<string, unknown>) => {
-          const accessKeyId = typeof config.accessKeyId === 'string' ? config.accessKeyId.trim() : ''
+          const accessKeyId = typeof config.apiKey === 'string' ? config.apiKey.trim() : ''
           const secretAccessKey = typeof config.secretAccessKey === 'string' ? config.secretAccessKey.trim() : ''
-          const region = typeof config.region === 'string' ? config.region.trim() || 'us-east-1' : 'us-east-1'
+          const region = typeof config.region === 'string' ? config.region.trim() : 'us-east-1'
+          const engine = typeof config.model === 'string' ? config.model : 'neural'
+
+          const fallbackVoices: VoiceInfo[] = [
+            { id: 'Ivy', name: 'Ivy', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'female', compatibleModels: ['neural', 'standard'] },
+            { id: 'Joanna', name: 'Joanna', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'female', compatibleModels: ['neural', 'standard'] },
+            { id: 'Kendra', name: 'Kendra', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'female', compatibleModels: ['neural', 'standard'] },
+            { id: 'Kimberly', name: 'Kimberly', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'female', compatibleModels: ['neural', 'standard'] },
+            { id: 'Matthew', name: 'Matthew', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'male', compatibleModels: ['neural', 'standard'] },
+            { id: 'Joey', name: 'Joey', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'male', compatibleModels: ['neural', 'standard'] },
+            { id: 'Justin', name: 'Justin', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'male', compatibleModels: ['neural', 'standard'] },
+          ].filter(v => v.compatibleModels!.includes(engine))
 
           if (!accessKeyId || !secretAccessKey)
-            return []
+            return fallbackVoices
 
           try {
-            const aws = new AwsClient({ accessKeyId, secretAccessKey, region, service: 'polly' })
-            const url = `https://polly.${region}.amazonaws.com/v1/voices`
-            const response = await fetch(await aws.sign(url, { method: 'GET' }))
+            const client = new AwsClient({
+              accessKeyId,
+              secretAccessKey,
+              region,
+              service: 'polly',
+            })
+
+            const url = `https://polly.${region}.amazonaws.com/v1/voices?Engine=${engine}`
+            const signed = await client.sign(url, { method: 'GET' })
+            const response = await fetch(signed)
 
             if (!response.ok) {
-              throw new Error(`HTTP ${response.status}`)
+              const error = await response.json()
+              logWarn('AWS Polly ListVoices failed:', error)
+              return fallbackVoices
             }
+
             const data = await response.json()
             const voices = data.Voices || []
+
+            if (voices.length === 0)
+              return fallbackVoices
+
             return voices.map((v: any) => ({
               id: v.Id,
               name: v.Name,
               provider: 'aws-polly-tts',
-              languages: [{ code: v.LanguageCode, title: v.LanguageCode }],
-              gender: v.Gender.toLowerCase(),
-            } satisfies VoiceInfo))
+              languages: (Array.isArray(v.LanguageCode) ? v.LanguageCode : [v.LanguageCode]).map((code: string) => ({
+                code,
+                title: v.LanguageName || code,
+              })),
+              gender: v.Gender?.toLowerCase(),
+              compatibleModels: v.SupportedEngines || [],
+            })) satisfies VoiceInfo[]
           }
           catch (error) {
-            logWarn('[AWS Polly] Failed to fetch dynamic voices:', error)
-            return []
+            logWarn('Error fetching AWS Polly voices:', error)
+            return fallbackVoices
           }
         },
-        listModels: async () => [
-          { id: 'generative', name: 'Generative (Ultra-High Quality)', provider: 'aws-polly-tts', description: 'The most advanced engine for lifelike conversational speech.', contextLength: 0, deprecated: false },
-          { id: 'neural', name: 'Neural (Lifelike)', provider: 'aws-polly-tts', description: 'High-quality neural text-to-speech for general use.', contextLength: 0, deprecated: false },
-          { id: 'long-form', name: 'Long-form (Narrations)', provider: 'aws-polly-tts', description: 'Best for narrating long documents or articles.', contextLength: 0, deprecated: false },
-          { id: 'standard', name: 'Standard (Legacy)', provider: 'aws-polly-tts', description: 'Legacy concatenative synthesis.', contextLength: 0, deprecated: false },
-        ],
       },
       validators: {
-        validateProviderConfig: (config: Record<string, unknown>) => {
-          const errors = []
-          if (!config.accessKeyId)
+        validateProviderConfig: (config) => {
+          const errors: Error[] = []
+          if (!config.apiKey)
             errors.push(new Error('AWS Access Key ID is required.'))
           if (!config.secretAccessKey)
             errors.push(new Error('AWS Secret Access Key is required.'))
@@ -739,55 +815,7 @@ export const useProvidersStore = defineStore('providers', () => {
           }
         },
       },
-      validation: [],
-      creator: async (config: Record<string, unknown>) => {
-        const accessKeyId = typeof config.accessKeyId === 'string' ? config.accessKeyId.trim() : ''
-        const secretAccessKey = typeof config.secretAccessKey === 'string' ? config.secretAccessKey.trim() : ''
-        const region = typeof config.region === 'string' ? config.region.trim() || 'us-east-1' : 'us-east-1'
-
-        return {
-          speech: (model: string) => {
-            return {
-              apiKey: 'aws-sigv4',
-              baseURL: `https://polly.${region}.amazonaws.com/v1/`,
-              model,
-              fetch: async (_input: RequestInfo | URL, init?: RequestInit) => {
-                if (!accessKeyId || !secretAccessKey) {
-                  return new Response(JSON.stringify({ error: 'Missing AWS credentials' }), { status: 401 })
-                }
-                const aws = new AwsClient({ accessKeyId, secretAccessKey, region, service: 'polly' })
-
-                // Parse the generic request that @xsai/generate-speech creates
-                const bodyStr = init?.body as string || '{}'
-                const bodyParsed = JSON.parse(bodyStr)
-
-                const pollyBody = {
-                  Engine: model || 'neural',
-                  OutputFormat: 'mp3',
-                  SampleRate: '24000',
-                  Text: bodyParsed.input || '',
-                  TextType: 'text',
-                  VoiceId: bodyParsed.voice || config.voice || 'Ivy',
-                }
-
-                const signedRequest = await aws.sign(`https://polly.${region}.amazonaws.com/v1/speech`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(pollyBody),
-                })
-
-                const response = await fetch(signedRequest)
-                if (!response.ok) {
-                  const errorText = await response.text()
-                  throw new Error(`AWS Polly Error: ${response.status} - ${errorText}`)
-                }
-                return response
-              },
-            }
-          },
-        }
-      },
-    } as unknown as ProviderMetadata,
+    },
     'openai-audio-transcription': buildOpenAICompatibleProvider({
       id: 'openai-audio-transcription',
       name: 'OpenAI',
@@ -802,7 +830,6 @@ export const useProvidersStore = defineStore('providers', () => {
       validation: ['health'],
       capabilities: {
         listModels: async () => {
-          // OpenAI transcription models are hardcoded (no API endpoint to list them)
           return [
             {
               id: 'gpt-4o-transcribe',

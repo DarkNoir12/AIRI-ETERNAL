@@ -66,15 +66,19 @@ const isLoadingModels = computed(() => {
 })
 
 onMounted(async () => {
-  await providersStore.loadModelsForConfiguredProviders()
-  await providersStore.fetchModelsForProvider(providerId)
-  await speechStore.loadVoicesForProvider(providerId)
-
   if (!providers.value[providerId]) {
     providers.value[providerId] = {}
   }
   if (!providers.value[providerId].model) {
     providers.value[providerId].model = defaultModel
+  }
+  if (!providers.value[providerId].region) {
+    providers.value[providerId].region = 'us-east-1'
+  }
+
+  // Only fetch voices if we have credentials
+  if (apiKeyConfigured.value) {
+    await speechStore.loadVoicesForProvider(providerId)
   }
 })
 
@@ -115,6 +119,12 @@ watch(model, async () => {
     providers.value[providerId] = {}
   providers.value[providerId].model = model.value
   await speechStore.loadVoicesForProvider(providerId)
+})
+
+watch(apiKeyConfigured, async (configured) => {
+  if (configured) {
+    await speechStore.loadVoicesForProvider(providerId)
+  }
 })
 
 const awsEngines = [
