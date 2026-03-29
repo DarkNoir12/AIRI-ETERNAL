@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<{
   skyBoxSrc?: string
   showAxes?: boolean
   idleAnimation?: string
+  idleCycleEnabled?: boolean
   paused?: boolean
   renderScaleOverride?: number
 }>(), {
@@ -401,6 +402,7 @@ defineExpose({
           :last-model-src="lastModelSrc"
           :last-model-identity="lastModelIdentity"
           :idle-animation="props.idleAnimation"
+          :idle-cycle-enabled="props.idleCycleEnabled"
           :paused="props.paused"
           :env-select="envSelect"
           :sky-box-intensity="skyBoxIntensity"

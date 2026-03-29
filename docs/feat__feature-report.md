@@ -143,7 +143,23 @@ The floating interaction hub for the desktop experience.
 
 ---
 
-## 12. Platform & Operations
+## 12. Modular Wardrobe System
+A persistent, multi-layered clothing and expression management system.
+
+- **Schema-Driven Outfits**: Outfits are stored as part of the AIRI character card, specifying `name`, `icon`, `base/overlay` type, and a set of `expressions`.
+- **Base vs. Overlay Logic**:
+    - **Base Outfits**: Mutually exclusive. Applying a new Base outfit will "zero out" any other active Base expressions (e.g., swapping a full dress for a swimsuit).
+    - **Overlays**: Stackable layers (e.g., glasses, ribbons, hats) that can be toggled on/off independently without disturbing the Base outfit.
+- **Interactive "Build Outfit" Mode**: A dedicated staging mode in the character settings that:
+    - **Snapshots** the character's current state before starting.
+    - Allows **real-time previewing** of expressions as the user selects them.
+    - Supports **restoration** to the original state if the build is canceled.
+- **Desktop Control Island Integration**: Quick-access Wardrobe hub in the desktop island. Active outfits are visually highlighted (Amber for Base, Sky-Blue for Overlay) with interactive toggle support.
+- **Persistence & Portability**: Wardrobe definitions are fully integrated into AIRI Card exports, ensuring character outfits are shared along with their personality and visuals.
+
+---
+
+## 13. Platform & Operations
 Internal hardening to ensure the app remains a stable, performant "Daily Driver."
 
 - **Interaction Throttling**: Sophisticated **rate-limiting (200ms)** on window move/resize events to prevent IPC flooding and UI stuttering during desktop manipulation.
@@ -151,11 +167,12 @@ Internal hardening to ensure the app remains a stable, performant "Daily Driver.
 - **Environment Guardrails**: Strict enforcement of **Node.js >= 20.14.0** and **pnpm >= 10.0.0** via `.npmrc` to prevent the `tsdown` build crashes found in modern dependencies.
 - **Identity-Guarded Character Switching**: Suppresses redundant model reloads and duplicate toasts when card metadata updates **without an actual model switch**.
 - **Tray Position Restore**: Auto-restores last window position from a saved snapshot on startup.
+- **Improved Animation Cycles**: Hardened VRM idle cycle logic in `airi-card.ts` for more reliable cross-fading and state transitions during AI acting and manual overrides.
 - **Provider Onboarding & Metadata UX**: The provider settings surface now includes more beginner-friendly onboarding cues and richer provider metadata presentation to make initial setup easier to understand.
 
 ---
 
-## 13. Integrated Upstream PRs
+## 14. Integrated Upstream PRs
 Features from pending upstream PRs that have been squatted, integrated, and maintained in this fork.
 
 | PR # | Feature | Author | Link |

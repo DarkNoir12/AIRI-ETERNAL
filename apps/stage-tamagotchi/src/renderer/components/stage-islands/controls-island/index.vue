@@ -31,11 +31,11 @@ const { t } = useI18n()
 const settingsAudioDeviceStore = useSettingsAudioDevice()
 const settingsStore = useSettings()
 const modelStore = useModelStore()
+const cardStore = useAiriCardStore()
 const customVrmAnimationsStore = useCustomVrmAnimationsStore()
 const context = useElectronEventaContext()
 const { enabled } = storeToRefs(settingsAudioDeviceStore)
 const { alwaysOnTop, controlsIslandIconSize } = storeToRefs(settingsStore)
-const cardStore = useAiriCardStore()
 const { activeCard, activeCardId } = storeToRefs(cardStore)
 const { favoriteExpression, activeExpressions, vrmIdleAnimation } = storeToRefs(modelStore)
 
@@ -57,7 +57,7 @@ const expanded = ref(false)
 const islandRef = ref<HTMLElement>()
 
 // === Sub-menu state ===
-const view = ref<'main' | 'emotions'>('main')
+const view = ref<'main' | 'emotions' | 'wardrobe'>('main')
 
 // Expose whether hearing dialog is open so parent can disable click-through
 const hearingDialogOpen = ref(false)
@@ -162,32 +162,77 @@ function triggerRandomEmotion() {
   triggerEmotion(random.key)
 }
 
-// === Favorite ===
-const hasFavorite = computed(() => !!favoriteExpression.value)
+// === Favorite (Superseded by Wardrobe) ===
+// const hasFavorite = computed(() => !!favoriteExpression.value)
 const currentIdleAnimationLabel = computed(() => customVrmAnimationsStore.animationLabelByKey[vrmIdleAnimation.value] ?? vrmIdleAnimation.value)
-const isFavoriteActive = computed(() => {
-  if (!favoriteExpression.value)
-    return false
-  return (activeExpressions.value[favoriteExpression.value] || 0) > 0
-})
-
-function toggleFavorite() {
-  if (!favoriteExpression.value)
-    return
-  expanded.value = false
-  const name = favoriteExpression.value
-  const current = activeExpressions.value[name] || 0
-  const next = current > 0 ? 0 : 1
-  activeExpressions.value = { ...activeExpressions.value, [name]: next }
-}
+// const isFavoriteActive = computed(() => {
+//   if (!favoriteExpression.value)
+//     return false
+//   return (activeExpressions.value[favoriteExpression.value] || 0) > 0
+// })
+//
+// function toggleFavorite() {
+//   if (!favoriteExpression.value)
+//     return
+//   expanded.value = false
+//   const name = favoriteExpression.value
+//   const current = activeExpressions.value[name] || 0
+//   const next = current > 0 ? 0 : 1
+//   activeExpressions.value = { ...activeExpressions.value, [name]: next }
+// }
 
 function cycleAnimation() {
-  const keys = customVrmAnimationsStore.animationKeys
-  const currentIndex = keys.indexOf(vrmIdleAnimation.value)
-  const nextIndex = (currentIndex + 1) % keys.length
-  const nextAnimation = keys[nextIndex]
+  const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
+  const allKeys = customVrmAnimationsStore.animationKeys
+  const hasCardSubset = cardIdleAnimations.length > 0
+
+  // Tier 1: Character owns a fixed idle (size 1)
+  if (cardIdleAnimations.length === 1) {
+    // Treat as manual cycler: Move the character's choice to the NEXT global animation
+    const currentKey = cardIdleAnimations[0]
+    const currentIndex = allKeys.indexOf(currentKey)
+    const nextIndex = (currentIndex + 1) % allKeys.length
+    const nextAnimation = allKeys[nextIndex]
+
+    if (activeCard.value?.extensions?.airi?.acting) {
+      activeCard.value.extensions.airi.acting.idleAnimations = [nextAnimation]
+      // No need to set vrmIdleAnimation manually, Stage.vue computed will handle it
+    }
+    toast.info(`Character Fixed: ${customVrmAnimationsStore.animationLabelByKey[nextAnimation] || nextAnimation}`, { id: 'animation-cycle' })
+    return
+  }
+
+  // Tier 2: Random cycling or global fallback
+  const keys = hasCardSubset ? cardIdleAnimations.filter(k => allKeys.includes(k)) : allKeys
+  const finalKeys = keys.length > 0 ? keys : allKeys
+
+  const currentKey = vrmIdleAnimation.value
+  const currentIndex = finalKeys.indexOf(currentKey)
+  const nextIndex = (currentIndex + 1) % finalKeys.length
+  const nextAnimation = finalKeys[nextIndex]
+
   vrmIdleAnimation.value = nextAnimation
-  toast.info(`Selected animation: ${customVrmAnimationsStore.animationLabelByKey[nextAnimation] ?? nextAnimation}`, { id: 'transcription-feedback' })
+  toast.info(`Cycling: ${customVrmAnimationsStore.animationLabelByKey[nextAnimation] || nextAnimation}`, { id: 'animation-cycle' })
+}
+
+// === Wardrobe ===
+const wardrobeFilter = ref<'all' | 'base' | 'overlay'>('all')
+const wardrobeItems = computed(() => {
+  const outfits = activeCard.value?.extensions?.airi?.outfits || []
+  return outfits.filter(item => wardrobeFilter.value === 'all' || item.type === wardrobeFilter.value)
+})
+
+function isOutfitActive(outfitId: string) {
+  const outfit = activeCard.value?.extensions?.airi?.outfits?.find(o => o.id === outfitId)
+  if (!outfit)
+    return false
+  return Object.entries(outfit.expressions).every(([name, weight]) => {
+    return Math.abs((activeExpressions.value[name] || 0) - weight) < 0.05
+  })
+}
+
+function triggerWardrobeItem(id: string) {
+  cardStore.applyOutfit(id)
 }
 </script>
 
@@ -272,19 +317,18 @@ function cycleAnimation() {
               <ControlButtonTooltip>
                 <ControlButton
                   :button-style="adjustStyleClasses.button"
-                  :class="isFavoriteActive ? 'ring-2 ring-amber-400/60' : ''"
-                  @click="toggleFavorite"
+                  @click="view = 'wardrobe'"
                 >
                   <div
                     :class="[
                       adjustStyleClasses.icon,
                       'text-amber-500',
-                      isFavoriteActive ? 'i-solar:star-bold' : 'i-solar:star-linear',
+                      'i-solar:t-shirt-outline',
                     ]"
                   />
                 </ControlButton>
                 <template #tooltip>
-                  {{ hasFavorite ? `Favorite: ${favoriteExpression}` : 'No favorite set' }}
+                  Wardrobe & Outfits
                 </template>
               </ControlButtonTooltip>
 
@@ -347,7 +391,7 @@ function cycleAnimation() {
             </div>
 
             <!-- Emotions Sub-menu -->
-            <div v-else key="emotions" grid grid-cols-3 gap-2>
+            <div v-else-if="view === 'emotions'" key="emotions" grid grid-cols-3 gap-2>
               <ControlButtonTooltip v-for="emotion in ACT_EMOTIONS" :key="emotion.key">
                 <ControlButton :button-style="adjustStyleClasses.button" @click="triggerEmotion(emotion.key)">
                   <div :class="[adjustStyleClasses.icon, 'flex items-center justify-center text-base leading-none text-amber-500']">
@@ -378,6 +422,86 @@ function cycleAnimation() {
                   Back
                 </template>
               </ControlButtonTooltip>
+            </div>
+
+            <!-- Wardrobe Sub-menu -->
+            <div v-else-if="view === 'wardrobe'" key="wardrobe" flex flex-col gap-2>
+              <!-- 3x3 Grid (Scrollbox) -->
+              <div class="scrollbar-hide max-h-[144px] overflow-y-auto">
+                <div grid grid-cols-3 gap-2 pb-1>
+                  <ControlButtonTooltip v-for="item in wardrobeItems" :key="item.id">
+                    <ControlButton
+                      :button-style="adjustStyleClasses.button"
+                      :class="[
+                        isOutfitActive(item.id)
+                          ? item.type === 'base'
+                            ? 'bg-amber-500/30 border-amber-400'
+                            : 'ring-2 ring-sky-400/60 border-sky-400'
+                          : '',
+                      ]"
+                      @click="triggerWardrobeItem(item.id)"
+                    >
+                      <div
+                        :class="[
+                          adjustStyleClasses.icon,
+                          item.type === 'base' ? 'text-amber-500' : 'text-sky-400',
+                          item.icon,
+                        ]"
+                      />
+                    </ControlButton>
+                    <template #tooltip>
+                      {{ item.name }}
+                    </template>
+                  </ControlButtonTooltip>
+
+                  <!-- Empty State -->
+                  <div
+                    v-if="wardrobeItems.length === 0"
+                    class="col-span-3 flex flex-col items-center justify-center py-4 text-center opacity-40"
+                  >
+                    <div i-solar:pajamas-outline class="size-8" />
+                    <span class="mt-1 text-[10px]">No outfits found</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fixed Utility Row -->
+              <div grid grid-cols-3 gap-2 border-t border-neutral-200 border-solid pt-2 dark:border-neutral-800>
+                <ControlButtonTooltip>
+                  <ControlButton
+                    :button-style="adjustStyleClasses.button"
+                    :class="wardrobeFilter === 'base' ? 'bg-amber-500/20' : ''"
+                    @click="wardrobeFilter = wardrobeFilter === 'base' ? 'all' : 'base'"
+                  >
+                    <div i-solar:t-shirt-bold-duotone :class="adjustStyleClasses.icon" text="amber-500" />
+                  </ControlButton>
+                  <template #tooltip>
+                    Filter: Outfits (Base)
+                  </template>
+                </ControlButtonTooltip>
+
+                <ControlButtonTooltip>
+                  <ControlButton
+                    :button-style="adjustStyleClasses.button"
+                    :class="wardrobeFilter === 'overlay' ? 'bg-sky-500/20' : ''"
+                    @click="wardrobeFilter = wardrobeFilter === 'overlay' ? 'all' : 'overlay'"
+                  >
+                    <div i-solar:magic-stick-3-bold-duotone :class="adjustStyleClasses.icon" text="sky-400" />
+                  </ControlButton>
+                  <template #tooltip>
+                    Filter: Accessories (Overlay)
+                  </template>
+                </ControlButtonTooltip>
+
+                <ControlButtonTooltip>
+                  <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'main'; wardrobeFilter = 'all'">
+                    <div i-solar:arrow-left-outline :class="adjustStyleClasses.icon" text="neutral-500" />
+                  </ControlButton>
+                  <template #tooltip>
+                    Back
+                  </template>
+                </ControlButtonTooltip>
+              </div>
             </div>
           </Transition>
         </div>

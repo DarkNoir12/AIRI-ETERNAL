@@ -84,6 +84,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
   }
 
   async function updateSensors() {
+    return
     if (!isElectron)
       return
 
@@ -128,6 +129,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
   })
 
   const sensorPayload = computed(() => {
+    return '[Proactivity: DISABLED]'
     const config = activeCard.value?.extensions?.airi?.heartbeat
     const activeBackgroundId = activeCard.value?.extensions?.airi?.modules?.activeBackgroundId
     const resolvedDefaultBackgroundName = activeBackgroundId && activeBackgroundId !== 'none'
@@ -206,6 +208,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
   })
 
   async function evaluateHeartbeat(options?: { force?: boolean }) {
+    return
     if (isHeartbeatEvaluating.value && !options?.force) {
       // eslint-disable-next-line no-console
       console.log('[Proactivity] Evaluation already in progress, skipping.')

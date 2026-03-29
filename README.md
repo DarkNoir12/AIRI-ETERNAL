@@ -340,7 +340,8 @@ Capable of
   - [x] Pre-built weather and map widgets
   - [x] Generic JSON fallback for arbitrary data
   - [x] Artistry / image generation via widget pipeline
-- [x] Shared builtin toolchain across chat, STT, and proactivity pipelines
+- [ ] Shared builtin toolchain across chat, STT, and proactivity pipelines (Proactivity: **DISABLED** for tuning)
+- [ ] Refactor Proactivity Sensors: Transition from PowerShell to native integration (Injeca/Eventa) currently causing main-thread lag (INP >1s).
 
 ## Development
 

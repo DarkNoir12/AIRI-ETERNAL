@@ -148,15 +148,19 @@ const temporaryVrma = ref<string | null>(null)
 let temporaryVrmaTimeout: ReturnType<typeof setTimeout> | null = null
 
 const vrmActiveAnimation = computed(() => {
+  const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
   let baseKey = vrmStore.vrmIdleAnimation
 
-  const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
-  if (cardIdleAnimations.length > 0 && !cardIdleAnimations.includes(baseKey)) {
-    // If the globally stored animation isn't allowed by the card's strict subset, clamp it to the first valid preset
+  // Tier 1: Character (if exactly 1 selected, we stick to it)
+  if (cardIdleAnimations.length === 1) {
+    baseKey = cardIdleAnimations[0]
+  }
+  // Tier 2: Global Fallback / Subsection clamping
+  else if (cardIdleAnimations.length > 1 && !cardIdleAnimations.includes(baseKey)) {
     const validKeys = cardIdleAnimations.filter(k => customVrmAnimationsStore.animationKeys.includes(k))
     if (validKeys.length > 0) {
       baseKey = validKeys[0]
-      // Sync it back to the store so the first initial loop finish accurately triggers any overrides
+      // Only sync if we are globally cycling
       if (vrmStore.vrmIdleCycleEnabled) {
         vrmStore.vrmIdleAnimation = baseKey
       }
@@ -165,6 +169,15 @@ const vrmActiveAnimation = computed(() => {
 
   const vrmaKey = temporaryVrma.value || baseKey
   return customVrmAnimationsStore.resolveAnimationUrl(vrmaKey)
+})
+
+const vrmEffectiveIdleCycleEnabled = computed(() => {
+  const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
+  if (cardIdleAnimations.length > 1)
+    return true
+  if (cardIdleAnimations.length === 1)
+    return false
+  return vrmStore.vrmIdleCycleEnabled
 })
 
 const emotionsQueue = createQueue<EmotionPayload>({
@@ -713,10 +726,13 @@ function handleAnimationFinished() {
     temporaryVrma.value = null
   }
 
-  // Cycle if enabled
-  if (vrmStore.vrmIdleCycleEnabled) {
-    const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
-    const keys = cardIdleAnimations.length > 0 ? cardIdleAnimations : customVrmAnimationsStore.animationKeys
+  // Cycle logic (Tier 1: Card Subset | Tier 2: Global)
+  const cardIdleAnimations = activeCard.value?.extensions?.airi?.acting?.idleAnimations || []
+  const hasCardSubset = cardIdleAnimations.length > 0
+  const isEnabled = hasCardSubset ? cardIdleAnimations.length > 1 : vrmStore.vrmIdleCycleEnabled
+
+  if (isEnabled) {
+    const keys = hasCardSubset ? cardIdleAnimations : customVrmAnimationsStore.animationKeys
 
     // Fall back to the original full subset if none of the customized ones are currently valid
     const validKeys = keys.filter(k => customVrmAnimationsStore.animationKeys.includes(k))
@@ -725,12 +741,13 @@ function handleAnimationFinished() {
     const currentKey = vrmStore.vrmIdleAnimation
     const otherKeys = finalKeys.filter(key => key !== currentKey)
 
-    // If there's only one valid key (meaning the user picked a single animation to loop), just force it
+    // Selection
     if (finalKeys.length === 1) {
       vrmStore.vrmIdleAnimation = finalKeys[0]
     }
     else {
-      const randomKey = otherKeys[Math.floor(Math.random() * otherKeys.length)]
+      const selection = otherKeys.length > 0 ? otherKeys : finalKeys
+      const randomKey = selection[Math.floor(Math.random() * selection.length)]
       if (randomKey) {
         vrmStore.vrmIdleAnimation = randomKey
       }
@@ -850,6 +867,7 @@ defineExpose({
         :model-src="stageModelSelectedUrl"
         :model-identity="stageModelSelected"
         :idle-animation="vrmActiveAnimation"
+        :idle-cycle-enabled="vrmEffectiveIdleCycleEnabled"
         :render-scale-override="isWindowResizing ? reducedRenderScale : undefined"
         :class="['min-w-50% <lg:full min-h-100 sm:100', 'h-full w-full flex-1']"
         :paused="paused"

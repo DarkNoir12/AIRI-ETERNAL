@@ -70,6 +70,14 @@ const AiriHeartbeatSchema = object({
   }),
 })
 
+const AiriOutfitSchema = object({
+  id: string(),
+  name: string(),
+  icon: string(),
+  type: union([literal('base'), literal('overlay')]),
+  expressions: record(string(), number()),
+})
+
 const AiriExtensionSchema = object({
   modules: optional(AiriModulesSchema),
   heartbeats: optional(AiriHeartbeatSchema),
@@ -94,7 +102,9 @@ const AiriExtensionSchema = object({
     modelExpressionPrompt: string(),
     speechExpressionPrompt: string(),
     speechMannerismPrompt: string(),
+    idleAnimations: optional(array(string())),
   })),
+  outfits: optional(array(AiriOutfitSchema)),
   artistry: optional(object({
     provider: optional(string()),
     model: optional(string()),

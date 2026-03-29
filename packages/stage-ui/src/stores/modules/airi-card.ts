@@ -42,6 +42,15 @@ export interface ActingConfig {
   speechExpressionPrompt: string
   speechMannerismPrompt: string
   idleAnimations?: string[]
+
+}
+
+export interface AiriOutfit {
+  id: string
+  name: string
+  icon: string
+  type: 'base' | 'overlay'
+  expressions: Record<string, number>
 }
 
 export interface CharacterGenerationConfig {
@@ -114,6 +123,8 @@ export interface AiriExtension {
   generation?: CharacterGenerationConfig
 
   acting?: ActingConfig
+
+  outfits?: AiriOutfit[]
 
   agents: {
     [key: string]: { // example: minecraft
@@ -391,6 +402,8 @@ export const useAiriCardStore = defineStore('airi-card', () => {
       modelExpressionPrompt: DEFAULT_ACTING_MODEL_EXPRESSION_PROMPT,
       speechExpressionPrompt: DEFAULT_ACTING_SPEECH_EXPRESSION_PROMPT,
       speechMannerismPrompt: DEFAULT_ACTING_SPEECH_MANNERISM_PROMPT,
+      idleAnimations: [],
+
     }
 
     // Return default if no extension exists
@@ -460,6 +473,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
         speechMannerismPrompt: existingExtension.acting?.speechMannerismPrompt ?? defaultActing.speechMannerismPrompt,
         idleAnimations: existingExtension.acting?.idleAnimations ?? defaultActing.idleAnimations,
       },
+      outfits: existingExtension.outfits ?? [],
       agents: existingExtension.agents ?? {},
       heartbeats: {
         enabled: existingExtension.heartbeats?.enabled ?? defaultHeartbeats.enabled,
@@ -654,6 +668,69 @@ export const useAiriCardStore = defineStore('airi-card', () => {
     resetState,
     initialize,
     seedDefaults,
+
+    updateCardOutfits: (id: string, outfits: AiriOutfit[]) => {
+      const card = cards.value.get(id)
+      if (!card)
+        return false
+
+      return updateCard(id, {
+        extensions: {
+          ...card.extensions,
+          airi: {
+            ...card.extensions?.airi,
+            outfits,
+          },
+        },
+      } as any)
+    },
+
+    applyOutfit: async (outfitId: string) => {
+      if (!activeCard.value)
+        return
+
+      const extension = resolveAiriExtension(activeCard.value)
+      const outfit = extension.outfits?.find(o => o.id === outfitId)
+      if (!outfit)
+        return
+
+      const nextExpressions = { ...vrmStore.activeExpressions }
+
+      // Logic: If it's an overlay, check if it's already active to support toggling OFF
+      if (outfit.type === 'overlay') {
+        const isCurrentlyActive = Object.entries(outfit.expressions).every(([name, weight]) => {
+          return Math.abs((nextExpressions[name] || 0) - weight) < 0.05
+        })
+
+        if (isCurrentlyActive) {
+          // Toggle OFF: Zero out the expressions belonging to this overlay
+          for (const name of Object.keys(outfit.expressions)) {
+            nextExpressions[name] = 0
+          }
+          vrmStore.activeExpressions = nextExpressions
+          vrmStore.shouldUpdateView('outfit-toggled-off')
+          return
+        }
+      }
+
+      // Logic: If Base, zero out other Base outfits' expressions
+      if (outfit.type === 'base') {
+        const otherBaseOutfits = (extension.outfits || []).filter(o => o.type === 'base' && o.id !== outfitId)
+        for (const other of otherBaseOutfits) {
+          for (const expr of Object.keys(other.expressions)) {
+            nextExpressions[expr] = 0
+          }
+        }
+      }
+
+      // Apply new outfit weights
+      for (const [name, weight] of Object.entries(outfit.expressions)) {
+        nextExpressions[name] = weight
+      }
+
+      vrmStore.activeExpressions = nextExpressions
+      vrmStore.shouldUpdateView('outfit-applied')
+    },
 
     currentModels: computed(() => {
       return {

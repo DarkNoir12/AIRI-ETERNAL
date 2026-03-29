@@ -20,11 +20,13 @@ This document tracks the current development state of the AIRI project, specific
 
 ## Recent Changes (in `airi-rebase-scratch`)
 
+#### 2026-03-29 - Modular Wardrobe & Interactive Builder
+- **Modular Wardrobe Architecture**: Implemented a schema-driven wardrobe system that persists outfit bundles (base vs. overlay) within the AIRI character card.
+- **Interactive Build Mode**: Created a real-time staging area for outfits with state snapshotting/restoration, allowing users to preview complex expression combinations before saving.
+- **Control Island Integration**: Integrated live wardrobe data into the desktop island hub with visual feedback for active base and overlay layers.
+- **Improved Animation Cycle**: Refined the VRM animation cycle logic for smoother cross-fading and state management in `airi-card.ts`.
+
 #### 2026-03-28 - Neural Memory & Interface Refinement
-- **Semantic Brain Sandbox (PoC)**: Validated a high-performance, hybrid (BM25 + Vector + Reranking) memory retrieval pipeline. Verified sub-15ms retrieval across a 5,000-chunk dataset (100M token sample).
-- **Stabilized Local Whisper Anchor**: Hardened the local transcription pipeline for "always-on" reliable speech recognition.
-- **Split Artistry Presets**: Restored and bifurcated Replicate presets to support distinct "Generation" vs. "Editing" workflows in the Artistry tab.
-- **Dual-Purpose Send Button**: Implemented a context-aware send button and improved Enter key reliability for intuitive chat interactions.
 
 #### 2026-03-27 - Reload Accountability & Asset Autonomy
 
@@ -74,10 +76,8 @@ This document tracks the current development state of the AIRI project, specific
 - **Character Photo Mode / Saved Shots**: Explore a lightweight "photo mode" for capturing stills of the current character pose/frame directly from stage. Initial scope should be simple one-click image capture and download; a later extension could allow cards to keep a preferred preview shot for export. Keep this intentionally small to avoid overengineering into a full screenshot studio too early.
 - **Onboarding Flow Repackaging (Phase 1)**: (Current Focus) Redesign the initial setup to include a character picker and import links (e.g., character hubs) early in the flow. Move character settings to be more approachable, ensuring users know how to edit personality/behavior immediately after import.
 - **Browser-Integrated Card Imports (Phase 2)**: Deep integration with external character sites via an in-app Electron browser. Hooks for direct importing while respecting site ads/iframes.
-- **Agentic Asset Creation (Continued)**:
-  - **Outfits (textures)**: (Coming soon)
-  - **Simple 3D Props**: (Coming eventually)
 - **Long-Term Memory Semantic Search**: Verified (See `docs/blueprint-semantic-search-integration.md`). Ready for full store integration.
+- **Modular Wardrobe System**: Successfully implemented (See `packages/stage-ui/src/types/card.schema.ts` and `vrm-expressions.vue`).
 
 
 ## Defunct / Scrapped Ideas

@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 
 import VRMExpressions from './vrm-expressions.vue'
 
+import { useAiriCardStore } from '../../../../stores/modules'
 import { useVHackStore } from '../../../../stores/vhack'
 import { Container, PropertyColor, PropertyNumber } from '../../../data-pane'
 import { ColorPalette } from '../../../widgets'
@@ -24,6 +25,10 @@ const { t } = useI18n()
 const modelStore = useModelStore()
 const vhackStore = useVHackStore()
 const customVrmAnimationsStore = useCustomVrmAnimationsStore()
+const airiCardStore = useAiriCardStore()
+const { activeCard, activeCardId } = storeToRefs(airiCardStore)
+const { updateCard } = airiCardStore
+
 const {
   modelSize,
   modelOffset,
@@ -96,6 +101,33 @@ const envOptions = computed(() => [
       : 'i-solar:gallery-circle-linear',
   },
 ])
+
+function isAnimationSelected(key: string) {
+  return activeCard.value?.extensions?.airi?.acting?.idleAnimations?.includes(key) ?? false
+}
+
+function toggleAnimation(key: string) {
+  if (!activeCardId.value || !activeCard.value)
+    return
+
+  const current = activeCard.value.extensions.airi.acting?.idleAnimations || []
+  const next = current.includes(key)
+    ? current.filter(k => k !== key)
+    : [...current, key]
+
+  updateCard(activeCardId.value, {
+    extensions: {
+      ...activeCard.value.extensions,
+      airi: {
+        ...activeCard.value.extensions.airi,
+        acting: {
+          ...activeCard.value.extensions.airi.acting,
+          idleAnimations: next,
+        },
+      },
+    },
+  })
+}
 </script>
 
 <template>
@@ -145,6 +177,29 @@ const envOptions = computed(() => [
               <Checkbox v-model="vrmIdleCycleEnabled" />
               <span class="ml-2 text-[10px] text-neutral-400 italic">Automatically cycle through idle animations</span>
             </div>
+
+            <template v-if="activeCard">
+              <div class="col-span-full mb-2 mt-4 text-[10px] text-neutral-400 font-bold tracking-wider uppercase">
+                Cycle Subset
+              </div>
+              <div class="col-span-full max-h-40 flex flex-col gap-2 overflow-y-auto rounded-lg bg-black/5 p-2 dark:bg-white/5">
+                <div
+                  v-for="option in animationOptions"
+                  :key="option.value"
+                  class="flex cursor-pointer items-center gap-2 rounded px-2 py-1 transition hover:bg-black/5 dark:hover:bg-white/5"
+                  @click="toggleAnimation(option.value)"
+                >
+                  <Checkbox
+                    :model-value="isAnimationSelected(option.value)"
+                    @update:model-value="toggleAnimation(option.value)"
+                  />
+                  <span class="text-xs text-neutral-600 dark:text-neutral-300">{{ option.label }}</span>
+                </div>
+              </div>
+              <p class="col-span-full mt-1 text-[10px] text-neutral-400 italic">
+                If none are selected, all animations will be included in the cycle.
+              </p>
+            </template>
           </div>
         </div>
       </div>
