@@ -134,7 +134,7 @@ The floating interaction hub for the desktop experience.
 - **Glassmorphic Control Island**: A floating, draggable UI component using `backdrop-blur-xl` and semi-transparent backgrounds, following an iOS-style **"island" pattern**.
 - **Emotion Picker Sub-Menu**: Direct access to **8 emotion triggers** (Happy, Sad, Angry, Surprised, Neutral, Think, Cool, Random) from the Control Island drawer.
 - **Fade-on-Hover Intelligence**: A specialized **"Eye" mode** that makes the UI nearly invisible when the mouse hovers over the model area, ensuring the character's performance is never obscured.
-- **Profile Switcher**: Inline popover for switching between AI souls/profiles without leaving the Stage.
+- **Integrated Profile Switcher**: A dedicated sub-menu within the Control Island that replaces the main view, featuring a scrollable list of character profiles with deep-links to Gallery and Management settings. Ensures the UI remains usable at any window size.
 - **Animation Cycle Button**: One-click cycling through available VRM idle animations directly from the island.
 - **ScrollLock Mic Toggle**: A physical hardware key binding for **push-to-talk / toggle microphone** without touching the UI.
 - **Manual (Pure Mic) Mode**: Bypasses VAD entirely for **clean push-to-talk** microphone triggering.
@@ -172,13 +172,15 @@ Internal hardening to ensure the app remains a stable, performant "Daily Driver.
 
 ---
 
-## 14. Onboarding Overhaul (Phase 1: Planning)
-A structured plan for reducing first-time setup friction.
+## 14. Onboarding Overhaul (Phase 1: Functional Implementation)
+A redesigned first-run experience that reduces setup friction through automation and intuitive terminology.
 
-- **The Sense Pivot**: Terminology shift from technical acronyms (LLM, TTS, STT) to intuitive human-centered terms (**Consciousness, Speech, Hearing**).
-- **Easy Mode (Recommended)**: An opinionated setup path featuring **Qwen Portal** (OAuth-based, no-key consciousness) and **Deepgram** for a near-instant out-of-the-box experience.
-- **Advanced Mode**: Maintains the legacy granular configuration for power users.
-- **Card Browser Integration**: A built-in browser for character cards that allows direct imports from **JannyAI**, **Chub.ai**, and **CharacterHub**, converging both onboarding paths.
+- **The Sense Pivot**: Complete terminology shift from technical acronyms (LLM, TTS, STT) to human-centered terms (**Consciousness, Speech, Hearing**).
+- **Sense Portal (Easy Mode)**: A zero-config setup path that uses **Qwen Portal OAuth** (Device Flow) for instant LLM access and **Deepgram** for high-speed voice services.
+- **Automated Provider Configuration**: Successfully completing the Easy Mode flow automatically configures all internal stores (Consciousness, Speech, Hearing) with optimal default models (e.g., `aura-2`, `nova-3`).
+- **Advanced Mode**: Retains granular control for power users who prefer custom OpenAI, Anthropic, or local (Ollama/LM Studio) configurations.
+- **Onboarding Orchestrator**: A modular, multi-step dialog system that handles branching setup paths and character initialization in a single unified flow.
+- **Polymorphic UI Primitives**: Upgraded core UI components (e.g., `Button`) to support polymorphic rendering, enabling seamless integration of external setup links into the premium onboarding interface.
 
 ---
 

@@ -14,7 +14,6 @@ import ControlButtonTooltip from './control-button-tooltip.vue'
 import ControlButton from './control-button.vue'
 import ControlsIslandFadeOnHover from './controls-island-fade-on-hover.vue'
 import ControlsIslandHearingConfig from './controls-island-hearing-config.vue'
-import ControlsIslandProfilePicker from './controls-island-profile-picker.vue'
 import IndicatorMicVolume from './indicator-mic-volume.vue'
 
 import {
@@ -57,7 +56,7 @@ const expanded = ref(false)
 const islandRef = ref<HTMLElement>()
 
 // === Sub-menu state ===
-const view = ref<'main' | 'emotions' | 'wardrobe'>('main')
+const view = ref<'main' | 'emotions' | 'wardrobe' | 'profiles'>('main')
 
 // Expose whether hearing dialog is open so parent can disable click-through
 const hearingDialogOpen = ref(false)
@@ -87,6 +86,18 @@ function handleOpenSettings() {
 function handleOpenChat() {
   expanded.value = false
   return openChat()
+}
+
+function handleViewGallery() {
+  if (activeCardId.value) {
+    openSettings({ route: `/settings/airi-card?cardId=${activeCardId.value}&tab=gallery` })
+    expanded.value = false
+  }
+}
+
+function handleManageProfiles() {
+  openSettings({ route: '/settings/airi-card' })
+  expanded.value = false
 }
 
 // Grouped classes for icon / border / padding and combined style class
@@ -258,13 +269,9 @@ function triggerWardrobeItem(id: string) {
             <div v-if="view === 'main'" key="main" grid grid-cols-3 gap-2>
               <!-- Row 1: Communication -->
               <ControlButtonTooltip disable-hoverable-content>
-                <ControlsIslandProfilePicker>
-                  <template #default="{ toggle }">
-                    <ControlButton :button-style="adjustStyleClasses.button" @click="toggle">
-                      <div i-solar:emoji-funny-square-broken :class="adjustStyleClasses.icon" text="sky-600 dark:sky-400" />
-                    </ControlButton>
-                  </template>
-                </ControlsIslandProfilePicker>
+                <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'profiles'">
+                  <div i-solar:emoji-funny-square-broken :class="adjustStyleClasses.icon" text="sky-600 dark:sky-400" />
+                </ControlButton>
                 <template #tooltip>
                   {{ t('tamagotchi.stage.controls-island.switch-profile') }}
                 </template>
@@ -495,6 +502,67 @@ function triggerWardrobeItem(id: string) {
 
                 <ControlButtonTooltip>
                   <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'main'; wardrobeFilter = 'all'">
+                    <div i-solar:arrow-left-outline :class="adjustStyleClasses.icon" text="neutral-500" />
+                  </ControlButton>
+                  <template #tooltip>
+                    Back
+                  </template>
+                </ControlButtonTooltip>
+              </div>
+            </div>
+
+            <!-- Profiles Sub-menu -->
+            <div v-else-if="view === 'profiles'" key="profiles" flex flex-col gap-2>
+              <!-- Profile List (Scrollbox) -->
+              <div class="scrollbar-hide max-h-[144px] overflow-y-auto">
+                <div flex flex-col gap-1 pb-1>
+                  <button
+                    v-for="[id, card] in cardStore.cards"
+                    :key="id"
+                    class="cursor-pointer border-2 rounded-xl border-solid px-3 py-1.5 text-left text-xs backdrop-blur-md transition-all duration-300 transition-ease-out"
+                    :class="[
+                      id === activeCardId
+                        ? 'bg-sky-500/20 border-sky-400/50 text-sky-600 dark:text-sky-300'
+                        : 'bg-neutral-50/80 dark:bg-neutral-800/70 border-neutral-200/60 dark:border-neutral-800/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-700/50',
+                    ]"
+                    @click="cardStore.activateCard(id)"
+                  >
+                    <div flex items-center gap-2>
+                      <div v-if="id === activeCardId" i-solar:check-circle-bold class="size-3" />
+                      <span truncate>{{ card.name }}</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Fixed Utility Row -->
+              <div grid grid-cols-3 gap-2 border-t border-neutral-200 border-solid pt-2 dark:border-neutral-800>
+                <ControlButtonTooltip>
+                  <ControlButton
+                    :button-style="adjustStyleClasses.button"
+                    @click="handleViewGallery"
+                  >
+                    <div i-solar:gallery-linear :class="adjustStyleClasses.icon" text="sky-600 dark:sky-400" />
+                  </ControlButton>
+                  <template #tooltip>
+                    View Gallery
+                  </template>
+                </ControlButtonTooltip>
+
+                <ControlButtonTooltip>
+                  <ControlButton
+                    :button-style="adjustStyleClasses.button"
+                    @click="handleManageProfiles"
+                  >
+                    <div i-solar:settings-outline :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
+                  </ControlButton>
+                  <template #tooltip>
+                    Manage Profiles
+                  </template>
+                </ControlButtonTooltip>
+
+                <ControlButtonTooltip>
+                  <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'main'">
                     <div i-solar:arrow-left-outline :class="adjustStyleClasses.icon" text="neutral-500" />
                   </ControlButton>
                   <template #tooltip>
