@@ -2,128 +2,83 @@ import type { BrowserWindow } from 'electron'
 
 import type { MicToggleHotkey } from '../../../shared/eventa'
 
-import { spawn } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 
-import { ipcMain } from 'electron'
+import { globalShortcut, ipcMain } from 'electron'
 
-let powershellProcess: ReturnType<typeof spawn> | null = null
-let currentMicState = false
-let currentLEDState = false
 let currentHotkey: MicToggleHotkey = 'Scroll'
 let currentWindow: BrowserWindow | null = null
-let currentSessionId = 0
 
 /**
- * Stop any existing PowerShell monitoring process and clean up listeners
+ * Stop any existing monitoring and unregister shortcuts
  */
 export function cleanupMicToggleShortcut() {
-  if (powershellProcess) {
-    try {
-      powershellProcess.kill('SIGKILL')
-    }
-    catch (e) {
-      console.warn(`[Mic Toggle] Error killing old PowerShell process: ${e}`)
-    }
-    powershellProcess = null
-  }
+  globalShortcut.unregisterAll()
   ipcMain.removeAllListeners('mic-state-changed')
-  currentSessionId++
 }
 
 /**
- * Setup global microphone toggle shortcut using keyboard lock LEDs (Scroll/Caps/Num)
+ * Setup global microphone toggle shortcut using Electron globalShortcut
  */
 export function setupMicToggleShortcut(mainWindow: BrowserWindow, hotkey: MicToggleHotkey = 'Scroll') {
   currentWindow = mainWindow
   currentHotkey = hotkey
 
-  // Cleanup before starting a new one
   cleanupMicToggleShortcut()
-  const mySessionId = currentSessionId
 
-  // Map our internal hotkey names to PowerShell/SendKeys names
   const keyMap = {
-    Scroll: { ps: 'Scroll', send: 'SCROLLLOCK' },
-    Caps: { ps: 'CapsLock', send: 'CAPSLOCK' },
-    Num: { ps: 'NumLock', send: 'NUMLOCK' },
+    Scroll: { electron: 'Scrolllock', send: 'SCROLLLOCK' },
+    Caps: { electron: 'Capslock', send: 'CAPSLOCK' },
+    Num: { electron: 'Numlock', send: 'NUMLOCK' },
   }
 
-  const { ps: psKey, send: sendKey } = keyMap[currentHotkey]
-  const psLabel = `${currentHotkey.toUpperCase()}LOCK_STATE`
+  const { electron: electronKey, send: sendKey } = keyMap[currentHotkey]
 
-  console.log(`[Mic Toggle] [Session ${mySessionId}] Setting up shortcut with hotkey: ${currentHotkey} (${psKey})`)
+  console.log(`[Mic Toggle] Setting up shortcut with hotkey: ${currentHotkey}`)
 
-  // 1. Start PowerShell script to monitor LED state
-  const psScript = `
-    $ErrorActionPreference = 'SilentlyContinue'
-    Add-Type -AssemblyName System.Windows.Forms
-    $state = [System.Windows.Forms.Control]::IsKeyLocked('${psKey}')
-    Write-Host "${psLabel}:$state"
-    while ($true) {
-      try {
-        Start-Sleep -Milliseconds 100
-        $newState = [System.Windows.Forms.Control]::IsKeyLocked('${psKey}')
-        if ($newState -ne $state) {
-          $state = $newState
-          Write-Host "${psLabel}:$state"
+  // 1. Initial State Check (Windows only fallback for LED sync)
+  // We don't poll anymore. We just react to the global shortcut.
+  // The globalShortcut consumes the event, so the LED won't toggle by itself.
+  // We will manually toggle it to keep the OS/User in sync.
+
+  const registerShortcut = () => {
+    try {
+      const isRegistered = globalShortcut.register(electronKey, () => {
+        console.log(`[Mic Toggle] Hotkey ${electronKey} pressed`)
+        if (currentWindow) {
+          currentWindow.webContents.send('toggle-mic-from-shortcut')
         }
-      } catch {
-        # Ignore errors in the loop
-      }
-    }
-  `
-
-  powershellProcess = spawn('powershell', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', psScript], {
-    windowsHide: true,
-  })
-
-  powershellProcess.stdout?.on('data', (data) => {
-    if (mySessionId !== currentSessionId)
-      return
-
-    const output = data.toString()
-    if (output.includes(`${psLabel}:True`)) {
-      currentLEDState = true
-      console.log(`[Mic Toggle] [Session ${mySessionId}] LED True detected`)
-      // If the user hit the key, the LED is now True. If the mic is off, turn it on.
-      if (!currentMicState && currentWindow) {
-        currentWindow.webContents.send('toggle-mic-from-shortcut')
-      }
-    }
-    else if (output.includes(`${psLabel}:False`)) {
-      currentLEDState = false
-      console.log(`[Mic Toggle] [Session ${mySessionId}] LED False detected`)
-      // If the user hit the key, the LED is now False. If the mic is on, turn it off.
-      if (currentMicState && currentWindow) {
-        currentWindow.webContents.send('toggle-mic-from-shortcut')
-      }
-    }
-  })
-
-  powershellProcess.stderr?.on('data', (data) => {
-    if (mySessionId === currentSessionId) {
-      console.error(`[Mic Toggle] [Session ${mySessionId}] PowerShell Error: ${data.toString()}`)
-    }
-  })
-
-  // 2. Listen to renderer state changes for the mic
-  // If the user clicks the UI button, we need to sync the LED to match the new mic state.
-  ipcMain.on('mic-state-changed', (_event, micEnabled: boolean, deviceName?: string) => {
-    if (mySessionId !== currentSessionId)
-      return
-
-    console.log(`[Mic Toggle] [Session ${mySessionId}] State Syncing: ${micEnabled ? 'ENABLED' : 'DISABLED'} | Device: ${deviceName || 'Unknown'}`)
-    currentMicState = micEnabled
-    if (micEnabled !== currentLEDState) {
-      // Toggle the Lock LED via SendKeys
-      const syncScript = `
-        Add-Type -AssemblyName System.Windows.Forms
-        $wsh = New-Object -ComObject WScript.Shell
-        $wsh.SendKeys('{${sendKey}}')
-      `
-      spawn('powershell', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', syncScript], {
-        windowsHide: true,
       })
+
+      if (!isRegistered) {
+        console.warn(`[Mic Toggle] Failed to register global shortcut for ${electronKey}`)
+      }
+    }
+    catch (err) {
+      console.error(`[Mic Toggle] Error registering global shortcut: ${err}`)
+    }
+  }
+
+  registerShortcut()
+
+  // 2. Listen to renderer state changes to sync the LED
+  ipcMain.on('mic-state-changed', (_event, _micEnabled: boolean) => {
+    // On Windows, try to sync the LED if possible.
+    // Since globalShortcut consumes the keypress, the LED state is controlled by US.
+    // We send a toggle if the target state doesn't match our 'presumed' LED state.
+    // NOTE: This uses WScript.Shell which is safer than Add-Type.
+    if (process.platform === 'win32') {
+      console.log(`[Mic Toggle] Syncing LED for ${electronKey}`)
+      // Temporarily unregister to avoid infinite loop from simulated keypress
+      globalShortcut.unregister(electronKey)
+
+      const syncScript = `$wsh = New-Object -ComObject WScript.Shell; $wsh.SendKeys('{${sendKey}}')`
+      spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', syncScript], { windowsHide: true })
+
+      // Re-register after a small delay to ensure the OS has processed the simulated key
+      setTimeout(() => {
+        registerShortcut()
+      }, 500)
     }
   })
 }

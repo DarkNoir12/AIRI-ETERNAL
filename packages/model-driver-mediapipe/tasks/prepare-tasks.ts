@@ -6,6 +6,8 @@ import type { VisionTaskAssets } from './tasks'
 import fs from 'node:fs/promises'
 
 import { Buffer } from 'node:buffer'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { withRetry } from '@moeru/std'
@@ -14,15 +16,20 @@ import { ofetch } from 'ofetch'
 
 import { visionTaskAssets } from './tasks'
 
+const require = createRequire(import.meta.url)
+// Resolve the main entry point and work upwards to find the wasm directory.
+// This is necessary because @mediapipe/tasks-vision has a strict export map.
+const packageRoot = dirname(require.resolve('@mediapipe/tasks-vision'))
+const wasmBinDir = join(packageRoot, 'wasm')
+const assetsRoot = fileURLToPath(new URL('./assets', import.meta.url))
+const wasmOutputDir = fileURLToPath(new URL('./assets/wasm', import.meta.url))
+
 const taskSources: Record<keyof VisionTaskAssets, string> = {
   pose: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
   hands: 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
   face: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
 }
 
-const assetsRoot = fileURLToPath(new URL('./assets', import.meta.url))
-const wasmSourceDir = fileURLToPath(new URL('../node_modules/@mediapipe/tasks-vision/wasm', import.meta.url))
-const wasmOutputDir = fileURLToPath(new URL('./assets/wasm', import.meta.url))
 const taskTargets = Object.entries(taskSources).map(([key, source]) => ({
   key: key as keyof VisionTaskAssets,
   source,
@@ -91,7 +98,7 @@ for (const { key, source, outputPath } of taskTargets) {
 }
 
 await fs.mkdir(wasmOutputDir, { recursive: true })
-await fs.cp(wasmSourceDir, wasmOutputDir, { recursive: true, force: true })
+await fs.cp(wasmBinDir, wasmOutputDir, { recursive: true, force: true })
 
 const wasmEntries = await fs.readdir(wasmOutputDir)
 if (!wasmEntries.length)

@@ -666,6 +666,97 @@ export const useProvidersStore = defineStore('providers', () => {
           }
         },
       },
+    }),
+    'aws-polly-tts': buildOpenAICompatibleProvider({
+      id: 'aws-polly-tts',
+      name: 'Amazon AWS Polly (Local)',
+      nameKey: 'settings.pages.providers.provider.aws-polly-tts.title',
+      descriptionKey: 'settings.pages.providers.provider.aws-polly-tts.description',
+      icon: 'i-logos:aws',
+      description: 'OpenAI-Compatible Gateway - High-quality neural voices from Amazon Web Services',
+      category: 'speech',
+      pricing: 'paid',
+      deployment: 'local',
+      tasks: ['text-to-speech', 'tts'],
+      defaultOptions: () => ({
+        baseUrl: 'http://127.0.0.1:8090/v1/',
+        model: 'neural',
+      }),
+      capabilities: {
+        listVoices: async (config: Record<string, unknown>) => {
+          const baseUrl = config.baseUrl as string
+          try {
+            const response = await fetch(`${baseUrl}voices`)
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`)
+            }
+            const data = await response.json()
+            return data.voices as VoiceInfo[]
+          }
+          catch (error) {
+            console.error('[AWS Polly] Failed to fetch dynamic voices:', error)
+            // Fallback to minimal set if server is unreachable
+            return [
+              { id: 'Joey', name: 'Joey', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'male' },
+              { id: 'Salli', name: 'Salli', provider: 'aws-polly-tts', languages: [{ code: 'en-US', title: 'English (US)' }], gender: 'female' },
+            ] satisfies VoiceInfo[]
+          }
+        },
+        listModels: async () => {
+          return [
+            {
+              id: 'generative',
+              name: 'Generative (Ultra-High Quality)',
+              provider: 'aws-polly-tts',
+              description: 'The most advanced engine for lifelike conversational speech.',
+              contextLength: 0,
+              deprecated: false,
+            },
+            {
+              id: 'neural',
+              name: 'Neural (Lifelike)',
+              provider: 'aws-polly-tts',
+              description: 'High-quality neural text-to-speech for general use.',
+              contextLength: 0,
+              deprecated: false,
+            },
+            {
+              id: 'long-form',
+              name: 'Long-form (Narrations)',
+              provider: 'aws-polly-tts',
+              description: 'Best for narrating long documents or articles.',
+              contextLength: 0,
+              deprecated: false,
+            },
+            {
+              id: 'standard',
+              name: 'Standard (Legacy)',
+              provider: 'aws-polly-tts',
+              description: 'Legacy concatenative synthesis.',
+              contextLength: 0,
+              deprecated: false,
+            },
+          ]
+        },
+      },
+      validators: {
+        validateProviderConfig: (config) => {
+          const errors = [
+            !config.baseUrl && new Error('Base URL is required. Default to http://127.0.0.1:8090/v1/'),
+          ].filter(Boolean)
+
+          const res = baseUrlValidator.value(config.baseUrl)
+          if (res) {
+            return res
+          }
+
+          return {
+            errors,
+            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            valid: !!config.baseUrl,
+          }
+        },
+      },
       creator: createOpenAI,
     }),
     'openai-audio-transcription': buildOpenAICompatibleProvider({

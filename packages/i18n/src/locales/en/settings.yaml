@@ -678,6 +678,9 @@ pages:
       app-local-audio-speech:
         title: App (Local)
         description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+      aws-polly-tts:
+        title: Amazon AWS Polly (Local)
+        description: OpenAI-Compatible Gateway - High-quality neural voices from Amazon Web Services
       browser-local-audio-transcription:
         title: Browser (Local)
         description: Private & Secure - In-browser transcription via WebGPU

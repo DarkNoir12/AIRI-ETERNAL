@@ -11,6 +11,7 @@ import { computed, ref } from 'vue'
 import Live2D from './live2d.vue'
 import VRM from './vrm.vue'
 
+import { useAiriCardStore } from '../../../../stores/modules'
 import { useSettings } from '../../../../stores/settings'
 import { useVHackStore } from '../../../../stores/vhack'
 import { ModelSelectorDialog } from '../../dialogs/model-selector'
@@ -48,6 +49,12 @@ const {
   live2dMaxFps,
 } = storeToRefs(settingsStore)
 
+const airiCardStore = useAiriCardStore()
+const { activeCard, activeCardId } = storeToRefs(airiCardStore)
+const { updateCard } = airiCardStore
+
+const activeCardName = computed(() => activeCard.value?.name || 'Active Character')
+
 const currentSelectedDisplayModel = computed<DisplayModel | undefined>(() => stageModelSelectedDisplayModel.value)
 
 const modelSupportCalloutDismissed = useLocalStorage('airi-model-support-callout-dismissed', false)
@@ -70,6 +77,26 @@ defineExpose({
 async function handleModelPick(selectedModel: DisplayModel | undefined) {
   stageModelSelected.value = selectedModel?.id ?? ''
   await settingsStore.updateStageModel()
+}
+
+async function handleApplyToActiveCharacter() {
+  if (!activeCardId.value || !activeCard.value)
+    return
+
+  const updatedAiriExtension = {
+    ...activeCard.value.extensions.airi,
+    modules: {
+      ...activeCard.value.extensions.airi.modules,
+      displayModelId: stageModelSelected.value,
+    },
+  }
+
+  updateCard(activeCardId.value, {
+    extensions: {
+      ...activeCard.value.extensions,
+      airi: updatedAiriExtension,
+    },
+  })
 }
 </script>
 
@@ -99,13 +126,22 @@ async function handleModelPick(selectedModel: DisplayModel | undefined) {
         @click="modelSupportCalloutDismissed = true"
       />
     </div>
-    <div :class="['flex flex-wrap gap-2']">
+    <div :class="['flex w-full gap-2']">
       <ModelSelectorDialog v-model:show="modelSelectorOpen" :selected-model="currentSelectedDisplayModel" @pick="handleModelPick">
-        <Button variant="secondary">
+        <Button variant="secondary" class="flex-1">
           Select Model
         </Button>
       </ModelSelectorDialog>
+      <Button
+        variant="secondary"
+        class="flex-1"
+        :disabled="!activeCardId"
+        @click="handleApplyToActiveCharacter"
+      >
+        Apply to: {{ activeCardName }}
+      </Button>
     </div>
+
     <Live2D
       v-if="stageModelRenderer === 'live2d'"
       ref="live2dRef"

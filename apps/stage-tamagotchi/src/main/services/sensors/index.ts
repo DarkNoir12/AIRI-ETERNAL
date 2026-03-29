@@ -1,13 +1,12 @@
 import type { ActiveWindowEntry, WindowInfo } from '@proj-airi/stage-shared'
 
 import os from 'node:os'
-import process from 'node:process'
 
-import { Buffer } from 'node:buffer'
-import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
+import { spawnSync } from 'node:child_process'
 
+import activeWin from 'active-win'
 import loudness from 'loudness'
+import si from 'systeminformation'
 
 import { useLogg } from '@guiiai/logg'
 import { defineInvokeHandler } from '@moeru/eventa'
@@ -22,7 +21,6 @@ import {
 } from '@proj-airi/stage-shared'
 import { ipcMain, powerMonitor } from 'electron'
 
-const execAsync = promisify(exec)
 const log = useLogg('main/sensors').useGlobalConfig()
 
 export function setupSensorsService() {
@@ -30,55 +28,44 @@ export function setupSensorsService() {
   const activeWindowHistory: ActiveWindowEntry[] = []
   const MAX_HISTORY = 5
 
+  let lastActiveWinErrorTime = 0
+  const ERROR_LOG_INTERVAL = 60000 // Only log once per minute
+
   async function getActiveWindowInfo(): Promise<WindowInfo | null> {
-    if (process.platform !== 'win32')
-      return null
-
     try {
-      const psScript = `
-        Add-Type @"
-          using System;
-          using System.Runtime.InteropServices;
-          using System.Text;
-          public class ActiveWindow {
-            [DllImport("user32.dll")]
-            static extern IntPtr GetForegroundWindow();
-            [DllImport("user32.dll")]
-            static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
-            [DllImport("user32.dll")]
-            static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-            public static string Get() {
-              IntPtr handle = GetForegroundWindow();
-              if (handle == IntPtr.Zero) return "null";
-              StringBuilder sb = new StringBuilder(256);
-              if (GetWindowText(handle, sb, 256) > 0) {
-                uint pid;
-                GetWindowThreadProcessId(handle, out pid);
-                try {
-                  var proc = System.Diagnostics.Process.GetProcessById((int)pid);
-                  // Simplified: Just return a delimited string. No JSON complexity.
-                  return sb.ToString() + "|||" + proc.ProcessName;
-                } catch { return "null"; }
-              }
-              return "null";
-            }
-          }
-"@
-        [ActiveWindow]::Get()
-      `
-      const encodedCommand = Buffer.from(psScript, 'utf16le').toString('base64')
-      const { stdout } = await execAsync(`powershell -NoProfile -NonInteractive -EncodedCommand ${encodedCommand}`)
-
-      const result = stdout.trim()
-      if (result && result !== 'null') {
-        const parts = result.split('|||')
-        const title = parts[0] || 'Unknown'
-        const processName = parts[1] || 'Unknown'
-        return { title, processName }
+      const result = await activeWin()
+      if (result) {
+        return {
+          title: result.title || 'Unknown',
+          processName: result.owner.name || 'Unknown',
+        }
       }
     }
     catch (err) {
-      log.withError(err).warn('Failed to get active window via PowerShell')
+      const now = Date.now()
+      if (now - lastActiveWinErrorTime > ERROR_LOG_INTERVAL) {
+        log.withError(err).warn('Native active-win failed; using system fallbacks.')
+        lastActiveWinErrorTime = now
+      }
+
+      // Fallback for Windows: Use PowerShell to get the window with the largest CPU usage among windowed processes
+      // as a heuristic for the 'active' window. This avoids native dlopen/Add-Type issues.
+      if (process.platform === 'win32') {
+        try {
+          const psCommand = '(Get-Process | Where-Object { $_.MainWindowTitle -ne "" } | Sort-Object CPU -Descending | Select-Object -First 1) | Select-Object MainWindowTitle, ProcessName | ConvertTo-Json'
+          const { stdout } = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', psCommand], { encoding: 'utf8', windowsHide: true })
+          if (stdout) {
+            const parsed = JSON.parse(stdout)
+            return {
+              title: parsed.MainWindowTitle || 'Unknown',
+              processName: parsed.ProcessName || 'Unknown',
+            }
+          }
+        }
+        catch (psErr) {
+          // Ignore PS fallback errors to avoid spam
+        }
+      }
     }
 
     return null
@@ -156,54 +143,32 @@ export function setupSensorsService() {
   )
 
   async function getSystemLoad() {
-    if (process.platform === 'win32') {
-      let cpuLoads: [number, number, number] = [0, 0, 0]
-      let gpuLoad = 0
+    let cpuLoads: [number, number, number] = [0, 0, 0]
+    let gpuLoad = 0
 
-      try {
-        const { stdout } = await execAsync('wsl uptime')
-        const match = stdout.match(/load average:\s*([0-9.]+),\s*([0-9.]+),\s*([0-9.]+)/)
-        if (match) {
-          cpuLoads = [
-            Number.parseFloat(match[1]),
-            Number.parseFloat(match[2]),
-            Number.parseFloat(match[3]),
-          ]
-        }
-      }
-      catch {
-        try {
-          const cpuScript = '(Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average'
-          const { stdout } = await execAsync(`powershell -NoProfile -NonInteractive -Command "${cpuScript}"`)
-          const val = Number.parseFloat(stdout.trim()) / 100
-          cpuLoads = [val, val, val]
-        }
-        catch {
-          // Keep zeros if both WSL and PowerShell fallbacks fail.
-        }
-      }
-
-      try {
-        const gpuScript = '(Get-Counter "\\GPU Engine(*)\\% Utilization").CounterSamples | Where-Object { $_.Path -like "*3D*" } | Measure-Object -Property CookedValue -Sum | Select-Object -ExpandProperty Sum'
-        const { stdout } = await execAsync(`powershell -NoProfile -NonInteractive -Command "${gpuScript}"`)
-        const val = Number.parseFloat(stdout.trim())
-        if (!Number.isNaN(val))
-          gpuLoad = val
-      }
-      catch {
-        // Keep zero if the GPU counter is unavailable.
-      }
-
-      return {
-        cpu: cpuLoads,
-        gpuAvg: gpuLoad,
-      }
+    try {
+      const load = await si.currentLoad()
+      const val = load.currentLoad / 100
+      cpuLoads = [val, val, val] // si doesn't provide 1/5/15 load avg directly in a cross-platform way as easily as this, but currentLoad is more meaningful for real-time sensors.
+    }
+    catch (err) {
+      log.withError(err).warn('Failed to get CPU load via systeminformation')
+      // Fallback to os.loadavg if si fails
+      cpuLoads = os.loadavg() as [number, number, number]
     }
 
-    const cpu = os.loadavg() as [number, number, number]
+    try {
+      const graphics = await si.graphics()
+      // Take the max utilization across all GPUs
+      gpuLoad = Math.max(0, ...graphics.controllers.map((c: any) => (c.utilizationGpu || 0) as number))
+    }
+    catch (err) {
+      log.withError(err).warn('Failed to get GPU load via systeminformation')
+    }
+
     return {
-      cpu,
-      gpuAvg: 0,
+      cpu: cpuLoads,
+      gpuAvg: gpuLoad,
     }
   }
 
