@@ -46,6 +46,14 @@ const showPresets = ref(false)
 const selectedCategory = ref<string | null>(null)
 const nodeFilter = ref('')
 const textureUploader = ref<HTMLInputElement | null>(null)
+const eraserCanvas = ref<HTMLCanvasElement | null>(null)
+
+// Surgical Eraser State
+const isEraserOpen = ref(false)
+const eraserImageUrl = ref('')
+const eraserPickedColor = ref<[number, number, number] | null>(null)
+const eraserTolerance = ref(15)
+const isEraserPicking = ref(true)
 
 const activePresets = computed(() => {
   if (!selectedCategory.value)
@@ -231,43 +239,85 @@ function updateProp(prop: string, value: number) {
   mat.needsUpdate = true
 }
 
+// Texture Trace Context (Precomputed State for Global Sync)
+const currentTextureNodes = computed(() => {
+  const tex = selectedMaterial.value?.map
+  if (!tex || !activeVrm.value)
+    return []
+
+  // The ultimate source of truth for GLB/VRM: The GLTF Source Image Index
+  const targetIdx = getGltfImageIndex(tex)
+  const targetFingerprint = tex.image?.uuid || tex.image?.src || tex.uuid
+
+  const result: any[] = []
+  activeVrm.value.scene.traverse((node: any) => {
+    if (node.material) {
+      const mats = Array.isArray(node.material) ? node.material : [node.material]
+      mats.forEach((m: any) => {
+        // Check ALL texture slots for a shared GLTF source or image identity
+        const slots = [m.map, m.shadeMultiplyTexture, m.rimMultiplyTexture, m.sphereAddTexture]
+        const hasMatch = slots.some((s) => {
+          if (!s)
+            return false
+          const sIdx = getGltfImageIndex(s)
+          if (targetIdx !== null && sIdx !== null)
+            return sIdx === targetIdx
+          return s.image?.uuid === targetFingerprint || s.image?.src === targetFingerprint || s.uuid === targetFingerprint
+        })
+
+        if (hasMatch) {
+          result.push({
+            name: node.name || 'Unnamed Mesh',
+            uuid: node.uuid,
+          })
+        }
+      })
+    }
+  })
+  // Deduplicate node results by UUID
+  return Array.from(new Map(result.map(r => [r.uuid, r])).values())
+})
+
 // Texture Deck Logic
 const textureList = ref<{ id: number, name: string, type: string, url: string, texture: any }[]>([])
 
 function extractTextures() {
   if (!activeVrm.value)
     return
-  const found: { tex: any, type: string }[] = []
+  const found = new Map<number | string, { tex: any, type: string, nodeName: string }>()
+
   activeVrm.value.scene.traverse((node: any) => {
     if (node.material) {
       const mats = Array.isArray(node.material) ? node.material : [node.material]
       mats.forEach((m: any) => {
-        if (m.map)
-          found.push({ tex: m.map, type: 'Main' })
-        if (m.shadeMultiplyTexture)
-          found.push({ tex: m.shadeMultiplyTexture, type: 'Shade' })
-        if (m.rimMultiplyTexture)
-          found.push({ tex: m.rimMultiplyTexture, type: 'Rim' })
-        if (m.sphereAddTexture)
-          found.push({ tex: m.sphereAddTexture, type: 'MatCap' })
+        const slots = [
+          { tex: m.map, type: 'Main' },
+          { tex: m.shadeMultiplyTexture, type: 'Shade' },
+          { tex: m.rimMultiplyTexture, type: 'Rim' },
+          { tex: m.sphereAddTexture, type: 'MatCap' },
+        ]
+        slots.forEach((slot) => {
+          if (!slot.tex)
+            return
+          const idx = getGltfImageIndex(slot.tex)
+          const key = idx !== null ? idx : (slot.tex.image?.uuid || slot.tex.image?.src || slot.tex.uuid)
+          if (!found.has(key)) {
+            found.set(key, { tex: slot.tex, type: slot.type, nodeName: node.name })
+          }
+        })
       })
     }
   })
-  const seenUuids = new Set()
-  const seenImages = new Set()
-  const uniqueItems: { tex: any, type: string }[] = []
-  found.forEach((item) => {
-    const tex = item.tex
-    const imgId = tex.image?.src || tex.image?.uuid || tex.name || tex.id
-    if (!seenUuids.has(tex.uuid) && !seenImages.has(imgId)) {
-      seenUuids.add(tex.uuid)
-      seenImages.add(imgId)
-      uniqueItems.push(item)
+
+  textureList.value = Array.from(found.values()).map((item, i) => {
+    return {
+      id: i,
+      name: item.tex.name || `Tex ${i}`,
+      type: item.type,
+      url: getTextureUrl(item.tex) || '',
+      texture: item.tex,
+      hint: item.nodeName,
     }
-  })
-  textureList.value = uniqueItems.map((item, i) => {
-    const tex = item.tex
-    return { id: i, name: tex.name || `Tex ${i}`, type: item.type, url: getTextureUrl(tex) || '', texture: tex }
   })
 }
 
@@ -382,11 +432,15 @@ async function generateAndSwap() {
       vhackStore.generationActionLabel = 'Applying Result'
 
       const newUrl = result.base64.startsWith('data:') ? result.base64 : `data:image/png;base64,${result.base64}`
+
+      // Capture reference to target before swap
+      const targetTex = selectedMaterial.value?.map
+
       lastGeneratedUrl.value = newUrl
-      swapTexture(newUrl)
+      swapTextureByRef(newUrl, targetTex)
 
       // Register mutation for surgical persistence
-      const imgIndex = getGltfImageIndex(selectedMaterial.value.map)
+      const imgIndex = getGltfImageIndex(targetTex)
       if (imgIndex !== null) {
         vhackStore.registerMutation(imgIndex, result.base64, 'image/png')
       }
@@ -417,10 +471,11 @@ function handleFileUpload(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file || !selectedMaterial.value)
     return
+  const targetTex = selectedMaterial.value?.map
   const reader = new FileReader()
   reader.onload = (e) => {
     const url = e.target?.result as string
-    swapTexture(url)
+    swapTextureByRef(url, targetTex)
     lastGeneratedUrl.value = url
   }
   reader.readAsDataURL(file)
@@ -435,17 +490,18 @@ async function handleManualUpload(event: Event) {
   if (!file || !selectedMaterial.value)
     return
 
+  const targetTex = selectedMaterial.value?.map
   const reader = new FileReader()
   reader.onload = (e) => {
     const url = e.target?.result as string
     const base64 = url.split(',')[1]
 
-    // 1. Swap in viewport
-    swapTexture(url)
+    // 1. Swap in viewport (Global search)
+    swapTextureByRef(url, targetTex)
     lastGeneratedUrl.value = url
 
     // 2. Register mutation for surgical persistence (Export parity)
-    const imgIndex = getGltfImageIndex(selectedMaterial.value.map)
+    const imgIndex = getGltfImageIndex(targetTex)
     if (imgIndex !== null) {
       vhackStore.registerMutation(imgIndex, base64, 'image/png')
     }
@@ -453,15 +509,177 @@ async function handleManualUpload(event: Event) {
   reader.readAsDataURL(file)
 }
 
-function swapTexture(url: string) {
-  if (!selectedMaterial.value)
+function swapTextureByRef(url: string, targetRef?: any) {
+  console.info('>>> [VHACK] Starting swap sequence (NUCLEAR)...', { url: `${url.substring(0, 40)}...`, targetRef })
+  const target = targetRef || selectedMaterial.value?.map
+  if (!target || !activeVrm.value)
     return
+
+  const targetIdx = getGltfImageIndex(target)
+  const targetFingerprint = target.image?.uuid || target.image?.src || target.uuid
+
   const loader = new THREE.TextureLoader()
   loader.load(url, (tex: any) => {
-    tex.flipY = false
-    selectedMaterial.value.map = tex
-    selectedMaterial.value.needsUpdate = true
+    const img = tex.image
+    const canvas = document.createElement('canvas')
+    canvas.width = img.width
+    canvas.height = img.height
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.drawImage(img, 0, 0)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const data = imageData.data
+
+      // ALPHA PATCH: Key out dark/black pixels to restore transparency for overlays
+      let blackCount = 0
+      const tolerance = 8 // Key out anything darker than 8/255 (approx 3% gray)
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i]; const g = data[i + 1]; const b = data[i + 2]
+        if (r <= tolerance && g <= tolerance && b <= tolerance) {
+          data[i + 3] = 0
+          blackCount++
+        }
+      }
+      if (blackCount > 0) {
+        console.log(`[VHACK] Alpha Patch: Keyed out ${blackCount} black pixels.`)
+        ctx.putImageData(imageData, 0, 0)
+        tex.image = canvas
+      }
+    }
+
+    activeVrm.value!.scene.traverse((node: any) => {
+      if (node.material) {
+        const materials = Array.isArray(node.material) ? node.material : [node.material]
+        materials.forEach((mat: any) => {
+          let updated = false
+          const slots = ['map', 'shadeMultiplyTexture', 'rimMultiplyTexture', 'sphereAddTexture']
+
+          slots.forEach((slot) => {
+            const currentSlotTex = mat[slot]
+            if (!currentSlotTex)
+              return
+
+            const sIdx = getGltfImageIndex(currentSlotTex)
+            const matches = (targetIdx !== null && sIdx !== null)
+              ? sIdx === targetIdx
+              : (currentSlotTex.image?.uuid === targetFingerprint || currentSlotTex.image?.src === targetFingerprint || currentSlotTex.uuid === targetFingerprint)
+
+            if (matches) {
+              console.log(`[VHACK] Nuclear Match: ${node.name} [${slot}]. Injecting pixels.`)
+
+              currentSlotTex.image = tex.image
+              currentSlotTex.colorSpace = tex.colorSpace
+              currentSlotTex.needsUpdate = true
+              updated = true
+
+              // PERSISTENCE BAKE: Register this mutation in the store so it survives export
+              if (sIdx !== null) {
+                // Determine mime type from URL or default to png
+                const mimeType = url.startsWith('data:image/webp') ? 'image/webp' : 'image/png'
+                // Convert current canvas/image back to base64 if it was modified by the alpha patch
+                const finalDataUrl = (tex.image instanceof HTMLCanvasElement) ? tex.image.toDataURL(mimeType) : url
+                const base64Data = finalDataUrl.split(',')[1]
+                vhackStore.registerMutation(sIdx, base64Data, mimeType)
+              }
+            }
+          })
+          if (updated)
+            mat.needsUpdate = true
+        })
+      }
+    })
+    console.log('[VHACK] Swap complete.')
   })
+}
+
+/**
+ * PICK & PURGE LOGIC
+ */
+function openEraser(url: string) {
+  eraserImageUrl.value = url
+  isEraserOpen.value = true
+  isEraserPicking.value = true
+  eraserPickedColor.value = null
+
+  // Wait for canvas to mount then draw
+  nextTick(() => {
+    if (eraserCanvas.value) {
+      const img = new Image()
+      img.onload = () => {
+        eraserCanvas.value!.width = img.width
+        eraserCanvas.value!.height = img.height
+        const ctx = eraserCanvas.value!.getContext('2d')
+        ctx?.drawImage(img, 0, 0)
+      }
+      img.src = url
+    }
+  })
+}
+
+function handleEraserClick(e: MouseEvent) {
+  if (!eraserCanvas.value || !isEraserPicking.value)
+    return
+  const rect = eraserCanvas.value.getBoundingClientRect()
+  const x = Math.floor((e.clientX - rect.left) * (eraserCanvas.value.width / rect.width))
+  const y = Math.floor((e.clientY - rect.top) * (eraserCanvas.value.height / rect.height))
+
+  const ctx = eraserCanvas.value.getContext('2d')
+  if (!ctx)
+    return
+
+  const pixel = ctx.getImageData(x, y, 1, 1).data
+  eraserPickedColor.value = [pixel[0], pixel[1], pixel[2]]
+  console.log('[VHACK] Color Picked:', eraserPickedColor.value)
+
+  // Auto-preview purge
+  applyEraserPurge()
+}
+
+function applyEraserPurge() {
+  if (!eraserCanvas.value || !eraserPickedColor.value)
+    return
+  const img = new Image()
+  img.onload = () => {
+    const canvas = eraserCanvas.value!
+    const ctx = canvas.getContext('2d')
+    if (!ctx)
+      return
+
+    ctx.drawImage(img, 0, 0)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const data = imageData.data
+    const [tr, tg, tb] = eraserPickedColor.value!
+    const tol = eraserTolerance.value
+
+    let count = 0
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i]; const g = data[i + 1]; const b = data[i + 2]
+      const diff = Math.sqrt(
+        (r - tr) ** 2
+        + (g - tg) ** 2
+        + (b - tb) ** 2,
+      )
+
+      if (diff <= tol) {
+        data[i + 3] = 0
+        count++
+      }
+    }
+    ctx.putImageData(imageData, 0, 0)
+    console.log(`[VHACK] Eraser: Purged ${count} pixels.`)
+  }
+  img.src = eraserImageUrl.value
+}
+
+function finalizeEraserBake() {
+  if (!eraserCanvas.value)
+    return
+  const cleanedUrl = eraserCanvas.value.toDataURL('image/png')
+  // Re-run the swap with the cleaned URL
+  // This will also hit the vhackStore.registerMutation we added above
+  swapTextureByRef(cleanedUrl)
+  isEraserOpen.value = false
+  lastGeneratedUrl.value = cleanedUrl // Update result preview
 }
 
 // Binary Export Logic
@@ -667,6 +885,7 @@ function revert() {
 
 watch(activeVrm, () => { if (activeVrm.value) { extractTextures(); takeGlobalSnapshot() } }, { immediate: true })
 onMounted(() => {
+  console.log('>>> [VHACK] NUCLEAR SYNC ACTIVE v35.6')
   if (activeVrm.value)
     takeGlobalSnapshot()
 })
@@ -724,12 +943,34 @@ onMounted(() => {
               <div class="flex items-center gap-2">
                 <div i-solar:magic-stick-bold-duotone class="text-sm text-emerald-400" />
                 <div class="text-[10px] text-white font-black tracking-widest uppercase">
-                  Texture Forge
+                  ◈ Texture Forge [Hardened v35.6]
                 </div>
               </div>
               <button class="text-neutral-500 transition hover:text-emerald-400" @click="vhackStore.showAiSettings = !vhackStore.showAiSettings">
                 <div i-solar:settings-bold-duotone />
               </button>
+            </div>
+
+            <!-- Texture Context Header (Global Proof) -->
+            <div v-if="selectedMaterial?.map" class="mx-1 flex items-center justify-between border border-white/5 rounded-xl bg-white/5 p-3">
+              <div class="flex flex-col">
+                <div class="text-[7px] text-neutral-500 font-bold uppercase">
+                  Active Texture
+                </div>
+                <div class="text-[10px] text-emerald-400 font-bold leading-tight font-mono uppercase">
+                  {{ selectedMaterial.map.name?.replace(/\.[^/.]+$/, "") || 'Unnamed' }}
+                </div>
+              </div>
+              <div class="flex flex-col items-end">
+                <div class="text-[7px] text-neutral-500 font-bold uppercase">
+                  Shared By
+                </div>
+                <div class="flex flex-wrap justify-end gap-1">
+                  <span v-for="node in currentTextureNodes" :key="node.uuid" class="border border-emerald-500/10 rounded-full bg-emerald-500/5 px-1.5 py-0.5 text-[6px] text-emerald-300 font-bold font-mono uppercase">
+                    {{ node.name }}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <!-- AI Settings -->
@@ -830,7 +1071,8 @@ onMounted(() => {
                 <div class="space-y-1">
                   <div class="text-[8px] text-neutral-400 font-bold uppercase">
                     JSON Parameters
-                  </div><textarea v-model="aiComfyParams" class="h-16 w-full resize-none border border-white/10 rounded-md bg-black/40 p-2 text-[8px] text-white font-mono outline-none" />
+                  </div>
+                  <textarea v-model="aiComfyParams" class="h-16 w-full resize-none border border-white/10 rounded-md bg-black/40 p-2 text-[8px] text-white font-mono outline-none" />
                   <div v-pre class="mt-0.5 text-[7px] text-emerald-400/60 font-bold uppercase italic">
                     Hint: Use {{ IMAGE }} and {{ PROMPT }} placeholders
                   </div>
@@ -866,14 +1108,22 @@ onMounted(() => {
                 </div>
                 <div class="group/result relative aspect-square flex items-center justify-center overflow-hidden border border-emerald-500/20 rounded-lg border-dashed bg-emerald-500/5">
                   <img v-if="lastGeneratedUrl" :src="lastGeneratedUrl" class="animate-in fade-in zoom-in-95 h-full w-full object-cover">
-                  <button
-                    v-if="lastGeneratedUrl"
-                    class="absolute right-1 top-1 z-10 border border-white/10 rounded bg-black/60 p-1 text-white opacity-0 transition hover:bg-emerald-500 group-hover/result:opacity-100"
-                    title="Download Generated Texture"
-                    @click.stop="downloadTexture(lastGeneratedUrl, `${selectedMaterial.name}_result`)"
-                  >
-                    <div i-solar:download-square-bold-duotone class="text-xs" />
-                  </button>
+                  <div v-if="lastGeneratedUrl" class="absolute right-1 top-1 z-10 flex flex-col gap-1 opacity-0 transition group-hover/result:opacity-100">
+                    <button
+                      class="border border-white/10 rounded bg-black/60 p-1 text-white transition hover:bg-emerald-500"
+                      title="Download Generated Texture"
+                      @click.stop="downloadTexture(lastGeneratedUrl, `${selectedMaterial.name}_result`)"
+                    >
+                      <div i-solar:download-square-bold-duotone class="text-xs" />
+                    </button>
+                    <button
+                      class="border border-white/10 rounded bg-black/60 p-1 text-emerald-400 transition hover:bg-emerald-500 hover:text-white"
+                      title="Pick & Purge (Surgical Eraser)"
+                      @click.stop="openEraser(lastGeneratedUrl)"
+                    >
+                      <div i-solar:broom-bold-duotone class="text-xs" />
+                    </button>
+                  </div>
                   <div v-else-if="isGenerating" class="flex flex-col items-center gap-2 px-4 text-center">
                     <div i-solar:spinner-bold class="animate-spin text-xl text-emerald-500" />
                     <span class="animate-pulse text-[7px] text-emerald-500 font-bold uppercase">{{ vhackStore.generationActionLabel || 'Generating...' }}</span>
@@ -962,6 +1212,28 @@ onMounted(() => {
                 </div>
                 <input type="range" min="-1" max="1" step="0.01" :value="selectedMaterial.shadingShiftFactor ?? selectedMaterial.uniforms?.shadingShift?.value ?? 0" class="h-1 w-full cursor-pointer appearance-none rounded-lg bg-white/10 accent-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)]" @input="e => updateProp('shadeShift', parseFloat((e.target as HTMLInputElement).value))">
               </div>
+
+              <!-- ADDITIVE BLENDING TOGGLE -->
+              <div class="border-t border-white/5 pt-4 space-y-4">
+                <div class="flex items-center justify-between px-1">
+                  <div class="flex items-center gap-2">
+                    <div i-solar:ghost-bold-duotone class="text-[10px] text-emerald-400" />
+                    <div class="text-[10px] text-neutral-400 font-bold uppercase">
+                      Additive Blending
+                    </div>
+                  </div>
+                  <button
+                    class="h-5 w-10 flex items-center border border-white/10 rounded-full bg-white/5 px-1 transition"
+                    :class="{ 'bg-emerald-500/20 border-emerald-500/50': selectedMaterial.blending === 2 }"
+                    @click="selectedMaterial.blending = selectedMaterial.blending === 2 ? 1 : 2; selectedMaterial.transparent = true; selectedMaterial.needsUpdate = true"
+                  >
+                    <div class="h-3 w-3 rounded-full bg-white transition-all" :class="{ 'translate-x-5 !bg-emerald-400': selectedMaterial.blending === 2 }" />
+                  </button>
+                </div>
+                <div v-if="selectedMaterial.blending === 2" class="px-1 text-[8px] text-emerald-400 font-bold uppercase italic opacity-70">
+                  Patch: Ignoring black data to restore eye transparency
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1030,6 +1302,57 @@ onMounted(() => {
       <Button variant="secondary" size="sm" class="w-full border-white/5 bg-white/5 text-[10px] font-bold tracking-widest" :disabled="!activeVrm" @click="revert">
         REVERT ALL CHANGES
       </Button>
+    </div>
+
+    <!-- FOOTER / MODALS -->
+    <div v-if="isEraserOpen" class="animate-in fade-in fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-10 transition-all">
+      <div class="relative max-h-full max-w-2xl w-full border border-white/10 rounded-3xl bg-neutral-900/50 p-6 shadow-2xl backdrop-blur-3xl space-y-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div i-solar:broom-bold-duotone class="text-2xl text-emerald-400" />
+            <div>
+              <div class="text-sm text-white font-black tracking-widest uppercase">
+                Surgical Eraser
+              </div>
+              <div class="text-[10px] text-neutral-500 font-bold uppercase">
+                Click a color on the texture to purge it
+              </div>
+            </div>
+          </div>
+          <button class="text-neutral-500 transition hover:text-white" @click="isEraserOpen = false">
+            <div i-solar:close-circle-bold-duotone class="text-2xl" />
+          </button>
+        </div>
+
+        <div class="relative aspect-square overflow-hidden border border-white/10 rounded-2xl bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAACpJREFUGFdjZEACDAwM/wwMDA0MDAz/GDAESDAwMPxjAIkAAwMDAwMDAwMBEgQE+8l9hAAAAABJRU5ErkJggg==')] bg-repeat shadow-inner">
+          <canvas ref="eraserCanvas" class="h-full w-full cursor-crosshair object-contain" @click="handleEraserClick" />
+
+          <div v-if="eraserPickedColor" class="animate-in slide-in-from-bottom-2 absolute bottom-4 left-4 flex items-center gap-3 border border-white/10 rounded-full bg-black/80 p-1.5 pr-4 shadow-xl">
+            <div class="h-6 w-6 border border-white/20 rounded-full shadow-inner" :style="{ backgroundColor: `rgb(${eraserPickedColor[0]}, ${eraserPickedColor[1]}, ${eraserPickedColor[2]})` }" />
+            <div class="flex flex-col">
+              <span class="text-[9px] text-white font-black uppercase">Picked Color</span>
+              <span class="text-[8px] text-neutral-500 font-bold font-mono uppercase">#{{ eraserPickedColor.map(c => c.toString(16).padStart(2, '0')).join('') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="flex justify-between px-1 text-[10px] text-neutral-400 font-bold tracking-widest uppercase">
+            <span>Selection Tolerance</span>
+            <span class="text-emerald-400 font-mono">{{ eraserTolerance }}</span>
+          </div>
+          <input v-model="eraserTolerance" type="range" min="1" max="100" step="1" class="range-emerald h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/5 accent-emerald-500" @input="applyEraserPurge">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <Button variant="secondary" class="border-white/5 bg-white/5 font-black tracking-widest uppercase" @click="isEraserOpen = false">
+            Abort
+          </Button>
+          <Button variant="primary" class="bg-emerald-500 text-black font-black tracking-widest uppercase shadow-emerald-500/20 shadow-lg hover:bg-emerald-400" @click="finalizeEraserBake">
+            Apply & Bake to Store
+          </Button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
