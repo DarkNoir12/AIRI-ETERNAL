@@ -479,6 +479,33 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     setSessionMessages(sessionId, [generateInitialMessage()])
   }
 
+  /**
+   * Refreshes the root system message in the active session to reflect
+   * current character settings without resetting the chat.
+   */
+  function refreshActiveSystemMessage() {
+    const sessionId = activeSessionId.value
+    if (!sessionId || !ready.value)
+      return
+
+    const currentMessages = sessionMessages.value[sessionId]
+    if (!currentMessages || currentMessages.length === 0)
+      return
+
+    // Logic: The first message is always the root system prompt
+    const firstMessage = currentMessages[0]
+    if (firstMessage.role !== 'system')
+      return
+
+    const nextSystemMessage = generateInitialMessage()
+    if (firstMessage.content === nextSystemMessage.content)
+      return
+
+    console.info('[ChatSession] Refreshing active system message from character settings')
+    const nextMessages = [nextSystemMessage, ...currentMessages.slice(1)]
+    setSessionMessages(sessionId, nextMessages)
+  }
+
   function getAllSessions() {
     return JSON.parse(JSON.stringify(sessionMessages.value)) as Record<string, ChatHistoryItem[]>
   }
@@ -623,6 +650,14 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     void ensureActiveSessionForCharacter()
   })
 
+  // NOTICE: Synchronize character settings (systemPrompt) with the active session
+  // by hot-swapping the root system message content.
+  watch(systemPrompt, () => {
+    if (!ready.value)
+      return
+    refreshActiveSystemMessage()
+  })
+
   watch(activeSessionId, async (nextId) => {
     if (!nextId || !ready.value)
       return
@@ -677,5 +712,6 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     inscribeTurn,
     exportSessions,
     importSessions,
+    refreshActiveSystemMessage,
   }
 })
