@@ -101,9 +101,9 @@ function handleMouseLeave() {
         :class="[
           'relative p-3 min-w-32 min-h-32 flex items-center justify-center',
           // Kawaii Yellow Post-it aesthetic with stack layers
-          'bg-[#fff799] dark:bg-[#e6db5e]',
-          'shadow-[2px_2px_5px_rgba(0,0,0,0.1),4px_4px_0px_-1px_#fffde7,4px_4px_5px_rgba(0,0,0,0.1),8px_8px_0px_-2px_#ffff8d,8px_8px_10px_rgba(0,0,0,0.1)]',
-          'rounded-sm',
+          // NOTICE: Temporarily disabled frame via false flag as requested.
+          false ? 'bg-[#fff799] dark:bg-[#e6db5e] shadow-[2px_2px_5px_rgba(0,0,0,0.1),4px_4px_0px_-1px_#fffde7,4px_4px_5px_rgba(0,0,0,0.1),8px_8px_0px_-2px_#ffff8d,8px_8px_10px_rgba(0,0,0,0.1)]' : '',
+          false ? 'rounded-sm' : '',
         ]"
       >
         <img
