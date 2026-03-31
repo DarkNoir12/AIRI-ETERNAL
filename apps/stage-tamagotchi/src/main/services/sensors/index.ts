@@ -26,7 +26,6 @@ const log = useLogg('main/sensors').useGlobalConfig()
 export function setupSensorsService() {
   const { context } = createContext(ipcMain)
   const activeWindowHistory: ActiveWindowEntry[] = []
-  const MAX_HISTORY = 5
 
   let lastActiveWinErrorTime = 0
   const ERROR_LOG_INTERVAL = 60000 // Only log once per minute
