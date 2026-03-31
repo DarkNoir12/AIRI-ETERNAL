@@ -7,6 +7,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useChatOrchestratorStore } from '../../../stores/chat'
 import { useAiriCardStore } from '../../../stores/modules/airi-card'
 import { useConsciousnessStore } from '../../../stores/modules/consciousness'
+import { useLiveSessionStore } from '../../../stores/modules/live-session'
 import { useProvidersStore } from '../../../stores/providers'
 import { StickerManager } from '../stickers'
 
@@ -29,6 +30,7 @@ const cardStore = useAiriCardStore()
 const consciousnessStore = useConsciousnessStore()
 const providersStore = useProvidersStore()
 const chatStore = useChatOrchestratorStore()
+const liveSessionStore = useLiveSessionStore()
 
 const { activeCard } = storeToRefs(cardStore)
 const { activeProvider, activeModel } = storeToRefs(consciousnessStore)
@@ -67,6 +69,14 @@ async function send() {
   isSending.value = true
 
   try {
+    if (liveSessionStore.isActive) {
+      liveSessionStore.sendText(text)
+      inputText.value = ''
+      isSending.value = false
+      dismiss()
+      return
+    }
+
     const provider = await providersStore.getProviderInstance(activeProvider.value)
     if (!provider || !activeModel.value) {
       console.warn('[WhisperDock] No provider or model configured')

@@ -114,6 +114,12 @@ This document tracks the current development state of the AIRI project, specific
   - [ ] **Ambient Modality**: Evaluate if this belongs in a new "Ambient Image" provider class or works within existing VLM abstractions.
   - [/] **Gemini Live API Integration**: Developed [Design Document](file:///c:/Users/h4rdc/Documents/Github/airi-rebase-scratch/docs/design-gemini-live-api-integration.md). Includes plans for real-time multimodal I/O, tool call plumbing, and chat history inscription using the `google-genai` SDK.
   - [ ] **ScrollLock Syncing Cleanup**: Fully remove or refactor the ScrollLock mic-toggle state syncing logic in the backend to prevent unwanted LED flickering and OS overlays. (Currently partially disabled in backend).
+- [ ] **MCP Management UI (Settings > Modules)**:
+  - [ ] Refactor the basic `mcp.vue` into a premium, Antigravity-inspired interface.
+  - [ ] Implement the **MCP Store** for curated server discovery (Search, Filesystem, GitHub).
+  - [ ] Implement the **Server Manager** with tool status counts (e.g., `91/91 tools`) and per-tool toggles.
+  - [ ] Add **Integrated Guidance** templates at the top of the configuration view.
+  - [ ] Add a "Refresh" capability to re-poll available tools without restarting the app.
 - [ ] **Privacy Indicator**: Add visual feedback in Controls Island when AIRI is "Watching".
 
 

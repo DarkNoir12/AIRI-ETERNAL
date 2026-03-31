@@ -225,3 +225,19 @@ Fix direction:
 - hoist the `hooks` object to module-level scope in `chat.ts`
 - this ensures the singleton event bus instance persists even when the Pinia store is re-instantiated during HMR
 - components remain bound to the same stable event bus regardless of store replacement
+Another failure pattern is bypassing the mandatory marker-parser layer in new pipelines.
+
+Failure mode:
+- A new ingestion surface (like `live-session.ts`) pipes raw LLM/transcription text directly to the `createStreamingCategorizer` to handle thought filtering.
+- The `createStreamingCategorizer` is strictly an XML/HTML tag parser and intentionally ignores/ignores markers like `<|ACT:...|>`.
+- It expects that the `useLlmmarkerParser` has already processed the stream and emitted those as special tokens.
+- Without the marker-parser layer, ACT markers bleed directly into the literal speech output and are spoken aloud by the TTS.
+
+Observed symptom:
+- The agent says "Yeah hey ACT emotion dot intensity dot 1 Richard" out loud.
+- Expressions/animations in the markers do not trigger because they were never intercepted as special tokens.
+
+Fix direction:
+- Always chain `useLlmmarkerParser` as the very first layer for any LLM text stream.
+- Route `onLiteral` → `categorizer.consume()` and `onSpecial` → `emitTokenSpecialHooks`.
+- This ensures markers are stripped safely before speech evaluation and categorized tags are handled correctly.

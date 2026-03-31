@@ -3,6 +3,7 @@ import { useElectronEventaContext, useElectronEventaInvoke } from '@proj-airi/el
 import { useCustomVrmAnimationsStore, useModelStore } from '@proj-airi/stage-ui-three'
 import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { useHearingStore } from '@proj-airi/stage-ui/stores/modules/hearing'
+import { useLiveSessionStore } from '@proj-airi/stage-ui/stores/modules/live-session'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
 import { useTheme } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
@@ -35,10 +36,12 @@ const settingsStore = useSettings()
 const modelStore = useModelStore()
 const cardStore = useAiriCardStore()
 const customVrmAnimationsStore = useCustomVrmAnimationsStore()
+const liveSessionStore = useLiveSessionStore()
 const context = useElectronEventaContext()
 const { enabled } = storeToRefs(settingsAudioDeviceStore)
 const { alwaysOnTop, controlsIslandIconSize, stageModelRenderer } = storeToRefs(settingsStore)
 const { activeCard, activeCardId } = storeToRefs(cardStore)
+const { isActive: isLiveSessionActive, isConnecting: isLiveSessionConnecting } = storeToRefs(liveSessionStore)
 const activeExpressions = computed(() => (modelStore as any).activeExpressions)
 const vrmIdleAnimation = toRef(modelStore as any, 'vrmIdleAnimation')
 
@@ -620,6 +623,25 @@ function triggerWardrobeItem(id: string) {
           </ControlButton>
           <template #tooltip>
             {{ expanded ? t('tamagotchi.stage.controls-island.collapse') : t('tamagotchi.stage.controls-island.expand') }}
+          </template>
+        </ControlButtonTooltip>
+
+        <ControlButtonTooltip side="left">
+          <ControlButton
+            :button-style="adjustStyleClasses.button"
+            @click="liveSessionStore.toggle()"
+          >
+            <div
+              i-ph:sparkle
+              :class="[
+                adjustStyleClasses.icon,
+                isLiveSessionActive ? 'text-sky-500 shadow-[0_0_10px_theme(colors.sky.400)]' : 'text-neutral-600 dark:neutral-400 opacity-50',
+                isLiveSessionConnecting ? 'animate-pulse text-sky-400' : '',
+              ]"
+            />
+          </ControlButton>
+          <template #tooltip>
+            {{ isLiveSessionActive ? 'Stop Gemini Live' : (isLiveSessionConnecting ? 'Connecting...' : 'Start Gemini Live') }}
           </template>
         </ControlButtonTooltip>
 
