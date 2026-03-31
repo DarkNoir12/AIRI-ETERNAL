@@ -2,8 +2,6 @@ import type { BrowserWindow } from 'electron'
 
 import type { MicToggleHotkey } from '../../../shared/eventa'
 
-import { spawnSync } from 'node:child_process'
-
 import { globalShortcut, ipcMain } from 'electron'
 
 let currentHotkey: MicToggleHotkey = 'Scroll'
@@ -32,7 +30,7 @@ export function setupMicToggleShortcut(mainWindow: BrowserWindow, hotkey: MicTog
     Num: { electron: 'Numlock', send: 'NUMLOCK' },
   }
 
-  const { electron: electronKey, send: sendKey } = keyMap[currentHotkey]
+  const { electron: electronKey } = keyMap[currentHotkey]
 
   console.log(`[Mic Toggle] Setting up shortcut with hotkey: ${currentHotkey}`)
 
@@ -62,6 +60,9 @@ export function setupMicToggleShortcut(mainWindow: BrowserWindow, hotkey: MicTog
   registerShortcut()
 
   // 2. Listen to renderer state changes to sync the LED
+  // NOTICE: Disabled backend Scroll Lock state syncing as requested by user.
+  // It causes unwanted flickering and OS overlays.
+  /*
   ipcMain.on('mic-state-changed', (_event, _micEnabled: boolean) => {
     // On Windows, try to sync the LED if possible.
     // Since globalShortcut consumes the keypress, the LED state is controlled by US.
@@ -81,4 +82,5 @@ export function setupMicToggleShortcut(mainWindow: BrowserWindow, hotkey: MicTog
       }, 500)
     }
   })
+  */
 }

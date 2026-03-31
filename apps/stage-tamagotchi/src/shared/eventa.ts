@@ -72,6 +72,8 @@ export interface WidgetsAddPayload {
   componentProps?: Record<string, any>
   // size presets or explicit spans; renderer decides mapping
   size?: 's' | 'm' | 'l' | { cols?: number, rows?: number }
+  // optional window bounds for standalone widgets
+  bounds?: { x?: number, y?: number, width?: number, height?: number }
   // auto-dismiss in ms; if omitted, persistent until closed by user
   ttlMs?: number
 }

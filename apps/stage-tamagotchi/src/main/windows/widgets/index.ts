@@ -53,7 +53,8 @@ function computeDefaultBounds(): Rectangle {
   return { x, y, width, height }
 }
 
-function createWidgetsWindow() {
+function createWidgetsWindow(options?: Electron.BrowserWindowConstructorOptions & { spotlight?: boolean }) {
+  const { spotlight = true, ...rest } = options ?? {}
   const window = new ElectronBrowserWindow({
     title: 'Widgets',
     width: 620,
@@ -67,7 +68,9 @@ function createWidgetsWindow() {
     // Top-level overlay style like other overlay windows
     type: 'panel',
     ...transparentWindowConfig(),
-    ...spotlightLikeWindowConfig(),
+    ...(spotlight ? spotlightLikeWindowConfig() : {}),
+    backgroundColor: '#00000000',
+    ...rest,
   })
 
   // Keep on top like caption/main overlays
@@ -110,6 +113,7 @@ export function setupWidgetsWindowManager(params: {
   let eventaContext: ReturnType<typeof createContext>['context'] | undefined
   const widgetRecords = new Map<string, WidgetRecord>()
   const windowContexts = new Map<string, WidgetWindowContext>()
+  const standaloneWindows = new Map<string, BrowserWindow>()
 
   const rendererBase = baseUrl(resolve(getElectronMainDirname(), '..', 'renderer'))
   const defaultRoute = '/widgets'
@@ -212,6 +216,11 @@ export function setupWidgetsWindowManager(params: {
 
     widgetRecords.delete(id)
     windowContexts.delete(id)
+    const standalone = standaloneWindows.get(id)
+    if (standalone && !standalone.isDestroyed()) {
+      standalone.close()
+    }
+    standaloneWindows.delete(id)
 
     if (emitEvent) {
       eventaContext?.emit(widgetsRemoveEvent, { id })
@@ -279,7 +288,41 @@ export function setupWidgetsWindowManager(params: {
     }
     upsertRecord(snapshot)
     const context = windowContexts.get(id)
-    await showWindowWithRoute(`${defaultRoute}?id=${id}`, context)
+    const isSticker = payload.componentName === 'sticker'
+
+    let window: BrowserWindow
+    if (isSticker && payload.bounds) {
+      window = await createWidgetsWindow({
+        ...payload.bounds,
+        spotlight: false,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+      })
+      standaloneWindows.set(id, window)
+      const { context: evCtx } = createContext(ipcMain, window)
+      // For standalone windows, we need to load the route directly
+      await loadWithRoute(window, `${defaultRoute}?id=${id}`)
+
+      // Since standalone windows have their own eventa context, we need to emit render through it
+      // but wait for ready-to-show
+      window.once('ready-to-show', () => {
+        evCtx.emit(widgetsRenderEvent, snapshot)
+      })
+    }
+    else {
+      window = await showWindowWithRoute(`${defaultRoute}?id=${id}`, context)
+      eventaContext?.emit(widgetsRenderEvent, snapshot)
+    }
+
+    if (payload.bounds && !isSticker) {
+      window.setBounds({
+        x: payload.bounds.x ?? window.getBounds().x,
+        y: payload.bounds.y ?? window.getBounds().y,
+        width: payload.bounds.width ?? window.getBounds().width,
+        height: payload.bounds.height ?? window.getBounds().height,
+      })
+    }
+
     eventaContext?.emit(widgetsRenderEvent, snapshot)
 
     return id

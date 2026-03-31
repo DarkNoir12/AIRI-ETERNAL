@@ -43,6 +43,9 @@ export const useStickersStore = Pinia.defineStore('stickers', () => {
   // Reactive state for active instances on screen
   const activePlacements = ref<StickerPlacement[]>([])
 
+  // UI toggle for spawning standalone widgets (for Desktop support)
+  const standaloneMode = useLocalStorage<boolean>('stickers/standalone-mode', false)
+
   // Cache for object URLs to avoid recreating them constantly
   const objectUrlCache = new Map<string, string>()
 
@@ -228,6 +231,7 @@ export const useStickersStore = Pinia.defineStore('stickers', () => {
   return {
     libraryMetadata,
     currentLibrary,
+    standaloneMode,
     activePlacements,
     getStickerUrl,
     addSticker,

@@ -40,9 +40,9 @@ export function stickersTools(): Tool[] {
         const stickersStore = useStickersStore()
         const placement = stickersStore.spawnSticker(stickerId, { x, y, duration })
 
-        if (placement) {
+        if (placement && typeof placement === 'object') {
           const expirationInfo = duration ? ` for ${duration}s` : ''
-          return `Successfully spawned sticker "${stickerId}"${expirationInfo} at (${Math.round(placement.x)}%, ${Math.round(placement.y)}%).`
+          return `Successfully spawned sticker "${stickerId}"${expirationInfo} at (${Math.round((placement as any).x)}%, ${Math.round((placement as any).y)}%).`
         }
         else {
           return `Failed to spawn sticker "${stickerId}". Label not found in library.`

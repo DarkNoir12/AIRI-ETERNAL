@@ -3,7 +3,12 @@ import type { ChatHistoryItem } from '@proj-airi/stage-ui/types/chat'
 import type { ChatProvider } from '@xsai-ext/providers/utils'
 
 import { estimateTokens, formatTokenCount } from '@proj-airi/stage-shared'
-import { ChatHistory, MarkdownRenderer } from '@proj-airi/stage-ui/components'
+import {
+  CharacterContextDialog,
+  ChatHistory,
+  ChatMemoryPopover,
+  MarkdownRenderer,
+} from '@proj-airi/stage-ui/components'
 import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { useChatOrchestratorStore } from '@proj-airi/stage-ui/stores/chat'
 import { useChatMaintenanceStore } from '@proj-airi/stage-ui/stores/chat/maintenance'
@@ -11,7 +16,7 @@ import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-sto
 import { useChatStreamStore } from '@proj-airi/stage-ui/stores/chat/stream-store'
 import { useShortTermMemoryStore } from '@proj-airi/stage-ui/stores/memory-short-term'
 import { useTextJournalStore } from '@proj-airi/stage-ui/stores/memory-text-journal'
-import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
+import { buildSystemPrompt, useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
 import { useProactivityStore } from '@proj-airi/stage-ui/stores/proactivity'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
@@ -127,63 +132,16 @@ function formatLocalDayKey(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
-// --- Memory Rebuild / Cache Status ---
-const saveMemoryPopoverOpen = ref(false)
 const trashConfirmOpen = ref(false)
+const showContext = ref(false)
 
-const todayDate = computed(() => formatLocalDayKey(new Date()))
-
-const last3Dates = computed(() => {
-  const dates: string[] = []
-  for (let i = 1; i <= 3; i++) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
-    dates.push(formatLocalDayKey(d))
-  }
-  return dates
-})
-
-const characterBlocks = computed(() => {
-  if (!activeCardId.value)
-    return []
-  return shortTermMemory.getCharacterBlocks(activeCardId.value)
-})
-
-const isTodayCached = computed(() => {
-  return characterBlocks.value.some(b => b.date === todayDate.value)
-})
-
-const cachedDayCount = computed(() => {
-  const blockDates = new Set(characterBlocks.value.map(b => b.date))
-  return last3Dates.value.filter(d => blockDates.has(d)).length
-})
-
-const allLast3Cached = computed(() => cachedDayCount.value === 3)
-
-async function handleCacheToday() {
-  if (!activeCardId.value)
-    return
-  try {
-    await shortTermMemory.rebuildToday(activeCardId.value)
-  }
-  catch (err) {
-    console.error('[InteractiveArea] Failed to cache today:', err)
-  }
-}
-
-async function handleRebuildFromHistory() {
-  if (!activeCardId.value)
-    return
-  try {
-    await shortTermMemory.rebuildFromHistory(activeCardId.value)
-  }
-  catch (err) {
-    console.error('[InteractiveArea] Failed to rebuild from history:', err)
-  }
-}
+const characterName = computed(() => activeCard.value?.name || 'AIRI')
+const effectiveSystemPrompt = computed(() => buildSystemPrompt(activeCard.value))
 
 function handleTrashClick() {
-  if (!isTodayCached.value && messages.value.length > 0) {
+  const today = formatLocalDayKey(new Date())
+  const isTodayCached = activeCardId.value && shortTermMemory.getCharacterBlocks(activeCardId.value).some(b => b.date === today)
+  if (!isTodayCached && messages.value.length > 0) {
     trashConfirmOpen.value = true
     return
   }
@@ -485,122 +443,12 @@ watch(messageInput, () => {
         <div :class="[activeCard?.extensions?.airi?.groundingEnabled ? 'i-solar:cpu-bolt-bold-duotone' : 'i-solar:cpu-bold-duotone']" />
       </button>
 
-      <!-- Save Memory Button -->
-      <div class="relative">
-        <button
-          :class="[
-            'max-h-[10lh] min-h-[1lh]',
-            'flex items-center justify-center rounded-md p-2 outline-none',
-            'transition-colors transition-transform active:scale-95',
-            saveMemoryPopoverOpen
-              ? 'bg-primary-200 text-primary-600 dark:bg-primary-800 dark:text-primary-300'
-              : 'bg-neutral-100 text-lg text-neutral-500 hover:text-primary-500 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:text-primary-400',
-          ]"
-          title="Save Memory"
-          @click="saveMemoryPopoverOpen = !saveMemoryPopoverOpen"
-        >
-          <div class="i-solar:diskette-bold-duotone" />
-        </button>
-
-        <!-- Save Memory Popover -->
-        <Transition name="modal-fade">
-          <div
-            v-if="saveMemoryPopoverOpen"
-            :class="[
-              'absolute bottom-full right-0 z-40 mb-2 w-72',
-              'rounded-xl border border-neutral-200/50 bg-white p-3 shadow-xl',
-              'dark:border-neutral-700/50 dark:bg-neutral-900',
-            ]"
-          >
-            <div :class="['mb-2 text-xs font-bold uppercase tracking-wide', 'text-neutral-500 dark:text-neutral-400']">
-              Memory Cache Status
-            </div>
-
-            <!-- Rebuild Progress -->
-            <div v-if="shortTermMemory.rebuilding" :class="['mb-3 rounded-lg bg-primary-50 p-2 dark:bg-primary-900/30']">
-              <div :class="['flex items-center gap-2 text-xs text-primary-600 dark:text-primary-300']">
-                <div class="i-svg-spinners:pulse-ring text-sm" />
-                <span>{{ shortTermMemory.rebuildProgress || 'Working...' }}</span>
-              </div>
-            </div>
-
-            <!-- Last 3 Days -->
-            <div :class="['mb-2 flex items-center justify-between rounded-lg border p-2', 'border-neutral-200/50 dark:border-neutral-700/50']">
-              <div class="flex items-center gap-2">
-                <div :class="allLast3Cached ? 'text-emerald-500' : 'text-amber-500'" class="text-sm">
-                  <div :class="allLast3Cached ? 'i-solar:check-circle-bold-duotone' : 'i-solar:danger-triangle-bold-duotone'" />
-                </div>
-                <div>
-                  <div :class="['text-xs font-semibold', 'text-neutral-700 dark:text-neutral-200']">
-                    Last 3 Days
-                  </div>
-                  <div :class="['text-[10px]', 'text-neutral-500 dark:text-neutral-400']">
-                    {{ cachedDayCount }}/3 Cached
-                  </div>
-                </div>
-              </div>
-              <button
-                :class="[
-                  'rounded-md px-2 py-1 text-[10px] font-semibold',
-                  'bg-primary-100 text-primary-600 transition-colors',
-                  'hover:bg-primary-200 dark:bg-primary-900/50 dark:text-primary-300 dark:hover:bg-primary-800/50',
-                ]"
-                :disabled="shortTermMemory.rebuilding"
-                @click="handleRebuildFromHistory"
-              >
-                Rebuild
-              </button>
-            </div>
-
-            <!-- Today -->
-            <div :class="['mb-2 flex items-center justify-between rounded-lg border p-2', 'border-neutral-200/50 dark:border-neutral-700/50']">
-              <div class="flex items-center gap-2">
-                <div :class="isTodayCached ? 'text-emerald-500' : 'text-amber-500'" class="text-sm">
-                  <div :class="isTodayCached ? 'i-solar:check-circle-bold-duotone' : 'i-solar:danger-triangle-bold-duotone'" />
-                </div>
-                <div>
-                  <div :class="['text-xs font-semibold', 'text-neutral-700 dark:text-neutral-200']">
-                    Today
-                  </div>
-                  <div :class="['text-[10px]', 'text-neutral-500 dark:text-neutral-400']">
-                    {{ isTodayCached ? 'Cached' : 'Not Cached' }}
-                  </div>
-                </div>
-              </div>
-              <button
-                :class="[
-                  'rounded-md px-2 py-1 text-[10px] font-semibold',
-                  'bg-primary-100 text-primary-600 transition-colors',
-                  'hover:bg-primary-200 dark:bg-primary-900/50 dark:text-primary-300 dark:hover:bg-primary-800/50',
-                ]"
-                :disabled="shortTermMemory.rebuilding"
-                @click="handleCacheToday"
-              >
-                {{ isTodayCached ? 'Refresh' : 'Cache Today' }}
-              </button>
-            </div>
-
-            <!-- Notes -->
-            <div :class="['text-[9px] leading-tight', 'text-neutral-400 dark:text-neutral-500']">
-              Yesterday is cached automatically. Rebuild fills only missing days.
-            </div>
-          </div>
-        </Transition>
-      </div>
-
-      <!-- Memory Deep Link -->
-      <button
-        class="max-h-[10lh] min-h-[1lh]"
-        bg="neutral-100 dark:neutral-800"
-        text="lg neutral-500 dark:neutral-400"
-        hover:text="primary-500 dark:primary-400"
-        flex items-center justify-center rounded-md p-2 outline-none
-        transition-colors transition-transform active:scale-95
-        title="Memory"
-        @click="router.push('/settings/memory')"
-      >
-        <div class="i-solar:leaf-bold-duotone" />
-      </button>
+      <!-- Memory & Context -->
+      <ChatMemoryPopover
+        show-cache-status
+        :title="`Memory & Context for ${characterName}`"
+        @view-context="showContext = true"
+      />
 
       <!-- Image Journal Deep Link -->
       <button
@@ -820,6 +668,12 @@ watch(messageInput, () => {
         </div>
       </Transition>
     </Teleport>
+    <!-- Context Dialog -->
+    <CharacterContextDialog
+      v-model="showContext"
+      :character-name="characterName"
+      :system-prompt="effectiveSystemPrompt"
+    />
   </div>
 </template>
 

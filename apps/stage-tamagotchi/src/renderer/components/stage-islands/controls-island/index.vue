@@ -6,7 +6,7 @@ import { useHearingStore } from '@proj-airi/stage-ui/stores/modules/hearing'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
 import { useTheme } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -39,7 +39,8 @@ const context = useElectronEventaContext()
 const { enabled } = storeToRefs(settingsAudioDeviceStore)
 const { alwaysOnTop, controlsIslandIconSize, stageModelRenderer } = storeToRefs(settingsStore)
 const { activeCard, activeCardId } = storeToRefs(cardStore)
-const { favoriteExpression, activeExpressions, vrmIdleAnimation } = storeToRefs(modelStore)
+const activeExpressions = computed(() => (modelStore as any).activeExpressions)
+const vrmIdleAnimation = toRef(modelStore as any, 'vrmIdleAnimation')
 
 // Watch for profile changes to provide feedback
 const lastCardId = ref(activeCardId.value)
@@ -316,7 +317,7 @@ function triggerWardrobeItem(id: string) {
                   :button-style="[
                     adjustStyleClasses.button,
                     stageModelRenderer === 'live2d' ? 'opacity-30 cursor-not-allowed filter-grayscale' : '',
-                  ]"
+                  ].join(' ')"
                   :disabled="stageModelRenderer === 'live2d'"
                   @click="cycleAnimation"
                 >

@@ -746,32 +746,32 @@ export const useAiriCardStore = defineStore('airi-card', () => {
         displayModelId: stageModelStore.stageModelSelected,
       } satisfies AiriExtension['modules']
     }),
-
-    systemPrompt: computed(() => {
-      const card = activeCard.value
-      if (!card)
-        return ''
-
-      const components = [
-        card.systemPrompt,
-        card.description,
-        card.personality,
-      ].filter(Boolean)
-
-      const acting = card.extensions?.airi?.acting
-      if (acting) {
-        components.push(
-          acting.modelExpressionPrompt,
-          acting.speechExpressionPrompt,
-          acting.speechMannerismPrompt,
-        )
-      }
-
-      if (card.extensions?.airi?.artistry?.provider && card.extensions?.airi?.artistry?.widgetInstruction) {
-        components.push(card.extensions.airi.artistry.widgetInstruction)
-      }
-
-      return components.join('\n')
-    }),
+    systemPrompt: computed(() => buildSystemPrompt(activeCard.value)),
   }
 })
+
+export function buildSystemPrompt(card: AiriCard | undefined) {
+  if (!card)
+    return ''
+
+  const components = [
+    card.systemPrompt,
+    card.description,
+    card.personality,
+  ].filter(Boolean)
+
+  const acting = card.extensions?.airi?.acting
+  if (acting) {
+    components.push(
+      acting.modelExpressionPrompt,
+      acting.speechExpressionPrompt,
+      acting.speechMannerismPrompt,
+    )
+  }
+
+  if (card.extensions?.airi?.artistry?.provider && card.extensions?.airi?.artistry?.widgetInstruction) {
+    components.push(card.extensions.airi.artistry.widgetInstruction)
+  }
+
+  return components.join('\n')
+}

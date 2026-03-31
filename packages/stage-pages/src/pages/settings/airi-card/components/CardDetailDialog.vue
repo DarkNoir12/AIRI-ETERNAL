@@ -3,13 +3,17 @@ import type { AiriCard } from '@proj-airi/stage-ui/stores/modules/airi-card'
 
 import DOMPurify from 'dompurify'
 
+import { CharacterContextDialog } from '@proj-airi/stage-ui/components/scenarios/dialogs'
 import {
-  useAiriCardStore,
   useArtistryStore,
   useBackgroundStore,
   useConsciousnessStore,
   useSpeechStore,
 } from '@proj-airi/stage-ui/stores'
+import {
+  buildSystemPrompt,
+  useAiriCardStore,
+} from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { Button, Select } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import {
@@ -132,6 +136,9 @@ function handleDeleteConfirm() {
   }
   showDeleteConfirm.value = false
 }
+
+const showContextPreview = ref(false)
+const effectiveSystemPrompt = computed(() => buildSystemPrompt(selectedCard.value))
 
 interface Tab {
   id: string
@@ -383,6 +390,17 @@ function getModuleDisplayValue(value: string | undefined, defaultValue: string |
             <!-- Character -->
             <div v-if="activeTab === 'character' && Object.values(characterSettings).some(value => !!value)">
               <div flex="~ col" max-h-60 gap-4 overflow-auto pr-1 sm:max-h-80>
+                <!-- Preview Button -->
+                <div class="mb-2 flex justify-end">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon="i-solar:notes-bold-duotone"
+                    label="Preview Combined System Prompt"
+                    @click="showContextPreview = true"
+                  />
+                </div>
+
                 <template v-for="(value, key) in characterSettings" :key="key">
                   <div v-if="value" flex="~ col" gap-2>
                     <h2 text-lg text-neutral-500 font-medium dark:text-neutral-400>
@@ -670,5 +688,11 @@ function getModuleDisplayValue(value: string | undefined, defaultValue: string |
     :card-name="selectedCard?.name"
     @confirm="handleDeleteConfirm"
     @cancel="showDeleteConfirm = false"
+  />
+
+  <CharacterContextDialog
+    v-model="showContextPreview"
+    :character-name="selectedCard?.name"
+    :system-prompt="effectiveSystemPrompt"
   />
 </template>

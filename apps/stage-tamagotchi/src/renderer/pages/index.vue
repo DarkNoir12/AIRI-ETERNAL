@@ -12,7 +12,7 @@ import {
   useElectronRelativeMouse,
 } from '@proj-airi/electron-vueuse'
 import { useThreeSceneIsTransparentAtPoint } from '@proj-airi/stage-ui-three'
-import { StickerStack, WhisperDock } from '@proj-airi/stage-ui/components/scenarios'
+import { StickerStack, WhisperDock } from '@proj-airi/stage-ui/components'
 import { WidgetStage } from '@proj-airi/stage-ui/components/scenes'
 import { useAudioRecorder } from '@proj-airi/stage-ui/composables/audio/audio-recorder'
 import { useCanvasPixelIsTransparentAtPoint } from '@proj-airi/stage-ui/composables/canvas-alpha'
@@ -33,7 +33,10 @@ import { toast } from 'vue-sonner'
 import ControlsIsland from '../components/stage-islands/controls-island/index.vue'
 import ResourceStatusIsland from '../components/stage-islands/resource-status-island/index.vue'
 
-import { electronGetMainWindowConfig } from '../../shared/eventa'
+import {
+  electronGetMainWindowConfig,
+  widgetsAdd,
+} from '../../shared/eventa'
 import { useControlsIslandStore } from '../stores/controls-island'
 import { builtinTools } from '../stores/tools/builtin'
 import { useWindowStore } from '../stores/window'
@@ -41,6 +44,7 @@ import { useWindowStore } from '../stores/window'
 const controlsIslandRef = ref<InstanceType<typeof ControlsIsland>>()
 const whisperDockRef = ref<InstanceType<typeof WhisperDock>>()
 const widgetStageRef = ref<InstanceType<typeof WidgetStage>>()
+const tools = ref<any[]>([])
 const stageCanvas = toRef(() => widgetStageRef.value?.canvasElement())
 const controlsIslandRoot = computed(() => controlsIslandRef.value?.rootElement)
 const componentStateStage = ref<'pending' | 'loading' | 'mounted'>('pending')
@@ -187,6 +191,24 @@ onMounted(async () => {
 
 const hearingDialogOpen = computed(() => controlsIslandRef.value?.hearingDialogOpen ?? false)
 const whisperDockOpen = computed(() => whisperDockRef.value?.isOpen ?? false)
+
+const addWidget = useElectronEventaInvoke(widgetsAdd)
+
+async function handleSpawnStandalone(stickerId: string) {
+  // We use 128x128 as a safe default for stickers to allow rotation "crook"
+  const width = 128
+  const height = 128
+  const x = Math.floor(Math.random() * (window.screen.availWidth - width))
+  const y = Math.floor(Math.random() * (window.screen.availHeight - height))
+
+  await addWidget({
+    componentName: 'sticker',
+    componentProps: { stickerId },
+    size: 's',
+    ttlMs: 60000,
+    bounds: { x, y, width, height },
+  })
+}
 
 watch([isOutsideForInstant, isAroundWindowBorderForInstant, isOutsideWindow, isTransparent, hearingDialogOpen, whisperDockOpen, fadeOnHoverEnabled], () => {
   if (hearingDialogOpen.value || whisperDockOpen.value) {
@@ -465,9 +487,11 @@ async function stopAudioInteraction() {
 }
 
 watch(enabled, async (val) => {
+  /*
   if (window.electron?.ipcRenderer) {
     window.electron.ipcRenderer.send('mic-state-changed', val, selectedAudioInputLabel.value)
   }
+  */
 
   console.info('[Main Page] Audio enabled changed:', val, 'stream available:', !!stream.value)
   if (val) {
@@ -489,7 +513,8 @@ watch(stream, async (newStream) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
+  tools.value = await builtinTools()
   // Initialize VAD model immediately to avoid startup lag
   initVAD().catch((err) => {
     console.error('[Main Page] VAD initialization failed:', err)
@@ -576,7 +601,11 @@ watch([stream, () => vadLoaded.value], async ([s, loaded]) => {
           :is-locked="isLocked"
           @take-photo="handleTakePhoto"
         />
-        <WhisperDock ref="whisperDockRef" :tools="builtinTools" />
+        <WhisperDock
+          ref="whisperDockRef"
+          :tools="tools"
+          @spawn-standalone="handleSpawnStandalone"
+        />
         <StickerStack />
       </div>
     </div>
