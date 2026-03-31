@@ -363,6 +363,7 @@ export const useLiveSessionStore = defineStore('live-session', () => {
     stop,
     toggle,
     cycleVoice,
+    sendText,
     recordInferenceUsage,
     reset,
   }
