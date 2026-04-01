@@ -14,11 +14,18 @@ Documentation for integrating the Gemini Live API into the AIRI ecosystem to sup
 
 The Gemini Live API allows AIRI to interact with users with sub-second latency using native audio/video streaming. This integration will replace or augment the existing turn-based STT -> LLM -> TTS pipeline for compatible models.
 
-## Key Requirements
-
 1.  **Real-time Multimodal I/O**:
     - **Input**: Send raw PCM audio (16kHz, 16-bit) and video frames (JPEG/PNG) via WebSockets.
     - **Output**: Receive and play back native audio chunks from the model.
+
+> [!CAUTION]
+> ### 🛑 THE MANDATORY AUDIO RULE (NON-NEGOTIABLE)
+> **The `responseModalities` array MUST ALWAYS contain `['AUDIO']`.**
+>
+> Attempting to set it to `['TEXT']` (e.g. to save tokens/bandwidth when using Custom TTS) is **EXPLICITLY FORBIDDEN**. It will cause the Bidi session to disconnect with **Error 1007 (Unsupported Data)** or fail reasoning/tools with **Error 1011 (Internal Error)**.
+>
+> **NEVER fork the modality at the connection level.** If using "Custom TTS" mode, the system MUST still request `['AUDIO']` and simply ignore the incoming PCM bytes.
+
 2.  **Tool Call Plumbing**:
     - Naturally integrate the existing tool calling pipeline.
     - Use the established tool collection/orchestration system (currently in `ProactivityStore`).
@@ -109,11 +116,9 @@ This phase bridges the existing AIRI proactive tool ecosystem with the Gemini Li
 
 1. **Shared Execution Context**: Tool execution in the Live Session has access to the full `ChatSession` state, including character memories and conversation history. Tools are NOT isolated—they share the same context as standard chat tools.
 
-2. **Full Toolchain Injection**: All proactive tools from `ProactivityStore.registeredTools` + MCP tools are always injected into the Live Session `setup` message. The `google_search` tool is the **only** tool controlled by the "Search Grounding" toggle button, since it incurs extra per-call API costs.
-
 3. **Rate Limiting**: A safety cap of **5 tool-call invocations** per turn chain prevents expensive or recursive tool loops. The counter resets on every new user utterance (voice or text).
 
-4. **AUDIO Modality**: `responseModalities: ['AUDIO']` is mandatory and already enforced. This is NOT a new change—it is the existing requirement for the Bidi endpoint to activate reasoning/grounding.
+4. **AUDIO Modality**: `responseModalities: ['AUDIO']` is mandatory and already enforced. This is NOT a new change—it is the existing requirement for the Bidi endpoint to activate reasoning/grounding. **NEVER ATTEMPT TO REMOVE THIS.**
 
 ### Tool Schema Bridge
 

@@ -11,6 +11,7 @@ import { toast } from 'vue-sonner'
 import { useLlmmarkerParser } from '../../composables/llm-marker-parser'
 import { createStreamingCategorizer } from '../../composables/response-categoriser'
 import { mcp } from '../../tools'
+import { useAudioContext } from '../audio'
 import { useChatOrchestratorStore } from '../chat'
 import { useChatContextStore } from '../chat/context-store'
 import { useChatSessionStore } from '../chat/session-store'
@@ -74,6 +75,8 @@ export const useLiveSessionStore = defineStore('live-session', () => {
   const proactivityStore = useProactivityStore()
   const airiCard = useAiriCardStore()
 
+  const audioCtxStore = useAudioContext()
+
   const isActive = ref(false)
   const isConnecting = ref(false)
   const messages = ref<Array<{ role: 'user' | 'assistant', text: string }>>([])
@@ -82,9 +85,16 @@ export const useLiveSessionStore = defineStore('live-session', () => {
   const inferenceTokens = useLocalStorage('settings/gemini/inference-tokens', 0)
   const totalTokens = computed(() => voiceTokens.value + inferenceTokens.value)
   const tokenDetails = ref<any[]>([])
-  const voiceName = ref<'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Aoede' | 'Ursa'>('Puck')
+  const voiceName = ref<'Leda' | 'Zephyr' | 'Achernar'>('Leda')
   const isGroundingEnabled = useLocalStorage('settings/gemini/grounding', false)
+  const outputMode = useLocalStorage<'gemini' | 'custom'>('settings/gemini/output-mode', 'gemini')
   const error = ref<string | null>(null)
+
+  // Audio playback queue for Gemini native PCM audio
+  // NOTICE: Gemini sends PCM16 at 24kHz in small chunks via inlineData.
+  // We queue AudioBuffers and schedule them sequentially to prevent
+  // gaps/clicks between chunks.
+  let audioPlaybackTime = 0
 
   const socket = shallowRef<WebSocket | null>(null)
 
@@ -317,19 +327,26 @@ export const useLiveSessionStore = defineStore('live-session', () => {
         console.log('[LiveSession] Google Search grounding ENABLED')
       }
 
+      // NOTICE: responseModalities MUST ALWAYS contain 'AUDIO'.
+      // The Bidi endpoint requires it for reasoning, tool-calling, and session stability.
+      // Modality forking is handled at the playback level, NOT at the connection level.
+      const generationConfig: Record<string, unknown> = {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: voiceName.value,
+            },
+          },
+        },
+      }
+
+      console.log('[LiveSession] Sending setup with mandatory AUDIO modality:', JSON.stringify(generationConfig, null, 2))
+
       const setupMessage = {
         setup: {
           model: MODEL,
-          generationConfig: {
-            responseModalities: ['AUDIO'],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: voiceName.value,
-                },
-              },
-            },
-          },
+          generationConfig,
           tools: geminiTools.length > 0 ? geminiTools : undefined,
           systemInstruction: {
             parts: [{
@@ -379,10 +396,19 @@ export const useLiveSessionStore = defineStore('live-session', () => {
             currentCategoriser = createStreamingCategorizer('google-generative-ai')
             streamPosition = 0
 
+            // Reset the audio playback timeline for a new turn
+            audioPlaybackTime = 0
+
+            // Capture the output mode at turn start so it's consistent for the whole turn
+            const turnOutputMode = outputMode.value
+            console.log(`[LiveSession] New assistant turn started. Output Mode: ${turnOutputMode}`, {
+              responseModalities: content.modelTurn ? 'AUDIO/TEXT' : 'TRANSCRIPTION_ONLY',
+            })
+
             // NOTICE: The marker parser strips <|ACT:...|> special tokens BEFORE
             // the categorizer sees the text. This mirrors the real chat.ts pipeline:
             // raw text → useLlmmarkerParser → categorizer → TTS hooks.
-            // Without this layer, ACT/DELAY markers bleed into speech output.
+            // Without this layer, ACT markers bleed directly into speech output.
             currentMarkerParser = useLlmmarkerParser({
               onLiteral: async (literalText) => {
                 if (!currentStreamingMessage || !currentCategoriser || !currentStreamContext)
@@ -404,22 +430,45 @@ export const useLiveSessionStore = defineStore('live-session', () => {
                   }
                 }
 
-                // Send token out to Chat Orchestrator (triggers TTS per-word)
-                if (speechOnly.trim() || speechOnly.includes(' ')) {
+                // NOTICE: Only emit literal hooks (which trigger Custom TTS in Stage.vue)
+                // when outputMode is 'custom'. In 'gemini' mode, Gemini's own audio
+                // is played directly from inlineData — no need to round-trip through TTS.
+                if (turnOutputMode === 'custom' && (speechOnly.trim() || speechOnly.includes(' '))) {
+                  console.log(`[LiveSession] Forwarding literal to Custom TTS: "${speechOnly}"`)
                   await chatOrchestrator.emitTokenLiteralHooks(speechOnly, currentStreamContext!)
+                }
+                else if (turnOutputMode === 'gemini') {
+                  // Log occasionally to confirm suppression is working without spamming
+                  if (speechOnly.trim().length > 0 && Math.random() > 0.8) {
+                    console.log(`[LiveSession] Gemini mode: suppressed Custom TTS for "${speechOnly.substring(0, 20)}..."`)
+                  }
                 }
               },
               onSpecial: async (special) => {
                 // ACT/DELAY markers are handled here — emit as special tokens
-                // so the stage orchestrator can process expressions/animations
+                // so the stage orchestrator can process expressions/animations.
+                // These fire in BOTH modes so expressions always work.
                 if (currentStreamContext) {
                   await chatOrchestrator.emitTokenSpecialHooks(special, currentStreamContext)
                 }
               },
             })
 
-            // Trigger TTS pipeline prep/reset
-            await chatOrchestrator.emitBeforeMessageComposedHooks('', currentStreamContext)
+            // Only prep the Custom TTS pipeline when in 'custom' mode.
+            // In 'gemini' mode, Gemini speaks directly — no need for TTS init.
+            if (turnOutputMode === 'custom') {
+              await chatOrchestrator.emitBeforeMessageComposedHooks('', currentStreamContext)
+            }
+          }
+
+          // Play Gemini native audio from inlineData PCM chunks
+          if (outputMode.value === 'gemini' && content.modelTurn?.parts) {
+            for (const part of content.modelTurn.parts) {
+              if (part.inlineData?.mimeType?.startsWith('audio/pcm') && part.inlineData.data) {
+                console.log(`[LiveSession] Received PCM chunk: ${part.inlineData.data.length} bytes (base64)`)
+                playPcmChunk(part.inlineData.data)
+              }
+            }
           }
 
           // Handle transcription text as a streaming delta
@@ -638,17 +687,75 @@ export const useLiveSessionStore = defineStore('live-session', () => {
   }
 
   function cycleVoice() {
-    const voices: Array<typeof voiceName.value> = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Aoede', 'Ursa']
+    const voices: Array<typeof voiceName.value> = ['Leda', 'Zephyr', 'Achernar']
     const currentIndex = voices.indexOf(voiceName.value)
     const nextIndex = (currentIndex + 1) % voices.length
     voiceName.value = voices[nextIndex]
     console.log('[LiveSession] Cycle voice:', voiceName.value)
+    toast.info(`Voice: ${voiceName.value}`)
 
-    // If active, we'd need to restart to apply voice change (Gemini Live setup is immutable per session)
+    // If active, we restart to apply the new voice in the setup message
     if (isActive.value) {
       console.log('[LiveSession] Session active, restarting to apply voice change...')
       stop()
       setTimeout(start, 500)
+    }
+  }
+
+  function toggleOutputMode() {
+    outputMode.value = outputMode.value === 'gemini' ? 'custom' : 'gemini'
+    console.log('[LiveSession] Output mode toggled to:', outputMode.value)
+    toast.info(`Output: ${outputMode.value === 'gemini' ? 'Gemini Native' : 'Custom TTS'}`)
+  }
+
+  /**
+   * Decodes a base64 PCM16 chunk from Gemini's inlineData and schedules
+   * it for gapless playback through the shared AudioContext.
+   *
+   * Gemini sends audio as PCM16 little-endian at 24kHz.
+   * We convert to Float32 and create an AudioBuffer, then schedule it
+   * right after the previous chunk to prevent gaps/clicks.
+   */
+  function playPcmChunk(base64Data: string) {
+    try {
+      const ctx = audioCtxStore.audioContext
+      if (ctx.state === 'suspended') {
+        ctx.resume()
+      }
+
+      // Decode base64 → raw bytes → Int16 PCM
+      const binaryString = atob(base64Data)
+      console.log(`[LiveSession] Decoding ${binaryString.length} bytes of PCM data`)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+
+      const pcm16 = new Int16Array(bytes.buffer)
+
+      // Convert Int16 PCM to Float32 for Web Audio API
+      const float32 = new Float32Array(pcm16.length)
+      for (let i = 0; i < pcm16.length; i++) {
+        float32[i] = pcm16[i] / 32768
+      }
+
+      // Create AudioBuffer at Gemini's native 24kHz sample rate
+      const GEMINI_SAMPLE_RATE = 24000
+      const audioBuffer = ctx.createBuffer(1, float32.length, GEMINI_SAMPLE_RATE)
+      audioBuffer.getChannelData(0).set(float32)
+
+      // Schedule gapless playback by chaining chunks sequentially
+      const source = ctx.createBufferSource()
+      source.buffer = audioBuffer
+      source.connect(ctx.destination)
+
+      const now = ctx.currentTime
+      const startTime = Math.max(now, audioPlaybackTime)
+      source.start(startTime)
+      audioPlaybackTime = startTime + audioBuffer.duration
+    }
+    catch (err) {
+      console.error('[LiveSession] PCM playback error:', err)
     }
   }
 
@@ -700,6 +807,7 @@ export const useLiveSessionStore = defineStore('live-session', () => {
     tokenDetails,
     voiceName,
     isGroundingEnabled,
+    outputMode,
     estimatedCost,
     error,
     powerState,
@@ -707,6 +815,7 @@ export const useLiveSessionStore = defineStore('live-session', () => {
     stop,
     toggle,
     cycleVoice,
+    toggleOutputMode,
     sendText,
     recordInferenceUsage,
     reset,

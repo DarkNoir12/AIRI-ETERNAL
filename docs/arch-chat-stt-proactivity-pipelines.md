@@ -89,6 +89,13 @@ The important nuance is:
 - this guarantee applies to surfaces that explicitly use `builtinTools`
 - generic chat surfaces like `ChatArea.vue` are still caller-driven and do not auto-discover tools on their own
 
+## 4. Gemini Live Native Audio Pipeline
+- **Surface**: `packages/stage-ui/src/stores/modules/live-session.ts`
+- **Output Mode**: The `outputMode` setting dictates how assistant audio is handled.
+  - **`gemini` mode**: The setup message requests `responseModalities: ['AUDIO']`. Gemini streams down PCM16 audio via `inlineData`. `live-session` decodes the chunks and schedules them gapless via the shared `AudioContext`.
+  - **`custom` mode**: **CRITICAL**: The setup message MUST STILL request `responseModalities: ['AUDIO']`. Although we are using a Custom TTS pipeline, the Gemini Bidi endpoint requires the audio modality to be active for its reasoning and tool-calling engine to stay connected. In this mode, we simply ignore the incoming `inlineData` PCM chunks and pipe the raw transcript text through the standard Marker Parser → TTS hook chain.
+- **Marker Parser requirement**: Regardless of `outputMode`, *all* Gemini Live output runs through `useLlmmarkerParser`. This guarantees that expression markers (e.g., `<|ACT...|>`) are correctly intercepted and emitted as special tokens, preventing them from bleeding into the audible text or the raw UI transcript. In `gemini` mode, literal text tokens are simply not forwarded to the Stage's Custom TTS hooks because the audio is already playing natively.
+
 ## Speech Runtime Notes
 
 - `Stage.vue` is the current speech host. It registers a speech pipeline with `speechRuntimeStore.registerHost(...)`.

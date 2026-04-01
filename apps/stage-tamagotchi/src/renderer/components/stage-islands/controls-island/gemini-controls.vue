@@ -21,8 +21,15 @@ const visionStore = useVisionStore()
 const proactivityStore = useProactivityStore()
 const settingsStore = useSettings()
 
-const { estimatedCost, isActive: isLiveActive, isGroundingEnabled } = storeToRefs(liveSessionStore)
+const {
+  estimatedCost,
+  isActive: isLiveActive,
+  isGroundingEnabled,
+  outputMode,
+  voiceName,
+} = storeToRefs(liveSessionStore)
 const { isWitnessEnabled, status: visionStatus } = storeToRefs(visionStore)
+
 const { controlsIslandIconSize } = storeToRefs(settingsStore)
 const { heartbeatIntervalMinutes, isRespectScheduleEnabled } = storeToRefs(proactivityStore)
 const router = useRouter()
@@ -134,31 +141,38 @@ function handleOpenSettings() {
         </template>
       </ControlButtonTooltip>
 
-      <!-- Row 2: Voice Cluster (Planned styles applied) -->
+      <!-- Row 2: Voice Cluster (Functional items marked) -->
       <ControlButtonTooltip>
         <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
-          <div i-solar:microphone-outline :class="adjustStyleClasses.icon" text="sky-400" />
+          <div :class="adjustStyleClasses.icon" class="flex items-center justify-center text-sky-400/80 font-bold">
+            3.1
+          </div>
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.live-voice') }} (Planned)
+          {{ t('tamagotchi.stage.controls-island.model-version') }}: 3.1 (Coming Soon)
         </template>
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
-          <div i-solar:soundwave-outline :class="adjustStyleClasses.icon" text="sky-400" />
+        <ControlButton :button-style="adjustStyleClasses.button" @click="liveSessionStore.toggleOutputMode()">
+          <div
+            :class="[
+              outputMode === 'gemini' ? 'i-solar:soundwave-bold text-sky-400' : 'i-solar:soundwave-outline text-violet-400',
+              adjustStyleClasses.icon,
+            ]"
+          />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.output-mode') }} (Planned)
+          {{ t('tamagotchi.stage.controls-island.output-mode') }}: {{ outputMode === 'gemini' ? 'Gemini Native' : 'Custom TTS' }}
         </template>
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="liveSessionStore.cycleVoice()">
           <div i-solar:user-speak-outline :class="adjustStyleClasses.icon" text="sky-400" />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.cycle-voice') }} (Planned)
+          {{ t('tamagotchi.stage.controls-island.cycle-voice') }}: {{ voiceName }}
         </template>
       </ControlButtonTooltip>
 

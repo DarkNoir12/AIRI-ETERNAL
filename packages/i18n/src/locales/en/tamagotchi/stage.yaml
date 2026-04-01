@@ -19,8 +19,10 @@ controls-island:
   vision-witness: Live API
   capture-now: Capture Now
   pulse-rate: Pulse Rate
+  model-version: Model Version
   live-voice: Gemini Live Voice
   output-mode: Output Mode
+
   grounding: Grounding
   respect-schedule: Respect Schedule
   cycle-voice: Cycle Voice
