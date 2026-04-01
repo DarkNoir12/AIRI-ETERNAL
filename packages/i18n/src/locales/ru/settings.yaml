@@ -5,7 +5,8 @@ animations:
     title: Отключить переходы между сценами
   use-page-specific-transitions:
     description: >-
-      Некоторые страницы имеют свои собственные переходы — они будут переопределять переходы сцен
+      Некоторые страницы имеют свои собственные переходы — они будут
+      переопределять переходы сцен
     title: Использовать переходы для страниц
 dialogs:
   onboarding:
@@ -46,7 +47,8 @@ dialogs:
 language:
   title: Language
   description: >
-    Change the language of the AIRI interface. This will not affect the language of the character's responses.
+    Change the language of the AIRI interface. This will not affect the language
+    of the character's responses.
 controls-island:
   icon-size:
     title: Controls Island Icon Size
@@ -132,12 +134,14 @@ pages:
         systemprompt: Вы будете получать сообщения, отвечайте на них как настоящий человек.
         posthistoryinstructions: Не забывайте подражать человеку.
       modules_info: >-
-        Configure modules for this character card. If not set, default module configuration will be used.
+        Configure modules for this character card. If not set, default module
+        configuration will be used.
       use_default: Use default
       use_default_not_configured: Use default (not configured)
       fields_info:
         subtitle: >-
-          Здесь можно указать детали о создаваемом персонаже, описать его историю, контекст и то, как он должен отвечать на взаимодействия.
+          Здесь можно указать детали о создаваемом персонаже, описать его
+          историю, контекст и то, как он должен отвечать на взаимодействия.
         name: Формальное имя персонажа.
         nickname: Можно дать ник, который будет приоритетным.
         description: Описание персонажа.
@@ -263,22 +267,26 @@ pages:
           parameters:
             adaptive_threshold:
               description: >-
-                Whether to apply adaptive thresholds based on signal variance over time.
+                Whether to apply adaptive thresholds based on signal variance
+                over time.
               label: Adaptive threshold
             buffer_duration:
               description: Duration of the internal analysis buffer.
               label: Buffer duration
             envelope_filter_frequency:
               description: >-
-                Frequency for the envelope filter applied to smooth energy changes.
+                Frequency for the envelope filter applied to smooth energy
+                changes.
               label: Envelope filter frequency
             highpass_filter_frequency:
               description: >-
-                Frequency for the highpass filter applied to reduce low frequencies like sub-bass noises.
+                Frequency for the highpass filter applied to reduce low
+                frequencies like sub-bass noises.
               label: Highpass filter frequency
             lowpass_filter_frequency:
               description: >-
-                Frequency for the lowpass filter applied to reduce high frequencies like vocals.
+                Frequency for the lowpass filter applied to reduce high
+                frequencies like vocals.
               label: Lowpass filter frequency
             min_beat_interval:
               description: Maximum BPM or minimum interval between detected beats.
@@ -400,7 +408,10 @@ pages:
             search_voices_results: Найдено {count} из {total} голосов
             unsupported_voice_warning_title: No supported voices
             unsupported_voice_warning_content: >-
-              Try a different model or provider. We are working on supporting all the voice for this model as quickly as possible. If you need it urgently, please let us know on GitHub at https://github.com/moeru-ai/airi/issues.
+              Try a different model or provider. We are working on supporting
+              all the voice for this model as quickly as possible. If you need
+              it urgently, please let us know on GitHub at
+              https://github.com/moeru-ai/airi/issues.
             show_less: Показать меньше
             show_more: Показать больше
             title: Провайдер
@@ -434,17 +445,33 @@ pages:
       access-token-secret-placeholder: Введите ваш секрет токена доступа X / Twitter
       configured: X / Twitter настроен правильно!
     mcp-server:
-      description: Подключение и управление MCP-сервером и инструментами
-      title: MCP-сервер
-      config-path: Config file path
-      runtime-title: Runtime status
+      description: Подключение и управление серверами и инструментами MCP
+      title: Сервер MCP
+      config-path: Путь к файлу конфигурации
+      runtime-title: Статус выполнения
+      tabs:
+        manage: Управление
+        discover: Обзор
       actions:
-        open-config: Open mcp.json
-        apply-and-restart: Save and restart stdio MCP
+        open-config: Открыть mcp.json
+        edit-json: Редактировать mcp.json
+        apply-and-restart: Сохранить и перезапустить stdio MCP
+        apply-restart: Сохранить и перезапустить stdio MCP
+        refresh: Обновить статус
+        install: Установить
+        installed: Установлено
+      search-placeholder: Поиск серверов MCP (напр. Google Search, Filesystem)...
       messages:
-        opened: Config file opened at {path}
-        restarted: >-
-          MCP servers restarted. Started {started}, failed {failed}, skipped {skipped}
+        opened: Конфигурационный файл открыт по пути {path}
+        restarted: Серверы MCP перезапущены. Запущено {started}, ошибка {failed},
+          пропущено {skipped}
+        install-success: '{name} успешно установлено'
+      dashboard:
+        tool-count: '{count} инструментов доступно'
+      registry:
+        loading: Загрузка реестра...
+        stars: '{count} звезд'
+        no-results: Серверы для "{query}" не найдены
   providers:
     explained:
       chat: Провайдеры текстогенерации, напр. OpenRouter, OpenAI, Ollama.
@@ -454,7 +481,8 @@ pages:
     helpinfo:
       title: Впервые здесь?
       description: >
-        AIRI требует как минимум одного {chat}-провайдера для корректной работы. Можно считать его "мозгом" персонажей в системе AIRI.
+        AIRI требует как минимум одного {chat}-провайдера для корректной работы.
+        Можно считать его "мозгом" персонажей в системе AIRI.
     catalog:
       edit:
         config-id-not-found: Provider configuration not found.
@@ -466,7 +494,8 @@ pages:
           failed:
             title: Please check your provider settings, validation failed.
             description: >-
-              You can still save the current configuration if you want to proceed.
+              You can still save the current configuration if you want to
+              proceed.
             action: Save anyway
         config:
           common:
@@ -479,7 +508,8 @@ pages:
                 base-url:
                   label: Base URL
                   description: >-
-                    The base url used to connect to remote service. Often looks like http://localhost:11434/v1 or https://example.com/v1.
+                    The base url used to connect to remote service. Often looks
+                    like http://localhost:11434/v1 or https://example.com/v1.
                   placeholder: Base url...
                 headers:
                   label: Custom HTTP Headers
@@ -491,7 +521,8 @@ pages:
                 thinking-mode:
                   label: Thinking Mode
                   description: >
-                    Controls Ollama thinking behavior. GPT-OSS only supports low/medium/high levels.
+                    Controls Ollama thinking behavior. GPT-OSS only supports
+                    low/medium/high levels.
                   options:
                     auto: Auto (provider default)
                     disable: Disable
@@ -525,7 +556,14 @@ pages:
                   openai-compatible-check-connectivity:
                     label: Extra configuration needed for Ollama
                     content: >-
-                      Sorry to hear that Connectivity check failed for Ollama. Don't worry, for Ollama instances, extra configuration is needed for making it pass for Ollama. You need to set <code>OLLAMA_HOST</code> explicitly when start the Ollama application or Ollama CLI server, for detailed information, check <a href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama integration guide</a>.
+                      Sorry to hear that Connectivity check failed for Ollama.
+                      Don't worry, for Ollama instances, extra configuration is
+                      needed for making it pass for Ollama. You need to set
+                      <code>OLLAMA_HOST</code> explicitly when start the Ollama
+                      application or Ollama CLI server, for detailed
+                      information, check <a
+                      href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama
+                      integration guide</a>.
     common:
       continueAnyway: Продолжить всё равно
       goToModelSelection: 'Select Model →'
@@ -557,15 +595,18 @@ pages:
         description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: Приложение (локально)
-        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+        description: Private Voice Engine - High-performance local speech synthesis
+          (xsai-transformers)
       browser-local-audio-transcription:
         title: Браузер (локально)
         description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: Браузер (локально)
-        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech
+          API or local engine
       alibaba-cloud-model-studio:
-        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice
+          models
         title: Alibaba Cloud Model Studio
       amazon-bedrock:
         title: Amazon Bedrock
@@ -580,13 +621,16 @@ pages:
           title: Перед началом
           description:
             part1: >-
-              Хотя Anthropic недавно объявили о бета-поддержке совместимости с OpenAI SDK
+              Хотя Anthropic недавно объявили о бета-поддержке совместимости с
+              OpenAI SDK
             part2: (подробнее здесь)
             part3: но из-за особенностей реализации есть
             part4: >-
-              ограничения, не совпадающие со спецификой OpenAI SDK, поэтому сейчас использовать этого провайдера в браузере нельзя.
+              ограничения, не совпадающие со спецификой OpenAI SDK, поэтому
+              сейчас использовать этого провайдера в браузере нельзя.
             part5: >-
-              Если провайдер необходим, нужен выделенный прокси-бэкенд (например, Serverless Function)
+              Если провайдер необходим, нужен выделенный прокси-бэкенд
+              (например, Serverless Function)
             part6: или сервисы обхода CORS для снятия ограничений CORS.
       cloudflare-workers-ai:
         description: AI on the Edge - 10k free Neurons/day across many models
@@ -615,7 +659,8 @@ pages:
               description: Регулировка громкости речи
               label: Громкость
       deepgram-tts:
-        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
+        description: High-Performance Aura - Low-latency speech synthesis for real-time
+          agents
         title: Deepgram
       speech-noop:
         title: None
@@ -624,7 +669,8 @@ pages:
         description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: DeepSeek
       elevenlabs:
-        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
+        description: Industry-Leading Realism - Unparalleled expressive neural voices
+          (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -672,7 +718,8 @@ pages:
         models:
           fp32-webgpu:
             description: >-
-              Full precision model using WebGPU - Recommended for supported devices
+              Full precision model using WebGPU - Recommended for supported
+              devices
           fp32:
             description: Full precision model
           fp16:
@@ -699,7 +746,8 @@ pages:
               label: Регион
         title: Microsoft / Azure Speech
       index-tts-vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: Bilibili / IndexTTS
         callout_indextts2_unavailable_title: Limited Support
         callout_indextts2_unavailable: Support for IndexTTS2 is currently unavailable. Please use IndexTTS.
@@ -707,7 +755,8 @@ pages:
         description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI Foundry
       minimax:
-        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and
+          coding models
         title: MiniMax
       minimax-global:
         description: Aggressive Pricing - High-performance LLMs at market-low rates
@@ -728,10 +777,12 @@ pages:
         description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: Industry Standard - Reliable flagship models for chat, coding, and vision
+        description: Industry Standard - Reliable flagship models for chat, coding, and
+          vision
         title: OpenAI
       openai-compatible:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or
+          self-hosted gateway
         title: OpenAI Compatible
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
@@ -749,7 +800,8 @@ pages:
         description: player2.game
         title: Player2
       together:
-        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
+        description: Open Model Fast Lane - Cost-effective access to fast open-source
+          inference
         title: Together.ai
       google-generative-ai:
         description: Gemini Integration - Native Google ecosystem intelligence
@@ -764,10 +816,12 @@ pages:
         description: Local Desktop GUI - Serve any GGUF model locally
         title: LM Studio
       vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for
+          natural interactions
         fields:
           field:
             appId:
@@ -781,7 +835,8 @@ pages:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
+        description: Real-time Intelligence - High-accuracy speech recognition natively
+          in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
         description: Resource Hub - Pay-as-you-go access to all major AI brands
@@ -792,13 +847,16 @@ pages:
       openai-audio-speech:
         description: Industry Standard - Reliable flagship TTS voices from OpenAI
       openai-compatible-audio-speech:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or
+          self-hosted gateway
       player2-speech:
-        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+        description: Game-Ready AI - High-fidelity character voices with zero developer
+          costs and revenue sharing
       comet-api-speech:
         description: Unified Speech Gateway - Hosted speech models through Comet API
       chatterbox:
-        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and
+          high-performance playback
         title: Chatterbox
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
@@ -807,7 +865,8 @@ pages:
         description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
+          dialect support
         title: Aliyun NLS
       browser-web-speech-api:
         description: Browser-native dictation (OS-dependent)
@@ -817,7 +876,8 @@ pages:
           title: Песочница транскрипции
       aihubmix:
         title: AIHubMix
-        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
+        description: Unified API Bridge - Versatile router aggregating major models into
+          one endpoint
     title: Провайдеры
   connection:
     description: Configure WebSocket server connection
@@ -886,7 +946,8 @@ pages:
                 description: Utility for taking shots of models
               context-flow:
                 description: >-
-                  Inspect incoming context updates and outgoing chat stream events
+                  Inspect incoming context updates and outgoing chat stream
+                  events
               websocket-inspector:
                 title: WebSocket Inspector
                 description: Inspect raw WebSocket traffic
@@ -896,7 +957,8 @@ pages:
               providers-transcription-realtime-aliyun-nls:
                 title: Aliyun Real-time Transcriber
                 description: >-
-                  Stream microphone audio to Aliyun NLS and inspect live transcripts
+                  Stream microphone audio to Aliyun NLS and inspect live
+                  transcripts
               performance-playground:
                 title: Performance Playground
                 description: 'VRM expressions + TTS lip sync playground'
@@ -966,7 +1028,8 @@ pages:
                 color-7: Azure Blue
                 color-8: Ochre
               description: >-
-                Traditional Chinese colors, derived from ancient textiles, porcelain and paintings
+                Traditional Chinese colors, derived from ancient textiles,
+                porcelain and paintings
               title: Chinese Traditional Colors
           title: Наборы цветовых схем
     title: Внешний вид
@@ -1028,11 +1091,14 @@ vrm:
 websocket-secure-enabled:
   title: Включить безопасный WebSocket (WSS)
   description: >-
-    Включите WSS (WebSocket Secure), чтобы разрешить HTTPS-подключения для мобильных устройств (pocket) в режиме разработки. Это автоматически сгенерирует самоподписанный сертификат.
+    Включите WSS (WebSocket Secure), чтобы разрешить HTTPS-подключения для
+    мобильных устройств (pocket) в режиме разработки. Это автоматически
+    сгенерирует самоподписанный сертификат.
 wip:
   title: Work in Progress
   description: >-
-    This feature is currently under development and not yet publicly available. Check back in future updates for this functionality.
+    This feature is currently under development and not yet publicly available.
+    Check back in future updates for this functionality.
 
       openai-audio-transcription:
         description: Industry Standard - Reliable and widely compatible Whisper API

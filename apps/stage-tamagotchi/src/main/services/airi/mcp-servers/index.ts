@@ -12,7 +12,7 @@ import type {
 } from '../../../../shared/eventa'
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 import { useLogg } from '@guiiai/logg'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -24,9 +24,11 @@ import { z } from 'zod'
 import {
   electronMcpApplyAndRestart,
   electronMcpCallTool,
+  electronMcpGetConfig,
   electronMcpGetRuntimeStatus,
   electronMcpListTools,
   electronMcpOpenConfigFile,
+  electronMcpUpdateConfig,
 } from '../../../../shared/eventa'
 import { onAppBeforeQuit } from '../../../libs/bootkit/lifecycle'
 
@@ -44,6 +46,8 @@ export interface McpStdioManager {
   callTool: (payload: ElectronMcpCallToolPayload) => Promise<ElectronMcpCallToolResult>
   stopAll: () => Promise<void>
   getRuntimeStatus: () => ElectronMcpStdioRuntimeStatus
+  getConfig: () => Promise<ElectronMcpStdioConfigFile>
+  updateConfig: (config: Partial<ElectronMcpStdioConfigFile>) => Promise<void>
 }
 
 const mcpServerConfigSchema = z.object({
@@ -74,7 +78,7 @@ function stringifyError(error: unknown) {
 }
 
 function getConfigPath() {
-  return join(app.getPath('appData'), 'airi', 'mcp.json')
+  return join(app.getPath('userData'), 'mcp.json')
 }
 
 function parseQualifiedToolName(name: string) {
@@ -127,12 +131,16 @@ export function createMcpStdioManager(): McpStdioManager {
 
   const ensureConfigFile = async () => {
     const path = getConfigPath()
-    await mkdir(app.getPath('userData'), { recursive: true })
+    log.withFields({ path }).debug('ensuring mcp config file')
+
+    // Ensure the parent directory exists
+    await mkdir(dirname(path), { recursive: true })
 
     try {
       await readFile(path, 'utf-8')
     }
-    catch {
+    catch (error) {
+      log.withFields({ path }).log('mcp config file not found, creating default')
       await writeFile(path, `${JSON.stringify(defaultMcpConfig, null, 2)}\n`)
     }
 
@@ -359,6 +367,27 @@ export function createMcpStdioManager(): McpStdioManager {
     }
   }
 
+  const getConfig = async () => {
+    const { path } = await ensureConfigFile()
+    return readConfigFile(path)
+  }
+
+  const updateConfig = async (partial: Partial<ElectronMcpStdioConfigFile>) => {
+    const { path } = await ensureConfigFile()
+    const current = await readConfigFile(path)
+
+    const updated: ElectronMcpStdioConfigFile = {
+      ...current,
+      mcpServers: {
+        ...current.mcpServers,
+        ...partial.mcpServers,
+      },
+    }
+
+    await writeFile(path, `${JSON.stringify(updated, null, 2)}\n`)
+    log.log('mcp config updated')
+  }
+
   return {
     ensureConfigFile,
     openConfigFile,
@@ -367,6 +396,8 @@ export function createMcpStdioManager(): McpStdioManager {
     callTool,
     stopAll,
     getRuntimeStatus,
+    getConfig,
+    updateConfig,
   }
 }
 
@@ -409,5 +440,13 @@ export function createMcpServersService(params: { context: ReturnType<typeof cre
 
   defineInvokeHandler(params.context, electronMcpCallTool, async (payload) => {
     return params.manager.callTool(payload)
+  })
+
+  defineInvokeHandler(params.context, electronMcpGetConfig, async () => {
+    return params.manager.getConfig()
+  })
+
+  defineInvokeHandler(params.context, electronMcpUpdateConfig, async (payload) => {
+    return params.manager.updateConfig(payload)
   })
 }

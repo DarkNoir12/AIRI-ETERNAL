@@ -6,6 +6,47 @@ pages:
     mcp-server:
       description: Connect and manage MCP server and tools
       title: MCP Server
+      config-path: Config Path
+      runtime-title: Running Servers
+      tabs:
+        manage: Manage
+        store: Store
+        config: Configuration
+      actions:
+        open-config: Open Config
+        apply-restart: 'Apply & Restart'
+        refresh: Refresh Status
+        install: Install
+      messages:
+        opened: Opened configuration file at {path}
+        restarted: 'Restart complete: {started} started, {failed} failed, {skipped} skipped.'
+      guidance:
+        title: How to use these tools
+        note: 'To execute an MCP action, simply ask the AI: "Please use the mcp_tool_call capability to run the {tool} tool..."'
+      dashboard:
+        server-list: Server Registry
+        no-servers: No servers configured.
+        tool-count: '{count} tools available'
+        details:
+          command: Command
+          args: Arguments
+          env: Environment
+      store:
+        title: MCP Store
+        description: Discover and install curated MCP servers
+        items:
+          google-search:
+            name: Google Search
+            description: Official Google Search MCP server for web grounding.
+          filesystem:
+            name: Filesystem
+            description: Secure access to local files and directories.
+          memory:
+            name: Memory
+            description: Graph-based long-term memory for persistence.
+          postgres:
+            name: PostgreSQL
+            description: Read and write access to PostgreSQL databases.
   system:
     dock-mode:
       title: Window Dock Mode

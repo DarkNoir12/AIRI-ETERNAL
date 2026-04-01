@@ -190,6 +190,8 @@ export const electronMcpApplyAndRestart = defineInvokeEventa<ElectronMcpStdioApp
 export const electronMcpGetRuntimeStatus = defineInvokeEventa<ElectronMcpStdioRuntimeStatus>('eventa:invoke:electron:mcp:get-runtime-status')
 export const electronMcpListTools = defineInvokeEventa<ElectronMcpToolDescriptor[]>('eventa:invoke:electron:mcp:list-tools')
 export const electronMcpCallTool = defineInvokeEventa<ElectronMcpCallToolResult, ElectronMcpCallToolPayload>('eventa:invoke:electron:mcp:call-tool')
+export const electronMcpGetConfig = defineInvokeEventa<ElectronMcpStdioConfigFile>('eventa:invoke:electron:mcp:get-config')
+export const electronMcpUpdateConfig = defineInvokeEventa<void, Partial<ElectronMcpStdioConfigFile>>('eventa:invoke:electron:mcp:update-config')
 
 export const widgetsOpenWindow = defineInvokeEventa<void, { id?: string }>('eventa:invoke:electron:windows:widgets:open')
 export const widgetsAdd = defineInvokeEventa<string | undefined, WidgetsAddPayload>('eventa:invoke:electron:windows:widgets:add')

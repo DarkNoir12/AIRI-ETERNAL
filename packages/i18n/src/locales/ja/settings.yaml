@@ -400,7 +400,9 @@ pages:
             search_voices_results: 結果{total}個中{count}個の音声が見つかりました
             unsupported_voice_warning_title: サポートされている音声がありません
             unsupported_voice_warning_content: >-
-              別のモデルまたはプロバイダーを試してください。このモデルのすべての音声をできるだけ早くサポートできるように取り組んでいます。 緊急に必要な場合は、GitHubの https://github.com/moeru-ai/airi/issues でお知らせください。
+              別のモデルまたはプロバイダーを試してください。このモデルのすべての音声をできるだけ早くサポートできるように取り組んでいます。
+              緊急に必要な場合は、GitHubの https://github.com/moeru-ai/airi/issues
+              でお知らせください。
             show_less: 表示を減らす
             show_more: もっと表示
             title: プロバイダー
@@ -435,16 +437,31 @@ pages:
       configured: X / Twitterは適切に設定されています！
     mcp-server:
       description: MCPサーバーとツールの接続と管理
-      title: MCPサーバー
-      config-path: Config file path
-      runtime-title: Runtime status
+      title: MCP サーバー
+      config-path: 設定ファイルのパス
+      runtime-title: 実行ステータス
+      tabs:
+        manage: 管理
+        discover: 検索
       actions:
-        open-config: Open mcp.json
-        apply-and-restart: Save and restart stdio MCP
+        open-config: mcp.json を開く
+        edit-json: mcp.json を編集
+        apply-and-restart: 保存して stdio MCP を再起動
+        apply-restart: 保存して stdio MCP を再起動
+        refresh: ステータスを更新
+        install: インストール
+        installed: インストール済み
+      search-placeholder: 'MCP サーバーを検索 (例: Google Search, Filesystem)...'
       messages:
-        opened: Config file opened at {path}
-        restarted: >-
-          MCP servers restarted. Started {started}, failed {failed}, skipped {skipped}
+        opened: '設定ファイルが {path} で開かれました'
+        restarted: 'MCP サーバーが再起動されました。開始: {started}, 失敗: {failed}, スキップ: {skipped}'
+        install-success: '{name} が正常にインストールされました'
+      dashboard:
+        tool-count: '{count} 個のツールが利用可能'
+      registry:
+        loading: レジストリを読み込み中...
+        stars: '{count} スター'
+        no-results: '"{query}" に一致するサーバーは見つかりませんでした'
   providers:
     explained:
       chat: テキスト生成モデルプロバイダー。例： OpenRouter, OpenAI, Ollama。
@@ -454,7 +471,8 @@ pages:
     helpinfo:
       title: ここを初めて利用しますか？
       description: >
-        AIRIが正常に思考し動作するためには、少なくとも1つの{chat}プロバイダーの設定が必要です。 これはAIRIシステム内に存在するキャラクターの脳と考えることができます。
+        AIRIが正常に思考し動作するためには、少なくとも1つの{chat}プロバイダーの設定が必要です。
+        これはAIRIシステム内に存在するキャラクターの脳と考えることができます。
     catalog:
       edit:
         config-id-not-found: プロバイダ設定が見つかりません。
@@ -479,7 +497,8 @@ pages:
                 base-url:
                   label: ベースURL
                   description: >-
-                    リモートサービスへの接続に使用されるベースURL。多くの場合、http://localhost:11434/v1 または https://example.com/v1 のようになります。
+                    リモートサービスへの接続に使用されるベースURL。多くの場合、http://localhost:11434/v1 または
+                    https://example.com/v1 のようになります。
                   placeholder: ベースURL…
                 headers:
                   label: カスタムHTTPヘッダー
@@ -491,7 +510,8 @@ pages:
                 thinking-mode:
                   label: Thinking Mode
                   description: >
-                    Controls Ollama thinking behavior. GPT-OSS only supports low/medium/high levels.
+                    Controls Ollama thinking behavior. GPT-OSS only supports
+                    low/medium/high levels.
                   options:
                     auto: Auto (provider default)
                     disable: Disable
@@ -525,7 +545,9 @@ pages:
                   openai-compatible-check-connectivity:
                     label: Ollamaに追加設定が必要です
                     content: >-
-                      残念ながら、Ollamaの接続チェックが失敗したようです。Ollamaインスタンスの場合、正常に動作させるためには追加の設定が必要です。OllamaアプリケーションまたはOllama CLIサーバーを起動する際には、<code>OLLAMA_HOST</code>環境変数を明示的に設定する必要があります。詳細な手順については、<a href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama統合ガイド</a>をご参照ください。
+                      残念ながら、Ollamaの接続チェックが失敗したようです。Ollamaインスタンスの場合、正常に動作させるためには追加の設定が必要です。OllamaアプリケーションまたはOllama
+                      CLIサーバーを起動する際には、<code>OLLAMA_HOST</code>環境変数を明示的に設定する必要があります。詳細な手順については、<a
+                      href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama統合ガイド</a>をご参照ください。
     common:
       continueAnyway: 続行する
       goToModelSelection: 'Select Model →'
@@ -557,15 +579,18 @@ pages:
         description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: アプリ (ローカル)
-        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+        description: Private Voice Engine - High-performance local speech synthesis
+          (xsai-transformers)
       browser-local-audio-transcription:
         title: ブラウザ (ローカル)
         description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: ブラウザ (ローカル)
-        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech
+          API or local engine
       alibaba-cloud-model-studio:
-        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice
+          models
         title: Alibaba Cloud Model Studio
       amazon-bedrock:
         title: Amazon Bedrock
@@ -615,7 +640,8 @@ pages:
               description: 音声の音量を調整
               label: 音量
       deepgram-tts:
-        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
+        description: High-Performance Aura - Low-latency speech synthesis for real-time
+          agents
         title: Deepgram
       speech-noop:
         title: None
@@ -624,7 +650,8 @@ pages:
         description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: DeepSeek
       elevenlabs:
-        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
+        description: Industry-Leading Realism - Unparalleled expressive neural voices
+          (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -699,7 +726,8 @@ pages:
               label: リージョン
         title: Microsoft / Azure Speech
       index-tts-vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: Bilibili/IndexTTS
         callout_indextts2_unavailable_title: 限定的なサポート
         callout_indextts2_unavailable: 現在、IndexTTS2のサポートはご利用いただけません。IndexTTSをご利用ください。
@@ -707,7 +735,8 @@ pages:
         description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI Foundry
       minimax:
-        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and
+          coding models
         title: MiniMax
       minimax-global:
         description: Aggressive Pricing - High-performance LLMs at market-low rates
@@ -728,10 +757,12 @@ pages:
         description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: Industry Standard - Reliable flagship models for chat, coding, and vision
+        description: Industry Standard - Reliable flagship models for chat, coding, and
+          vision
         title: OpenAI
       openai-compatible:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or
+          self-hosted gateway
         title: OpenAI互換
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
@@ -749,7 +780,8 @@ pages:
         description: player2.game
         title: Player2
       together:
-        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
+        description: Open Model Fast Lane - Cost-effective access to fast open-source
+          inference
         title: Together.ai
       google-generative-ai:
         description: Gemini Integration - Native Google ecosystem intelligence
@@ -764,10 +796,12 @@ pages:
         description: Local Desktop GUI - Serve any GGUF model locally
         title: LM Studio
       vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for
+          natural interactions
         fields:
           field:
             appId:
@@ -781,7 +815,8 @@ pages:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
+        description: Real-time Intelligence - High-accuracy speech recognition natively
+          in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
         description: Resource Hub - Pay-as-you-go access to all major AI brands
@@ -792,13 +827,16 @@ pages:
       openai-audio-speech:
         description: Industry Standard - Reliable flagship TTS voices from OpenAI
       openai-compatible-audio-speech:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or
+          self-hosted gateway
       player2-speech:
-        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+        description: Game-Ready AI - High-fidelity character voices with zero developer
+          costs and revenue sharing
       comet-api-speech:
         description: Unified Speech Gateway - Hosted speech models through Comet API
       chatterbox:
-        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and
+          high-performance playback
         title: Chatterbox
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
@@ -807,7 +845,8 @@ pages:
         description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
+          dialect support
         title: Aliyun NLS
       browser-web-speech-api:
         description: Browser-native dictation (OS-dependent)
@@ -817,7 +856,8 @@ pages:
           title: 文字起こし実験場
       aihubmix:
         title: AIHubMix
-        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
+        description: Unified API Bridge - Versatile router aggregating major models into
+          one endpoint
     title: プロバイダー
   connection:
     description: WebSocketサーバー接続の設定
@@ -1028,7 +1068,8 @@ vrm:
 websocket-secure-enabled:
   title: セキュア WebSocket (WSS) を有効にする
   description: >-
-    開発モードでモバイル（pocket）のHTTPS接続を許可するために、WSS（WebSocket Secure）を有効にします。これにより自己署名証明書が自動的に生成されます。
+    開発モードでモバイル（pocket）のHTTPS接続を許可するために、WSS（WebSocket
+    Secure）を有効にします。これにより自己署名証明書が自動的に生成されます。
 wip:
   title: 開発中
   description: >-
