@@ -14,7 +14,7 @@ const textJournalParams = z.object({
 
 async function executeCreateTextJournalEntry(params: { title?: string, content?: string }) {
   if (!params.content?.trim())
-    throw new Error('content is required for text_journal.create')
+    return 'Error: content is required for text_journal.create. Please provide the content you wish to save.'
 
   const store = useTextJournalStore()
   const entry = await store.createEntry({
@@ -28,7 +28,7 @@ async function executeCreateTextJournalEntry(params: { title?: string, content?:
 
 async function executeSearchTextJournalEntries(params: { query?: string, limit?: number }) {
   if (!params.query?.trim())
-    throw new Error('query is required for text_journal.search')
+    return 'Error: query is required for text_journal.search. Please provide a keyword query to search.'
 
   const longTermStore = useTextJournalStore()
   await longTermStore.load()

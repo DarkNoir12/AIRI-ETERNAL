@@ -72,13 +72,10 @@ export function sanitizeMessages(messages: unknown[], options?: { vision?: boole
 
       // If vision is explicitly disabled, strip all image_url parts
       if (options?.vision === false && contentParts.some(p => p?.type === 'image_url')) {
-        const originalContentLength = JSON.stringify(m.content).length
         const newContent = contentParts
           .map(p => p?.type === 'image_url' ? '[Image]' : (p?.text ?? ''))
           .filter(Boolean)
           .join(' ')
-
-        console.log(`[llm.ts] Stripping image from message. Original length: ${originalContentLength}, New content: "${newContent}"`)
 
         return {
           ...m,

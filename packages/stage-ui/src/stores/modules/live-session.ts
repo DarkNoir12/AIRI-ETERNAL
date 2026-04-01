@@ -1,15 +1,20 @@
+import type { Tool } from '@xsai/shared-chat'
+
 import type { ChatAssistantMessage, ChatStreamEventContext, StreamingAssistantMessage } from '../../types/chat'
 
 import { useLocalStorage } from '@vueuse/core'
 import { nanoid } from 'nanoid'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowRef } from 'vue'
+import { toast } from 'vue-sonner'
 
 import { useLlmmarkerParser } from '../../composables/llm-marker-parser'
 import { createStreamingCategorizer } from '../../composables/response-categoriser'
+import { mcp } from '../../tools'
 import { useChatOrchestratorStore } from '../chat'
 import { useChatContextStore } from '../chat/context-store'
 import { useChatSessionStore } from '../chat/session-store'
+import { useProactivityStore } from '../proactivity'
 import { useProvidersStore } from '../providers'
 import { useAiriCardStore } from './airi-card'
 import { useVisionStore } from './vision'
@@ -17,11 +22,56 @@ import { useVisionStore } from './vision'
 const MODEL = 'models/gemini-3.1-flash-live-preview'
 const LIVE_WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent'
 
+// Maximum tool calls allowed per turn chain before aborting to prevent recursive loops
+const MAX_TOOL_CALLS_PER_TURN = 5
+
+/**
+ * Maps an AIRI tool (xsai Tool interface) to a Gemini functionDeclaration.
+ * The xsai Tool already stores parameters as JSON Schema (produced by @xsai/tool from Zod),
+ * so this is a direct structural mapping with no conversion needed.
+ */
+export function mapAiriToolToGemini(tool: Tool): Record<string, unknown> {
+  // Purify the JSON Schema for Gemini's strict Bidi API requirements.
+  // Standard xsai/zod schemas often include keywords Gemini rejects ($schema, additionalProperties).
+  const params = tool.function.parameters ? JSON.parse(JSON.stringify(tool.function.parameters)) : { type: 'object', properties: {} }
+
+  // Recursively clean the schema
+  const cleanSchema = (obj: any) => {
+    if (!obj || typeof obj !== 'object')
+      return
+    delete obj.$schema
+    delete obj.additionalProperties
+    if (obj.properties) {
+      Object.values(obj.properties).forEach(cleanSchema)
+    }
+    if (obj.items) {
+      cleanSchema(obj.items)
+    }
+  }
+
+  cleanSchema(params)
+
+  // Gemini requires the top-level parameters to be an object with type: 'object'
+  if (params.type !== 'object') {
+    params.type = 'object'
+  }
+  if (!params.properties) {
+    params.properties = {}
+  }
+
+  return {
+    name: tool.function.name,
+    description: tool.function.description || '',
+    parameters: params,
+  }
+}
+
 export const useLiveSessionStore = defineStore('live-session', () => {
   const providersStore = useProvidersStore()
   const chatSession = useChatSessionStore()
   const chatOrchestrator = useChatOrchestratorStore()
   const chatContext = useChatContextStore()
+  const proactivityStore = useProactivityStore()
   const airiCard = useAiriCardStore()
 
   const isActive = ref(false)
@@ -33,10 +83,160 @@ export const useLiveSessionStore = defineStore('live-session', () => {
   const totalTokens = computed(() => voiceTokens.value + inferenceTokens.value)
   const tokenDetails = ref<any[]>([])
   const voiceName = ref<'Puck' | 'Charon' | 'Kore' | 'Fenrir' | 'Aoede' | 'Ursa'>('Puck')
-  const isGroundingEnabled = ref(false)
+  const isGroundingEnabled = useLocalStorage('settings/gemini/grounding', false)
   const error = ref<string | null>(null)
 
   const socket = shallowRef<WebSocket | null>(null)
+
+  /**
+   * Executes a single tool call from the Gemini Bidi stream.
+   * Handles rate limiting, tool registry lookup, execution, and WebSocket response.
+   * Called from BOTH wire format paths:
+   *   1. Inline functionCall inside serverContent.modelTurn.parts[]
+   *   2. Top-level response.toolCall.functionCalls[]
+   */
+  async function executeToolCall(
+    ws: WebSocket,
+    call: { name: string, args?: Record<string, unknown>, id?: string },
+  ) {
+    const { name, args, id: callId } = call
+    console.log(`[LiveSession] 🛠️ Tool call received: ${name}`, args)
+
+    if (toolCallCounter >= MAX_TOOL_CALLS_PER_TURN) {
+      console.warn(`[LiveSession] ⚠️ Rate limit reached (${MAX_TOOL_CALLS_PER_TURN} calls). Skipping tool: ${name}`)
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          toolResponse: {
+            functionResponses: [{
+              id: callId,
+              name,
+              response: { error: `Tool call limit reached (${MAX_TOOL_CALLS_PER_TURN} per turn). Please respond to the user.` },
+            }],
+          },
+        }))
+      }
+      return
+    }
+
+    toolCallCounter++
+
+    try {
+      // Resolve tools from the store's registry
+      const allTools = await proactivityStore.resolveRegisteredTools()
+      console.log(`[LiveSession] 🔍 Searching registry for "${name}" among ${allTools.length} tools...`)
+
+      const matchedTool = (allTools as Tool[]).find(t => t.function.name === name)
+
+      if (!matchedTool) {
+        console.warn(`[LiveSession] ❌ Tool not found in registry: ${name}`)
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            toolResponse: {
+              functionResponses: [{
+                id: callId,
+                name,
+                response: { error: `Tool "${name}" not found in registry.` },
+              }],
+            },
+          }))
+        }
+        return
+      }
+
+      // Add 'executing' slice to the chat UI and trigger toast
+      console.log(`[LiveSession] 🚀 Executing "${name}"...`)
+      toast.info(`Executing tool: ${name}...`)
+
+      if (currentStreamingMessage) {
+        if (!currentStreamingMessage.slices)
+          currentStreamingMessage.slices = []
+        // TypeScript complains slice needs to be cast as any because types don't exactly align locally,
+        // but ChatSlicesToolCall matches what we need for presentation layer here.
+        ;(currentStreamingMessage.slices as any[]).push({
+          type: 'tool-call',
+          state: 'executing',
+          toolCall: {
+            toolName: name,
+            args: JSON.stringify(args || {}),
+            toolCallId: callId,
+            toolCallType: 'function',
+          },
+        })
+      }
+
+      const result = await matchedTool.execute(
+        args || {},
+        {
+          toolCallId: callId || nanoid(),
+          messages: chatSession.messages as any,
+          abortSignal: undefined as any,
+        },
+      )
+
+      console.log(`[LiveSession] ✅ Tool "${name}" result:`, result)
+      toast.success(`Tool ${name} completed.`)
+
+      // Send the tool response back through the WebSocket
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          toolResponse: {
+            functionResponses: [{
+              id: callId,
+              name,
+              response: typeof result === 'string' ? { output: result } : result,
+            }],
+          },
+        }))
+      }
+
+      // Inscribe tool result into the streaming message for history and update the slice state
+      if (currentStreamingMessage) {
+        const resultString = typeof result === 'string' ? result : JSON.stringify(result)
+
+        if (!currentStreamingMessage.tool_results)
+          currentStreamingMessage.tool_results = []
+        ;(currentStreamingMessage.tool_results as any[]).push({
+          toolCallId: callId,
+          toolName: name,
+          result: resultString,
+        })
+
+        // Find the slice we just pushed and mark it 'done'
+        const executingSlice = (currentStreamingMessage.slices as any[]).find(
+          s => s.type === 'tool-call' && s.toolCall?.toolCallId === callId,
+        )
+        if (executingSlice) {
+          executingSlice.state = 'done'
+          executingSlice.result = resultString
+        }
+      }
+    }
+    catch (err) {
+      console.error(`[LiveSession] ❌ Tool "${name}" execution failed:`, err)
+
+      if (currentStreamingMessage) {
+        const executingSlice = (currentStreamingMessage.slices as any[]).find(
+          s => s.type === 'tool-call' && s.toolCall?.toolCallId === callId,
+        )
+        if (executingSlice) {
+          executingSlice.state = 'error'
+          executingSlice.result = err instanceof Error ? err.message : String(err)
+        }
+      }
+
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          toolResponse: {
+            functionResponses: [{
+              id: callId,
+              name,
+              response: { error: err instanceof Error ? err.message : String(err) },
+            }],
+          },
+        }))
+      }
+    }
+  }
 
   // Streaming State for hooking into the Chat Orchestrator's TTS
   let currentStreamingMessage: StreamingAssistantMessage | null = null
@@ -44,6 +244,13 @@ export const useLiveSessionStore = defineStore('live-session', () => {
   let currentCategoriser: ReturnType<typeof createStreamingCategorizer> | null = null
   let currentMarkerParser: ReturnType<typeof useLlmmarkerParser> | null = null
   let streamPosition = 0
+
+  // Rate limiter: counts tool-call invocations within the current turn chain.
+  // Resets on every new user utterance (voice or text).
+  let toolCallCounter = 0
+
+  // Cached resolved tools for the active session (resolved on connect, used for execution)
+  let resolvedToolRegistry: Tool[] = []
 
   function getApiKey(): string {
     const creds = providersStore.getProviderConfig('google-generative-ai')
@@ -70,8 +277,30 @@ export const useLiveSessionStore = defineStore('live-session', () => {
     const ws = new WebSocket(endpoint)
     socket.value = ws
 
-    ws.onopen = () => {
-      console.log('[LiveSession] WebSocket connected. Sending setup...')
+    ws.onopen = async () => {
+      console.log('[LiveSession] WebSocket connected. Resolving tools and sending setup...')
+
+      // Resolve the full AIRI toolchain: proactive tools + MCP tools
+      const proactiveTools = await proactivityStore.resolveRegisteredTools() as Tool[]
+      const mcpTools = await mcp() as Tool[]
+      resolvedToolRegistry = [...proactiveTools, ...mcpTools]
+
+      // Build the Gemini tools array
+      const geminiTools: Record<string, unknown>[] = []
+
+      // Always inject proactive + MCP tools as functionDeclarations
+      if (resolvedToolRegistry.length > 0) {
+        geminiTools.push({
+          functionDeclarations: resolvedToolRegistry.map(mapAiriToolToGemini),
+        })
+        console.log('[LiveSession] Injecting tools:', resolvedToolRegistry.map(t => t.function.name))
+      }
+
+      // Only inject google_search when the grounding toggle is enabled (cost-aware)
+      if (isGroundingEnabled.value) {
+        geminiTools.push({ google_search: {} })
+        console.log('[LiveSession] Google Search grounding ENABLED')
+      }
 
       const setupMessage = {
         setup: {
@@ -86,11 +315,7 @@ export const useLiveSessionStore = defineStore('live-session', () => {
               },
             },
           },
-          tools: isGroundingEnabled.value
-            ? [
-                { google_search_retrieval: {} },
-              ]
-            : [],
+          tools: geminiTools.length > 0 ? geminiTools : undefined,
           systemInstruction: {
             parts: [{
               text: airiCard.systemPrompt || 'You are an AI assistant.',
@@ -194,6 +419,25 @@ export const useLiveSessionStore = defineStore('live-session', () => {
             }
           }
 
+          // NOTICE: In the raw WebSocket format (not the Google SDK), tool calls can arrive
+          // as `functionCall` parts INSIDE `serverContent.modelTurn.parts[]`.
+          // This is the format verified in our POC (03-function-calling.ts, line 82).
+          // The model may first emit text parts, then follow with a functionCall part
+          // in the same modelTurn — we must scan for both.
+          if (content.modelTurn?.parts) {
+            for (const part of content.modelTurn.parts) {
+              // Check both camelCase and snake_case variants (API inconsistency)
+              const funcCall = part.functionCall || part.function_call
+              if (funcCall && ws) {
+                await executeToolCall(ws, {
+                  name: funcCall.name,
+                  args: funcCall.args,
+                  id: funcCall.id,
+                })
+              }
+            }
+          }
+
           if (content.turnComplete) {
             if (currentStreamingMessage && currentStreamContext) {
               // Flush any buffered tail from the marker parser before finalizing
@@ -224,6 +468,56 @@ export const useLiveSessionStore = defineStore('live-session', () => {
               streamPosition = 0
             }
           }
+
+          // Capture grounding metadata from google_search for future UI citation rendering
+          if (content.groundingMetadata) {
+            console.log('[LiveSession] Grounding metadata received:', JSON.stringify(content.groundingMetadata, null, 2))
+
+            // Extract chunks/sources if available
+            const chunks = content.groundingMetadata.groundingChunks || []
+            const searchQueries = content.groundingMetadata.searchEntryPoints?.map((sep: any) => sep.renderedContent).filter(Boolean) || []
+
+            if (currentStreamingMessage) {
+              if (!currentStreamingMessage.grounding) {
+                currentStreamingMessage.grounding = {
+                  queries: [],
+                  chunks: [],
+                }
+              }
+
+              // De-duplicate and add queries
+              searchQueries.forEach((q: string) => {
+                if (!currentStreamingMessage!.grounding!.queries.includes(q))
+                  currentStreamingMessage!.grounding!.queries.push(q)
+              })
+
+              // Add chunks (sources)
+              chunks.forEach((chunk: any) => {
+                if (chunk.web) {
+                  currentStreamingMessage!.grounding!.chunks.push({
+                    title: chunk.web.title,
+                    uri: chunk.web.uri,
+                  })
+                }
+              })
+            }
+          }
+        }
+
+        // Handle tool calls from the model (top-level toolCall in the Bidi stream)
+        // NOTICE: This is the format the Google GenAI SDK normalizes to.
+        // Different from the inline format above — we handle BOTH paths.
+        if (response.toolCall) {
+          const { functionCalls } = response.toolCall
+          if (functionCalls && Array.isArray(functionCalls) && ws) {
+            for (const call of functionCalls) {
+              await executeToolCall(ws, {
+                name: call.name,
+                args: call.args,
+                id: call.id,
+              })
+            }
+          }
         }
 
         if (response.usageMetadata) {
@@ -246,12 +540,21 @@ export const useLiveSessionStore = defineStore('live-session', () => {
     }
 
     ws.onclose = (event) => {
-      console.log(`[LiveSession] WebSocket closed [${event.code}]: ${event.reason}`)
+      console.warn(`[LiveSession] WebSocket CLOSED! Code: ${event.code}, Reason: ${event.reason || 'None provided'}`)
+
+      // Surface 1011 or Internal Error specifically
+      if (event.code === 1011 || (event.reason && event.reason.includes('Internal error'))) {
+        toast.error(`Gemini Live API Error: Internal error encountered. Check your API key.`)
+      }
+      else if (event.code !== 1000) {
+        toast.error(`Gemini Live Disconnected (Code ${event.code})`)
+      }
+
       reset()
     }
 
-    ws.onerror = (err) => {
-      console.error('[LiveSession] WebSocket Error:', err)
+    ws.onerror = (event) => {
+      console.error(`[LiveSession] WebSocket ENCOUNTERED AN ERROR!`, event)
       error.value = 'WebSocket connection failed.'
       isConnecting.value = false
     }
@@ -264,15 +567,29 @@ export const useLiveSessionStore = defineStore('live-session', () => {
   }
 
   function sendText(text: string) {
-    if (!socket.value || socket.value.readyState !== WebSocket.OPEN)
+    console.log(`[LiveSession] sendText() called. socket.readyState:`, socket.value?.readyState)
+    if (!socket.value || socket.value.readyState !== WebSocket.OPEN) {
+      console.error(`[LiveSession] Cannot sendText. Socket is invalid or not OPEN.`)
       return
+    }
 
     const message = {
       realtimeInput: { text },
     }
 
-    socket.value.send(JSON.stringify(message))
+    console.log(`[LiveSession] Sending payload:`, JSON.stringify(message))
+    try {
+      socket.value.send(JSON.stringify(message))
+      console.log(`[LiveSession] Payload sent successfully via WebSocket.`)
+    }
+    catch (err) {
+      console.error(`[LiveSession] FAILED to send WebSocket payload!`, err)
+    }
+
     messages.value.push({ role: 'user', text })
+
+    // Reset tool-call rate limit counter on every new user utterance
+    toolCallCounter = 0
 
     // Mirror the user's message into the shared chat session so WhisperDock
     // and the chat UI stay in sync during live mode.
@@ -332,6 +649,8 @@ export const useLiveSessionStore = defineStore('live-session', () => {
     currentCategoriser = null
     currentMarkerParser = null
     streamPosition = 0
+    toolCallCounter = 0
+    resolvedToolRegistry = []
   }
 
   const visionStore = useVisionStore()

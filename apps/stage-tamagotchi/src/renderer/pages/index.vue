@@ -47,6 +47,7 @@ const widgetStageRef = ref<InstanceType<typeof WidgetStage>>()
 const tools = ref<any[]>([])
 const stageCanvas = toRef(() => widgetStageRef.value?.canvasElement())
 const controlsIslandRoot = computed(() => controlsIslandRef.value?.rootElement)
+const geminiIslandRoot = computed(() => controlsIslandRef.value?.geminiRootElement)
 const componentStateStage = ref<'pending' | 'loading' | 'mounted'>('pending')
 
 const isLoading = ref(true)
@@ -55,7 +56,9 @@ const isIgnoringMouseEvents = ref(false)
 const shouldFadeOnCursorWithin = ref(false)
 
 const { isOutside: isOutsideWindow } = useElectronMouseInWindow()
-const { isOutside } = useElectronMouseInElement(controlsIslandRoot)
+const { isOutside: isOutsideMain } = useElectronMouseInElement(controlsIslandRoot)
+const { isOutside: isOutsideGemini } = useElectronMouseInElement(geminiIslandRoot)
+const isOutside = computed(() => isOutsideMain.value && isOutsideGemini.value)
 const isOutsideForInstant = isOutside
 const { x: relativeMouseX, y: relativeMouseY } = useElectronRelativeMouse()
 // NOTICE: In real-world use cases of Fade on Hover feature, the cursor may move around the edge of the

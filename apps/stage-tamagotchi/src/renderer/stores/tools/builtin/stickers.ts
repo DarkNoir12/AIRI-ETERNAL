@@ -35,8 +35,7 @@ export function stickersTools(): Tool[] {
           required: ['stickerId'],
         },
       },
-      // @ts-expect-error - Custom implementation field
-      async execute({ stickerId, x, y, duration }: { stickerId: string, x?: number, y?: number, duration?: number }) {
+      async execute({ stickerId, x, y, duration }: any) {
         const stickersStore = useStickersStore()
         const placement = stickersStore.spawnSticker(stickerId, { x, y, duration })
 
@@ -44,8 +43,14 @@ export function stickersTools(): Tool[] {
           const expirationInfo = duration ? ` for ${duration}s` : ''
           return `Successfully spawned sticker "${stickerId}"${expirationInfo} at (${Math.round((placement as any).x)}%, ${Math.round((placement as any).y)}%).`
         }
+        else if (typeof placement === 'string') {
+          // Store already provides a helpful message with available labels:
+          // "Sticker label '...' not found... Available labels: ..."
+          return placement
+        }
         else {
-          return `Failed to spawn sticker "${stickerId}". Label not found in library.`
+          const available = stickersStore.currentLibrary.map(s => s.label).join(', ')
+          return `Sticker "${stickerId}" not found. Available stickers in your library: ${available || 'None (Upload some first!)'}`
         }
       },
     },

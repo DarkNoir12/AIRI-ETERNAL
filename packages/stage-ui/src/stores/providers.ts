@@ -1237,7 +1237,9 @@ export const useProvidersStore = defineStore('providers', () => {
         baseUrl: 'https://unspeech.hyp3r.link/v1/',
       }),
       createProvider: async (config) => {
-        const provider = createUnDeepgram((config.apiKey as string).trim(), (config.baseUrl as string).trim()) as SpeechProviderWithExtraOptions<string, UnDeepgramOptions>
+        const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+        const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+        const provider = createUnDeepgram(apiKey, baseUrl) as SpeechProviderWithExtraOptions<string, UnDeepgramOptions>
         return provider
       },
       capabilities: {
@@ -1270,7 +1272,9 @@ export const useProvidersStore = defineStore('providers', () => {
           ]
         },
         listVoices: async (config) => {
-          const provider = createUnDeepgram((config.apiKey as string).trim(), (config.baseUrl as string).trim()) as VoiceProviderWithExtraOptions<UnDeepgramOptions>
+          const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+          const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+          const provider = createUnDeepgram(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnDeepgramOptions>
 
           const voices = await listVoices({
             ...provider.voice(),
@@ -1369,7 +1373,11 @@ export const useProvidersStore = defineStore('providers', () => {
       defaultOptions: () => ({
         baseUrl: 'https://unspeech.hyp3r.link/v1/',
       }),
-      createProvider: async config => createUnMicrosoft((config.apiKey as string).trim(), (config.baseUrl as string).trim()) as SpeechProviderWithExtraOptions<string, UnMicrosoftOptions>,
+      createProvider: async (config) => {
+        const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+        const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+        return createUnMicrosoft(apiKey, baseUrl) as SpeechProviderWithExtraOptions<string, UnMicrosoftOptions>
+      },
       capabilities: {
         listModels: async () => {
           return [
@@ -1384,7 +1392,9 @@ export const useProvidersStore = defineStore('providers', () => {
           ]
         },
         listVoices: async (config) => {
-          const provider = createUnMicrosoft((config.apiKey as string).trim(), (config.baseUrl as string).trim()) as VoiceProviderWithExtraOptions<UnMicrosoftOptions>
+          const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+          const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+          const provider = createUnMicrosoft(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnMicrosoftOptions>
 
           const voices = await listVoices({
             ...provider.voice({ region: config.region as string }),
@@ -1529,10 +1539,16 @@ export const useProvidersStore = defineStore('providers', () => {
       defaultOptions: () => ({
         baseUrl: 'https://unspeech.hyp3r.link/v1/',
       }),
-      createProvider: async config => createUnAlibabaCloud((config.apiKey as string).trim(), (config.baseUrl as string).trim()),
+      createProvider: async (config) => {
+        const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+        const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+        return createUnAlibabaCloud(apiKey, baseUrl)
+      },
       capabilities: {
         listVoices: async (config) => {
-          const provider = createUnAlibabaCloud((config.apiKey as string).trim(), (config.baseUrl as string).trim()) as VoiceProviderWithExtraOptions<UnAlibabaCloudOptions>
+          const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+          const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+          const provider = createUnAlibabaCloud(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnAlibabaCloudOptions>
 
           const voices = await listVoices({
             ...provider.voice(),
@@ -1605,10 +1621,16 @@ export const useProvidersStore = defineStore('providers', () => {
       defaultOptions: () => ({
         baseUrl: 'https://unspeech.hyp3r.link/v1/',
       }),
-      createProvider: async config => createUnVolcengine((config.apiKey as string).trim(), (config.baseUrl as string).trim()),
+      createProvider: async (config) => {
+        const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+        const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+        return createUnVolcengine(apiKey, baseUrl)
+      },
       capabilities: {
         listVoices: async (config) => {
-          const provider = createUnVolcengine((config.apiKey as string).trim(), (config.baseUrl as string).trim()) as VoiceProviderWithExtraOptions<UnVolcengineOptions>
+          const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
+          const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
+          const provider = createUnVolcengine(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnVolcengineOptions>
 
           const voices = await listVoices({
             ...provider.voice(),

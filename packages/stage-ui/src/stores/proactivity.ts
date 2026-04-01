@@ -367,23 +367,11 @@ export const useProactivityStore = defineStore('proactivity', () => {
         return
       }
 
-      const resolveRegisteredTools = async () => {
-        const all: any[] = []
-        for (const t of registeredTools.value) {
-          if (typeof t === 'function') {
-            const resolved = await t()
-            if (resolved)
-              all.push(...resolved)
-          }
-          else {
-            all.push(t)
-          }
-        }
-        return all
-      }
+      // NOTICE: Uses the top-level resolveRegisteredTools function (also used by LiveSessionStore)
+      const resolvedTools = resolveRegisteredTools
 
       const llmResponse = await llmStore.generate(activeModel, activeProvider, messages, {
-        tools: resolveRegisteredTools,
+        tools: resolvedTools,
         supportsTools: true,
       })
       const rawReply = llmResponse.text
@@ -529,6 +517,23 @@ export const useProactivityStore = defineStore('proactivity', () => {
     }
   }
 
+  // Resolves all registered tools (static + async factory functions) into a flat array.
+  // Used by both the Proactivity heartbeat pipeline AND the LiveSessionStore for Gemini Bidi tool injection.
+  async function resolveRegisteredTools(): Promise<any[]> {
+    const all: any[] = []
+    for (const t of registeredTools.value) {
+      if (typeof t === 'function') {
+        const resolved = await t()
+        if (resolved)
+          all.push(...resolved)
+      }
+      else {
+        all.push(t)
+      }
+    }
+    return all
+  }
+
   return {
     sessionMetrics,
     totalTurns,
@@ -542,7 +547,9 @@ export const useProactivityStore = defineStore('proactivity', () => {
     locTime,
     lastHeartbeatTime,
     isHeartbeatEvaluating,
+    registeredTools,
     registerTools,
+    resolveRegisteredTools,
     evaluateHeartbeat,
     startHeartbeatLoop,
     stopHeartbeatLoop,

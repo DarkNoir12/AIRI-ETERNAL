@@ -32,6 +32,10 @@ export interface ChatAssistantMessage extends AssistantMessage {
     speech: string
     reasoning: string
   }
+  grounding?: {
+    queries: string[]
+    chunks: { title: string, uri: string }[]
+  }
 }
 
 export type ChatMessage = ChatAssistantMessage | SystemMessage | ToolMessage | UserMessage

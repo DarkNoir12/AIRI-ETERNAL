@@ -71,9 +71,8 @@ function handleDeleteProvider(providerId: string) {
         -->
           <fieldset
             v-if="persistedChatProvidersMetadata.length > 0"
-            flex="~ row gap-4"
-            :style="{ 'scrollbar-width': 'none' }"
-            min-w-0 of-x-scroll scroll-smooth
+            flex="~ col gap-2"
+            class="max-h-[300px] overflow-y-auto pr-2" min-w-0
             role="radiogroup"
           >
             <RadioCardSimple
@@ -105,18 +104,14 @@ function handleDeleteProvider(providerId: string) {
             </RadioCardSimple>
             <RouterLink
               to="/settings/providers"
-              border="2px solid"
-              class="border-neutral-100 bg-white dark:border-neutral-900 hover:border-primary-500/30 dark:bg-neutral-900/20 dark:hover:border-primary-400/30"
-              flex="~ col items-center justify-center"
+              border="2px dashed"
+              class="border-neutral-200 bg-transparent text-neutral-400 dark:border-neutral-800 hover:border-primary-500/50 hover:bg-neutral-50 hover:text-primary-500 dark:hover:border-primary-400/50 dark:hover:bg-neutral-900/50 dark:hover:text-primary-400"
+              flex="~ row items-center justify-center gap-2"
               transition="all duration-200 ease-in-out"
-              relative min-w-50 w-fit rounded-xl p-4
+              relative w-full shrink-0 rounded-xl p-3
             >
-              <div i-solar:add-circle-line-duotone class="text-2xl text-neutral-500 dark:text-neutral-500" />
-              <div
-                class="bg-dotted-neutral-200/80 dark:bg-dotted-neutral-700/50"
-                absolute inset-0 z--1
-                style="background-size: 10px 10px; mask-image: linear-gradient(165deg, white 30%, transparent 50%);"
-              />
+              <div i-solar:add-circle-line-duotone class="text-xl" />
+              <span class="text-sm font-medium">Add Provider</span>
             </RouterLink>
           </fieldset>
           <div v-else>

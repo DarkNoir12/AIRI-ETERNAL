@@ -121,6 +121,7 @@ This document tracks the current development state of the AIRI project, specific
   - [ ] Add **Integrated Guidance** templates at the top of the configuration view.
   - [ ] Add a "Refresh" capability to re-poll available tools without restarting the app.
 - [ ] **Privacy Indicator**: Add visual feedback in Controls Island when AIRI is "Watching".
+- [ ] **Provider Refactor (Low Priority)**: Split "Google Gemini API" (API Key) and "Google Gemini OAuth" (Bearer Token) into distinct provider types in `stores/providers.ts` to prevent credential misuse in standard Chat vs. Bidi endpoints.
 
 
 ## Defunct / Scrapped Ideas

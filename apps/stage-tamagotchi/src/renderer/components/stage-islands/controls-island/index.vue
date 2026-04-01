@@ -72,7 +72,9 @@ const view = ref<'main' | 'emotions' | 'wardrobe' | 'profiles'>('main')
 
 // Expose whether hearing dialog is open so parent can disable click-through
 const hearingDialogOpen = ref(false)
-defineExpose({ hearingDialogOpen, rootElement: islandRef })
+const geminiRef = ref<HTMLElement>()
+
+defineExpose({ hearingDialogOpen, rootElement: islandRef, geminiRootElement: geminiRef })
 
 watch(expanded, (isExp) => {
   if (!isExp) {
@@ -636,39 +638,7 @@ function triggerWardrobeItem(id: string) {
       </Transition>
 
       <!-- Main Controls (Dual Column Layout) -->
-      <div flex items-end gap-2>
-        <!-- Gemini Control Column -->
-        <div flex flex-col gap-1>
-          <Transition
-            enter-active-class="transition-all duration-300 cubic-bezier(0.32, 0.72, 0, 1)"
-            leave-active-class="transition-all duration-200 cubic-bezier(0.32, 0.72, 0, 1)"
-            enter-from-class="opacity-0 -translate-x-4 scale-95"
-            leave-to-class="opacity-0 -translate-x-4 scale-95"
-          >
-            <div v-if="geminiExpanded" absolute bottom-0 right-full z-50 mr-2>
-              <GeminiControls @close="geminiExpanded = false" />
-            </div>
-          </Transition>
-
-          <ControlButtonTooltip side="left">
-            <ControlButton
-              :button-style="[adjustStyleClasses.button, geminiColorClasses].join(' ')"
-              @click="geminiExpanded = !geminiExpanded"
-            >
-              <div
-                i-ph:sparkle
-                :class="[
-                  adjustStyleClasses.icon,
-                  geminiIconClasses,
-                ]"
-              />
-            </ControlButton>
-            <template #tooltip>
-              {{ t('tamagotchi.stage.controls-island.open-gemini-controls') }}
-            </template>
-          </ControlButtonTooltip>
-        </div>
-
+      <div flex items-end>
         <!-- Main Logic Column (Chevron + Handlebar) -->
         <div flex flex-col gap-1>
           <ControlButtonTooltip side="left">
@@ -704,6 +674,40 @@ function triggerWardrobeItem(id: string) {
           </ControlButtonTooltip>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Left Side Gemini Anchor -->
+  <div ref="geminiRef" fixed bottom-2 left-2 z-100 select-none>
+    <div flex flex-col gap-1>
+      <Transition
+        enter-active-class="transition-all duration-300 cubic-bezier(0.32, 0.72, 0, 1)"
+        leave-active-class="transition-all duration-200 cubic-bezier(0.32, 0.72, 0, 1)"
+        enter-from-class="opacity-0 translate-x-4 scale-95"
+        leave-to-class="opacity-0 translate-x-4 scale-95"
+      >
+        <div v-if="geminiExpanded" absolute bottom-0 left-full z-50 ml-2>
+          <GeminiControls @close="geminiExpanded = false" />
+        </div>
+      </Transition>
+
+      <ControlButtonTooltip side="right">
+        <ControlButton
+          :button-style="[adjustStyleClasses.button, geminiColorClasses].join(' ')"
+          @click="geminiExpanded = !geminiExpanded"
+        >
+          <div
+            i-ph:sparkle
+            :class="[
+              adjustStyleClasses.icon,
+              geminiIconClasses,
+            ]"
+          />
+        </ControlButton>
+        <template #tooltip>
+          {{ t('tamagotchi.stage.controls-island.open-gemini-controls') }}
+        </template>
+      </ControlButtonTooltip>
     </div>
   </div>
 </template>

@@ -18,7 +18,7 @@ const liveSessionStore = useLiveSessionStore()
 const visionStore = useVisionStore()
 const settingsStore = useSettings()
 
-const { estimatedCost } = storeToRefs(liveSessionStore)
+const { estimatedCost, isActive: isLiveActive, isGroundingEnabled } = storeToRefs(liveSessionStore)
 const { isWitnessEnabled, status: visionStatus } = storeToRefs(visionStore)
 const { controlsIslandIconSize } = storeToRefs(settingsStore)
 
@@ -54,8 +54,19 @@ const formattedCost = computed(() => {
 })
 
 // === Functional Handlers ===
-function handleWitnessToggle() {
-  visionStore.toggleWitness()
+function handleLiveToggle() {
+  const wasActive = isLiveActive.value
+
+  // Toggle both for a unified "Live API" experience
+  liveSessionStore.toggle()
+
+  // Also sync vision witness to the live state for a true "On/Off" experience
+  if (!wasActive && !isWitnessEnabled.value) {
+    visionStore.toggleWitness()
+  }
+  else if (wasActive && isWitnessEnabled.value) {
+    visionStore.toggleWitness()
+  }
 }
 function handleCaptureNow() {
   visionStore.heartbeat({ force: true })
@@ -69,19 +80,20 @@ function handleCaptureNow() {
   >
     <!-- 3x3 Modular Grid -->
     <div class="grid grid-cols-3 gap-2">
-      <!-- Row 1: Vision (ENABLED) -->
+      <!-- Row 1: Live API (Unified) -->
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" @click="handleWitnessToggle">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="handleLiveToggle">
           <div
             :class="[
-              isWitnessEnabled ? 'i-solar:eye-bold-duotone' : 'i-solar:eye-outline',
+              'transition-colors duration-200',
+              isLiveActive ? 'i-ph:broadcast-bold animate-pulse' : 'i-ph:broadcast-light',
               adjustStyleClasses.icon,
-              isWitnessEnabled ? 'text-amber-500' : 'text-neutral-400',
+              isLiveActive ? 'text-amber-500' : 'text-neutral-400',
             ]"
           />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.vision-witness') }}: {{ isWitnessEnabled ? 'ON' : 'OFF' }}
+          {{ t('tamagotchi.stage.controls-island.vision-witness') }}: {{ isLiveActive ? 'ON' : 'OFF' }}
         </template>
       </ControlButtonTooltip>
 
@@ -101,18 +113,21 @@ function handleCaptureNow() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="pointer-events-none opacity-20 grayscale">
-          <div i-solar:pulse-2-outline :class="adjustStyleClasses.icon" text="neutral-400" />
+        <ControlButton :button-style="adjustStyleClasses.button" @click="visionStore.cycleFrequency()">
+          <div i-ph:heartbeat :class="adjustStyleClasses.icon" text="red-400" />
+          <div absolute bottom-1 right-1 text="[8px]" font-black leading-none opacity-80>
+            {{ visionStore.witnessIntervalMinutes }}m
+          </div>
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.pulse-rate') }} (Planned)
+          {{ t('tamagotchi.stage.controls-island.pulse-rate') }} ({{ visionStore.witnessIntervalMinutes }}m)
         </template>
       </ControlButtonTooltip>
 
-      <!-- Row 2: (DISABLED) -->
+      <!-- Row 2: Voice Cluster (DISABLED - pending voice feature implementation) -->
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="pointer-events-none opacity-20 grayscale">
-          <div i-solar:microphone-outline :class="adjustStyleClasses.icon" />
+        <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
+          <div i-solar:microphone-outline :class="adjustStyleClasses.icon" text="sky-400" />
         </ControlButton>
         <template #tooltip>
           {{ t('tamagotchi.stage.controls-island.live-voice') }} (Planned)
@@ -120,8 +135,8 @@ function handleCaptureNow() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="pointer-events-none opacity-20 grayscale">
-          <div i-solar:soundwave-outline :class="adjustStyleClasses.icon" />
+        <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
+          <div i-solar:soundwave-outline :class="adjustStyleClasses.icon" text="green-400" />
         </ControlButton>
         <template #tooltip>
           {{ t('tamagotchi.stage.controls-island.output-mode') }} (Planned)
@@ -129,18 +144,23 @@ function handleCaptureNow() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="pointer-events-none opacity-20 grayscale">
-          <div i-solar:globus-outline :class="adjustStyleClasses.icon" />
+        <ControlButton :button-style="adjustStyleClasses.button" @click="isGroundingEnabled = !isGroundingEnabled">
+          <div
+            :class="[
+              isGroundingEnabled ? 'i-solar:globus-bold text-emerald-400' : 'i-solar:globus-outline text-neutral-400',
+              adjustStyleClasses.icon,
+            ]"
+          />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.grounding') }} (Planned)
+          {{ t('tamagotchi.stage.controls-island.grounding') }}: {{ isGroundingEnabled ? 'ON' : 'OFF' }}
         </template>
       </ControlButtonTooltip>
 
-      <!-- Row 3: (DISABLED) -->
+      <!-- Row 3: System Cluster (DISABLED) -->
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="pointer-events-none opacity-20 grayscale">
-          <div i-solar:clock-circle-outline :class="adjustStyleClasses.icon" />
+        <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
+          <div i-solar:clock-circle-outline :class="adjustStyleClasses.icon" text="orange-400" />
         </ControlButton>
         <template #tooltip>
           {{ t('tamagotchi.stage.controls-island.respect-schedule') }} (Planned)
@@ -148,8 +168,8 @@ function handleCaptureNow() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" class="pointer-events-none opacity-20 grayscale">
-          <div i-solar:user-speak-outline :class="adjustStyleClasses.icon" />
+        <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
+          <div i-solar:user-speak-outline :class="adjustStyleClasses.icon" text="emerald-400" />
         </ControlButton>
         <template #tooltip>
           {{ t('tamagotchi.stage.controls-island.cycle-voice') }} (Planned)
@@ -157,8 +177,8 @@ function handleCaptureNow() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip side="right">
-        <ControlButton :button-style="adjustStyleClasses.button" class="pointer-events-none opacity-20 grayscale">
-          <div i-solar:settings-minimalistic-outline :class="adjustStyleClasses.icon" />
+        <ControlButton :button-style="adjustStyleClasses.button" class="cursor-not-allowed opacity-30">
+          <div i-solar:settings-minimalistic-outline :class="adjustStyleClasses.icon" text="neutral-400" />
         </ControlButton>
         <template #tooltip>
           {{ t('tamagotchi.stage.controls-island.open-settings') }} (Planned)

@@ -75,3 +75,65 @@ AIRI uses a centralized parsing pipeline to handle special markers (like `<|ACT.
 2.  Implement `LiveSessionStore`.
 3.  Bridge `useLlmmarkerParser` to the live transcription stream.
 4.  Standardize `strictPort` across all dev environments to stabilize Linux development.
+
+## 🛠️ Hardening & Verified Wire Formats (Phase 2)
+
+Recent "Clean Room" testing has verified the following stable configurations for the Gemini Live Bidi API:
+
+### 1. Verification POCs
+The following scripts in `scripts/gemini-live-pocs/` serve as the ground truth for the implementation:
+- `01-inference-rick.ts`: Baseline Bidi connection and text/audio inference.
+- `02-grounding-search.ts`: **Working** Google Search grounding implementation.
+- `03-function-calling.ts`: Experimental synchronous tool-calling structure.
+
+### 2. Mandatory Modality: AUDIO
+Through testing, it was discovered that **`AUDIO` must be present in `responseModalities`** for the Bidi endpoint to correctly trigger reasoning tools (like Grounding).
+- **Why?**: The Bidi alpha preview appears to tie its advanced tool-calling logic to the multimodal "Live" state. Using `['TEXT']` only often results in `1011: Internal Error`.
+- **Note**: This is likely because the model is optimized for real-time speech-to-speech interaction.
+
+### 3. Tool Declaration: `google_search`
+The correct tool key for search grounding is **`google_search: {}`**.
+> [!WARNING]
+> Previous versions used `google_search_retrieval`. Using the wrong key will cause 1011 errors or silent failure to ground.
+
+### 4. Auth Caveat (401 Errors)
+When using the OpenAI-compatible endpoint (`https://generativelanguage.googleapis.com/v1beta/openai/`), a standard API key (`AIza...`) will return a **401 Unauthenticated** error.
+- **Requirement**: This specific endpoint path requires an **OAuth2 Access Token** (`AQ...`).
+- **Bidi Exception**: The Bidi WebSocket endpoint (`wss://.../BidiGenerateContent?key=...`) *does* support standard API keys, though quota limits are significantly stricter than OAuth-authenticated sessions.
+
+## 🔧 Phase 3: Production Hardening (Grounding + Tools)
+
+This phase bridges the existing AIRI proactive tool ecosystem with the Gemini Live WebSocket session.
+
+### Design Decisions (Finalized)
+
+1. **Shared Execution Context**: Tool execution in the Live Session has access to the full `ChatSession` state, including character memories and conversation history. Tools are NOT isolated—they share the same context as standard chat tools.
+
+2. **Full Toolchain Injection**: All proactive tools from `ProactivityStore.registeredTools` + MCP tools are always injected into the Live Session `setup` message. The `google_search` tool is the **only** tool controlled by the "Search Grounding" toggle button, since it incurs extra per-call API costs.
+
+3. **Rate Limiting**: A safety cap of **5 tool-call invocations** per turn chain prevents expensive or recursive tool loops. The counter resets on every new user utterance (voice or text).
+
+4. **AUDIO Modality**: `responseModalities: ['AUDIO']` is mandatory and already enforced. This is NOT a new change—it is the existing requirement for the Bidi endpoint to activate reasoning/grounding.
+
+### Tool Schema Bridge
+
+AIRI tools use the `@xsai/shared-chat` `Tool` interface, which already stores `function.parameters` as JSON Schema (produced by `@xsai/tool` from Zod). The bridge maps these directly to Gemini's `functionDeclarations` format:
+
+```
+AIRI Tool.function → Gemini functionDeclaration
+  .name           → .name
+  .description    → .description
+  .parameters     → .parameters (already JSON Schema, pass-through)
+```
+
+### Tool Execution Loop (WebSocket Mid-Turn)
+
+When the Bidi stream delivers a `toolCall` message:
+1. Resolve the matching tool from the merged registry (proactive + MCP).
+2. Execute it with provided args via the tool's `execute()` function.
+3. Send a `toolResponse` message back through the WebSocket immediately.
+4. Increment the turn-chain counter; abort if ≥ 5.
+
+### Grounding Metadata
+
+When `google_search` is enabled, the server may include `groundingMetadata` in responses. This metadata contains search result citations that should be parsed and associated with the streaming assistant message for future UI rendering.

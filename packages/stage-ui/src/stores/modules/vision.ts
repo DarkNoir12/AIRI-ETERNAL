@@ -33,6 +33,7 @@ export const useVisionStore = defineStore('vision', () => {
   const status = ref<'idle' | 'capturing'>('idle')
   const lastWitnessTime = ref<number>(0)
   const lastWitnessAnalysis = ref<string>('')
+  const lastHeartbeatExec = useLocalStorageManualReset<number>('settings/vision/last-heartbeat', 0)
 
   const airiCardStore = useAiriCardStore()
   const { activeCard } = storeToRefs(airiCardStore)
@@ -44,6 +45,29 @@ export const useVisionStore = defineStore('vision', () => {
     console.log('[Vision Store] Heartbeat checking...', { isWitnessEnabled: isWitnessEnabled.value, force: !!options?.force })
     if (!isWitnessEnabled.value && !options?.force)
       return
+
+    // Throttle duplicate executions across multiple independent Electron renderer windows.
+    // Each window runs its own `useIntervalFn`, meaning they can easily drift out of sync.
+    const now = Date.now()
+
+    if (!options?.force) {
+      // Background interval: enforce the full interval duration minus a small 10s drift buffer
+      const intervalMs = witnessIntervalMinutes.value * 60 * 1000
+      if (now - lastHeartbeatExec.value < (intervalMs - 10000)) {
+        console.log(`[Vision Store] Background heartbeat skipped. Next allowed in ${intervalMs - (now - lastHeartbeatExec.value)}ms due to cross-window sync.`)
+        return
+      }
+    }
+    else {
+      // Manual trigger: enforce a small 15-second debounce to prevent spam clicks and IPC echo
+      if (now - lastHeartbeatExec.value < 15000) {
+        console.log(`[Vision Store] Forced heartbeat throttled (15s cooldown).`)
+        return
+      }
+    }
+
+    // Lock the execution time so other windows respect this cycle
+    lastHeartbeatExec.value = now
 
     // Schedule check (only if respectSchedule is enabled)
     const config = activeCard.value?.extensions?.airi?.heartbeats

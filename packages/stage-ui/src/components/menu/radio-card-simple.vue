@@ -29,8 +29,8 @@ const modelValue = defineModel<string>({ required: true })
         ? 'form_radio-card-simple-active'
         : '',
     ]"
-    flex="~ col"
-    block min-w-50 w-fit cursor-pointer items-start rounded-xl p-4 text-left
+    flex="~ row gap-4"
+    w-full shrink-0 cursor-pointer items-center rounded-xl px-4 py-3 text-left
   >
     <input
       v-model="modelValue"
@@ -41,7 +41,7 @@ const modelValue = defineModel<string>({ required: true })
       class="absolute opacity-0 [&:checked+div]:border-primary-500 [&:checked+div_.radio-dot]:opacity-100 dark:[&:checked+div]:border-primary-400"
     >
     <div
-      class="radio-circle absolute left-2 top-2 size-5 rounded-full"
+      class="radio-circle relative size-5 shrink-0 rounded-full"
       border="2 solid neutral-300 dark:neutral-600"
       transition="all duration-200 ease-in-out"
     >
@@ -51,9 +51,9 @@ const modelValue = defineModel<string>({ required: true })
         bg="primary-500 dark:primary-400"
       />
     </div>
-    <div flex="~ col" min-h-16 w-full items-start justify-center pb-2 pl-5 pr-4 pt-2>
+    <div flex="~ col" class="min-w-0 flex-1 justify-center py-1">
       <span
-        class="radio-item-name font-normal"
+        class="radio-item-name truncate font-medium"
         text="md"
         :class="[
           modelValue === value
@@ -67,7 +67,7 @@ const modelValue = defineModel<string>({ required: true })
       <span
         v-if="description"
         class="radio-item-description line-clamp-2"
-        text="xs"
+        text="sm"
         :class="[
           modelValue === value
             ? 'text-neutral-600 dark:text-neutral-400'
