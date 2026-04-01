@@ -78,7 +78,7 @@ function stringifyError(error: unknown) {
 }
 
 function getConfigPath() {
-  return join(app.getPath('userData'), 'mcp.json')
+  return join(app.getPath('appData'), 'airi', 'mcp.json')
 }
 
 function parseQualifiedToolName(name: string) {
