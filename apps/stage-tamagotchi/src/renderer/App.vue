@@ -32,6 +32,7 @@ import ResizeHandler from './components/ResizeHandler.vue'
 import {
   electronGetServerChannelConfig,
   electronMcpCallTool,
+  electronMcpGetRuntimeStatus,
   electronMcpListTools,
   electronOpenOnboarding,
   electronOpenSettings,
@@ -109,6 +110,7 @@ const startTrackingCursorPoint = useElectronEventaInvoke(electronStartTrackMouse
 const reportPluginCapability = useElectronEventaInvoke(electronPluginUpdateCapability)
 const listMcpTools = useElectronEventaInvoke(electronMcpListTools)
 const callMcpTool = useElectronEventaInvoke(electronMcpCallTool)
+const getMcpRuntimeStatus = useElectronEventaInvoke(electronMcpGetRuntimeStatus)
 const setLocale = useElectronEventaInvoke(i18nSetLocale)
 const openOnboarding = useElectronEventaInvoke(electronOpenOnboarding)
 
@@ -127,6 +129,7 @@ pluginHostInspectorStore.setBridge({
 setMcpToolBridge({
   listTools: () => listMcpTools(),
   callTool: payload => callMcpTool(payload),
+  getRuntimeStatus: () => getMcpRuntimeStatus(),
 })
 
 watch(language, () => {

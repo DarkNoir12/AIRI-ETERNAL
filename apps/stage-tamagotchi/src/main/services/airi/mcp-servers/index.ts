@@ -74,7 +74,7 @@ function stringifyError(error: unknown) {
 }
 
 function getConfigPath() {
-  return join(app.getPath('userData'), 'mcp.json')
+  return join(app.getPath('appData'), 'airi', 'mcp.json')
 }
 
 function parseQualifiedToolName(name: string) {
@@ -174,6 +174,7 @@ export function createMcpStdioManager(): McpStdioManager {
   }
 
   const startServer = async (name: string, config: ElectronMcpStdioServerConfig) => {
+    log.withFields({ name }).log('starting mcp stdio server')
     const transport = new StdioClientTransport({
       command: config.command,
       args: config.args ?? [],
@@ -181,9 +182,12 @@ export function createMcpStdioManager(): McpStdioManager {
       cwd: config.cwd,
       stderr: 'pipe',
     })
+
     const client = new Client({
-      name: `proj-airi:stage-tamagotchi:mcp:${name}`,
+      name: 'proj-airi',
       version: app.getVersion(),
+    }, {
+      capabilities: {},
     })
 
     try {
@@ -191,9 +195,10 @@ export function createMcpStdioManager(): McpStdioManager {
       transport.stderr?.on('data', (data) => {
         const text = data.toString('utf-8').trim()
         if (text) {
-          log.withFields({ serverName: name }).warn(text)
+          log.withFields({ name }).debug(`mcp stdio stderr: ${text}`)
         }
       })
+
       sessions.set(name, { client, transport, config })
       setRuntimeStatus({
         name,
@@ -202,8 +207,11 @@ export function createMcpStdioManager(): McpStdioManager {
         args: config.args ?? [],
         pid: transport.pid,
       })
+      log.withFields({ name, pid: transport.pid }).log('mcp stdio server started')
     }
     catch (error) {
+      log.withFields({ name }).withError(error).error('failed to connect mcp stdio server')
+      console.error(`[MCP][${name}] Connection Failed:`, error)
       await transport.close().catch(() => {})
       throw error
     }
@@ -260,34 +268,38 @@ export function createMcpStdioManager(): McpStdioManager {
   }
 
   const listTools = async (): Promise<ElectronMcpToolDescriptor[]> => {
-    const entries = [...sessions.entries()].sort(([left], [right]) => left.localeCompare(right))
-    const listResult = await Promise.all(entries.map(async ([serverName, session]) => {
+    log.log('listing mcp tools')
+    const allTools: ElectronMcpToolDescriptor[] = []
+    for (const [serverName, session] of sessions) {
       try {
-        const response = await session.client.listTools(undefined, {
-          timeout: mcpRequestTimeoutMsec,
-          maxTotalTimeout: mcpRequestMaxTotalTimeoutMsec,
-        })
-        return response.tools.map<ElectronMcpToolDescriptor>(item => ({
-          serverName,
-          name: `${serverName}${toolNameSeparator}${item.name}`,
-          toolName: item.name,
-          description: item.description,
-          inputSchema: item.inputSchema,
-        }))
+        const result = await session.client.listTools()
+        for (const tool of result.tools) {
+          allTools.push({
+            serverName,
+            name: `${serverName}${toolNameSeparator}${tool.name}`,
+            toolName: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema as Record<string, unknown>,
+          })
+        }
       }
       catch (error) {
-        log.withFields({ serverName }).withError(error).warn('failed to list tools from mcp server')
-        return []
+        log.withFields({ serverName }).withError(error).error('failed to list tools')
+        console.error(`[MCP][${serverName}] List Tools Failed:`, error)
       }
-    }))
+    }
 
-    return listResult.flat()
+    log.withFields({ count: allTools.length }).log('mcp tools listed')
+    return allTools
   }
 
   const callTool = async (payload: ElectronMcpCallToolPayload): Promise<ElectronMcpCallToolResult> => {
     const { serverName, toolName } = parseQualifiedToolName(payload.name)
+    log.withFields({ serverName, toolName }).log('calling mcp tool')
+
     const session = sessions.get(serverName)
     if (!session) {
+      log.withFields({ serverName }).error('mcp server is not running')
       throw new Error(`mcp server is not running: ${serverName}`)
     }
 

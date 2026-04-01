@@ -18,9 +18,25 @@ export interface McpCallToolResult {
   isError?: boolean
 }
 
+export interface McpServerRuntimeStatus {
+  name: string
+  state: 'running' | 'stopped' | 'error'
+  command: string
+  args: string[]
+  pid: number | null
+  lastError?: string
+}
+
+export interface McpRuntimeStatus {
+  path: string
+  servers: McpServerRuntimeStatus[]
+  updatedAt: number
+}
+
 interface McpToolBridge {
   listTools: () => Promise<McpToolDescriptor[]>
   callTool: (payload: McpCallToolPayload) => Promise<McpCallToolResult>
+  getRuntimeStatus: () => Promise<McpRuntimeStatus>
 }
 
 let bridge: McpToolBridge | undefined

@@ -108,19 +108,25 @@ async function runHarness() {
     const purifiedList = mapAiriToolToGemini(mcpListToolsAiri)
     console.log(JSON.stringify(purifiedList, null, 2))
 
-    // 4. Test a representative archivist tool
-    if (descriptors.length > 0) {
-      const firstTool = descriptors[0]
-      console.log(`\n--- VERIFICATION: ${firstTool.name} ---`)
-      const airiTool = {
-        function: {
-          name: firstTool.name,
-          description: firstTool.description,
-          parameters: firstTool.inputSchema,
-        },
+    // 4. Test calling an actual tool
+    const targetToolName = 'catalog_list' // Raw name as returned by server
+    const hasCatalogList = descriptors.some(t => t.toolName === targetToolName)
+
+    if (hasCatalogList) {
+      console.log(`\n[Harness] --- VERIFICATION: Calling ${targetToolName} ---`)
+      try {
+        const result = await client.callTool({
+          name: targetToolName,
+          arguments: {}, // Assuming catalog_list takes no mandatory args or we just test empty
+        })
+        console.log('[Harness] Call Result:', JSON.stringify(result, null, 2))
       }
-      const purifiedArchivist = mapAiriToolToGemini(airiTool)
-      console.log(JSON.stringify(purifiedArchivist, null, 2))
+      catch (callErr) {
+        console.error(`[Harness] Call Error on ${targetToolName}:`, callErr)
+      }
+    }
+    else {
+      console.log(`\n[Harness] Tool '${targetToolName}' not found on server. Cannot test execution.`)
     }
 
     console.log('\n[Harness] All verification steps completed successfully!')

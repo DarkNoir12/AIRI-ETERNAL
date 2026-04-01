@@ -10,7 +10,7 @@ import { useChatSessionStore } from '../../../stores/chat/session-store'
 import { MarkdownRenderer } from '../../markdown'
 
 const props = withDefaults(defineProps<{
-  message: ChatAssistantMessage & { id?: string }
+  message: ChatAssistantMessage & { id?: string, createdAt?: number }
   label: string
   showPlaceholder?: boolean
   variant?: 'desktop' | 'mobile'
@@ -20,6 +20,12 @@ const props = withDefaults(defineProps<{
 })
 
 const chatSession = useChatSessionStore()
+
+const formattedTime = computed(() => {
+  if (!props.message.createdAt)
+    return ''
+  return new Date(props.message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+})
 
 interface DisplaySegment {
   type: 'text' | 'act'
@@ -256,6 +262,15 @@ function deleteSelf() {
       >
         <div i-ph:trash-duotone />
       </button>
+
+      <div
+        v-if="variant === 'desktop' && formattedTime"
+        class="absolute left-full top-1/2 ml-4 opacity-0 transition-opacity -translate-y-1/2 group-hover:opacity-100"
+      >
+        <span class="whitespace-nowrap text-xs text-neutral-400 font-medium tabular-nums dark:text-neutral-500">
+          {{ formattedTime }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
