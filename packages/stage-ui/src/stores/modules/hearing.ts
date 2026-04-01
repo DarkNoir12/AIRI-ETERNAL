@@ -226,7 +226,7 @@ export const useHearingStore = defineStore('hearing-store', () => {
           'Authorization': `Token ${providerConfig.apiKey}`,
           'Content-Type': normalizedInput.file.type || 'audio/webm',
         },
-        body: normalizedInput.file,
+        body: await normalizedInput.file.arrayBuffer(),
         signal: options?.providerOptions?.abortSignal as AbortSignal | undefined,
       })
 
