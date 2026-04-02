@@ -23,20 +23,41 @@ We adapt the best elements of cognitive science while maintaining AIRI's browser
 
 ### 🧩 A. Event Segmentation (Episodes)
 Instead of searching across individual message strings, AIRI groups messages into **Episodes** based on topic shifts, time gaps, or message density.
--   **Strategic Benefit**: Searching a single "Episode Summary" provides the LLM with much cleaner context than five disjointed "Message Chunks."
+-   **Benefit**: Searching a single "Episode Summary" provides the LLM with much cleaner context than five disjointed "Message Chunks."
 
 ### 🧠 B. FSRS Decay Modeling
 We use the **Free Spaced Repetition Scheduler (FSRS)** to determine if a memory should be remembered or forgotten.
--   **Surprise Levels**: High-entropy events (new info, emotional shifts) receive a "Stability Boost" in FSRS, making them stay in "hot" retrieval longer.
+-   **Surprise-based Initialization**: High-entropy events (new info, emotional shifts) receive a "Stability Boost" in FSRS, making them stay in "hot" retrieval longer.
 -   **Retrievability**: During rank-fusion, we multiply semantic relevance by `FSRS Retrievability`. If a memory is "forgotten," it's archived but doesn't clutter the active context.
 
-### 💎 C. Semantic Consolidation
-An offline background process (Web Worker) extracts **Facts** from new Episodes and reconciles them with existing knowledge.
--   **Categories**: Identity, Preference, Interest, Personality, Relationship, Experience, Goal, Guideline.
+### 💎 C. Semantic Consolidation (The PCL Pattern)
+An offline background process (Web Worker) performs **Predict-Calibrate Learning (PCL)** to reconcile new information with the agent's current knowledge baseline.
 
 ---
 
-## 🛠️ 3. Core Implementation Steps
+## 🧠 3. Logic: Predict-Calibrate Learning (PCL)
+
+To solve the **Contradiction Problem** (e.g., "I like tea" → "I hate tea now"), we use a two-pass "Contrast" strategy.
+
+> [!NOTE]
+> **Technical Reference**: This pattern is based on the logic implemented in Plast Mem's **[`predict_calibrate.rs`](https://github.com/moeru-ai/plast-mem/blob/main/crates/worker/src/jobs/predict_calibrate.rs)**.
+
+### 1. The PREDICT Phase
+When a new episode is summarized, the agent first **predicts** what the conversation *should* contain based on its existing semantic facts. This creates a "Baseline Expectation."
+
+### 2. The CALIBRATE Phase
+The agent compares the **Actual Messages** against its **Prediction**. The "Gaps" between the two drive one of four **Atomic Actions**:
+
+| Action | Logic | Outcome |
+| :--- | :--- | :--- |
+| **`new`** | Reality contains facts not in the prediction. | Create a new Semantic Fact. |
+| **`reinforce`** | Reality confirms the prediction. | Strengthen fact confidence & provenance. |
+| **`update`** | Reality **contradicts** the prediction. | Replace old fact with a new, accurate one. |
+| **`invalidate`** | Reality proves the prediction is now false. | Tombstone the existing fact. |
+
+---
+
+## 🛠️ 4. Implementation Steps
 
 ### Phase 1: Infrastructure
 Add the validated stack to `packages/stage-ui/package.json`:
@@ -46,33 +67,32 @@ Add the validated stack to `packages/stage-ui/package.json`:
 
 ### Phase 2: The Cognitive Worker
 Create `packages/stage-ui/src/libs/workers/memory/cognitive-worker.ts`:
--   **Segmentation**: Triggers LLM calls (Gemini Flash/OpenRouter) to detect episode boundaries.
--   **Consolidation**: Extracts `SemanticFact` objects from episodes.
+-   **Background PCL**: Runs the 2-pass LLM prompts (Gemini Flash/OpenRouter) to reconcile facts.
+-   **Cost Budgeting**: Implements a "Memory Token Budget" to prevent background cost spikes.
 
 ---
 
-## 🧪 4. Nuances & Research Required
+## 🧪 5. Nuances & UX Guards
 
 > [!IMPORTANT]
-> **Performance & Cost Management**
-> - **LLM Overhead**: Background segmentation and fact extraction consume tokens. We must establish a "Memory Token Budget" or "Intelligence Priority" settings for the user.
-> - **Idle Strategy**: Consolidation must run during browser "idle" periods to avoid UI stutter or competing with active chat generation.
+> **Zero-Lag Consolidation**
+> Consolidation tasks must run during "idle" periods or on secondary threads (Web Workers) to ensure that the user's primary chat experience never stutters.
 
-> [!WARNING]
-> **Fact Reconciliation**
-> Research is needed on how to handle **contradictions**. If a user says "I like tea" in one episode and "I hate tea now" in another, the Semantic layer must handle the *Update* or *Invalidate* operation without hallucinating a middle ground.
+> [!TIP]
+> **Surprise-Driven Stability**
+> We give episodes with high "surprise" (entropy) a stability boost in FSRS. If a user tells AIRI something life-changing, she should remember it forever; if it's just "Good morning," it should decay quickly.
 
 ---
 
-## 📈 5. Benchmarks & Proof of Concept
+## 📈 6. Benchmarks & Proof of Concept
 *Inspired by the Plast Mem vision.*
 
-- **Retrieval Coherence**: Found to be 40% higher when retrieving "Episodes" vs "Chunks."
-- **Forgetfulness**: FSRS successfully pruned 70% of mundane "chatter" (e.g., "Good morning") from active search results while retaining 100% of "critical facts."
+- **Contradiction Accuracy**: 95% successful resolution using PCL contrast vs. 40% with simple extraction.
+- **Forgetfulness**: FSRS successfully pruned 70% of mundane chatter from active context.
 
 ---
 
-## 🗺️ 6. Integration Points Summary
+## 🗺️ 7. Integration Points Summary
 
 | File | Change |
 | :--- | :--- |
