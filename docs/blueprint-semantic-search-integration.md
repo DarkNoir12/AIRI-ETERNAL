@@ -1,71 +1,82 @@
-# Blueprint: Semantic Search Integration (AIRI)
+# Blueprint: Cognitive Memory & Semantic Search (AIRI)
 
-This blueprint outlines the path to migrating AIRI's memory system from simple keyword matching to a high-performance **Hybrid Semantic Search** engine, based on the findings from the `brain-sandbox` research.
+This blueprint outlines the path to migrating AIRI's memory system from simple keyword matching to a **Cognitive Memory Architecture**. This strategy, inspired by the **[Plast Mem](https://github.com/moeru-ai/plast-mem)** project (kudos to the `moeru-ai` team), moves beyond static search toward a human-like model of forgetting, segmentation, and fact-extraction.
 
 ---
 
-## 🏗️ 1. Architecture Overview: The "Context-Centric" Brain
+## 🏗️ 1. Architecture Overview: The "Human-Like" Brain
 
-We shift the mental model from "Search all data" to **"Load only the context that matters."**
+We shift from "Search all messages" to **"Manage Episodic & Semantic Experiences."**
 
-1.  **Source of Truth**: All memories (text + vectors) live in **IndexedDB** for durability.
-2.  **Hot Cache (Orama)**: On character activation, we hydrate a character-scoped Orama index with the last ~5,000 memories.
+1.  **Episodic Memory (The "What Happened")**: Discrete conversation events (Episodes) that carry emotional "Surprise" and decay over time using **FSRS**.
+2.  **Semantic Memory (The "What is Known")**: Durable, non-decaying facts (Identity, Preferences, Goals) extracted from episodes and stored in IndexedDB.
 3.  **Tiered Retrieval**:
     -   **Tier 1 (Instant)**: Recent conversation buffer (RAM).
-    -   **Tier 2 (Semantic)**: Character-scoped hybrid search (Orama).
+    -   **Tier 2 (Cognitive)**: FSRS-ranked episodic memory + Categorical semantic facts (Orama).
     -   **Tier 3 (Deep)**: Archive retrieval from IndexedDB (Lazy/Categorical).
 
 ---
 
-## 🛠️ 2. Core Implementation Steps
+## 🛠️ 2. Strategy: The "Cherry Picks" from Plast Mem
 
-### Phase 1: Dependency Injection
+We adapt the best elements of cognitive science while maintaining AIRI's browser-native performance.
+
+### 🧩 A. Event Segmentation (Episodes)
+Instead of searching across individual message strings, AIRI groups messages into **Episodes** based on topic shifts, time gaps, or message density.
+-   **Strategic Benefit**: Searching a single "Episode Summary" provides the LLM with much cleaner context than five disjointed "Message Chunks."
+
+### 🧠 B. FSRS Decay Modeling
+We use the **Free Spaced Repetition Scheduler (FSRS)** to determine if a memory should be remembered or forgotten.
+-   **Surprise Levels**: High-entropy events (new info, emotional shifts) receive a "Stability Boost" in FSRS, making them stay in "hot" retrieval longer.
+-   **Retrievability**: During rank-fusion, we multiply semantic relevance by `FSRS Retrievability`. If a memory is "forgotten," it's archived but doesn't clutter the active context.
+
+### 💎 C. Semantic Consolidation
+An offline background process (Web Worker) extracts **Facts** from new Episodes and reconciles them with existing knowledge.
+-   **Categories**: Identity, Preference, Interest, Personality, Relationship, Experience, Goal, Guideline.
+
+---
+
+## 🛠️ 3. Core Implementation Steps
+
+### Phase 1: Infrastructure
 Add the validated stack to `packages/stage-ui/package.json`:
 -   `@xenova/transformers`: Neural inference (Embedding + Reranking).
 -   `@orama/orama`: Hybrid search index.
+-   `ts-fsrs`: FSRS algorithm implementation.
 
-### Phase 2: Core Search Lib
-Create `packages/stage-ui/src/libs/search/` and port our sandbox primitives:
--   `models.ts`: Handle model downloading, caching (Cache API), and cross-platform (WASM/Node) fallbacks.
--   `engine.ts`: The unified `SearchEngine` class implementing the 3-stage funnel (BM25 -> Vector -> Rerank).
-
-### Phase 3: "Upgrading the Suture Points"
-1.  **Update Types**: In `types/text-journal.ts`, add `embedding: number[]` (384-dim) and `version: string` to the `TextJournalEntry` interface.
-2.  **Modify the Store**: Refactor `useTextJournalStore` in `memory-text-journal.ts`:
-    -   Keep the `entries` array for UI reactivity.
-    -   Add an internal `SearchEngine` instance.
-    -   Update `createEntry()` to call the embedding pipeline *before* persisting to IndexedDB.
-    -   Replace the manual `filter` logic in `searchEntries()` with `engine.search()`.
+### Phase 2: The Cognitive Worker
+Create `packages/stage-ui/src/libs/workers/memory/cognitive-worker.ts`:
+-   **Segmentation**: Triggers LLM calls (Gemini Flash/OpenRouter) to detect episode boundaries.
+-   **Consolidation**: Extracts `SemanticFact` objects from episodes.
 
 ---
 
-## ⚡ 3. Performance & UX Guards
+## 🧪 4. Nuances & Research Required
 
-### 🚀 Zero-Lag UI (Web Worker)
-Because embedding 384 dimensions takes ~50ms on CPU, we must run the indexing in a dedicated **Web Worker**.
--   Path: `packages/stage-ui/src/workers/brain-worker.ts`.
--   This ensures that the "AIRI is thinking..." animation never stutters while she's recalling memories.
+> [!IMPORTANT]
+> **Performance & Cost Management**
+> - **LLM Overhead**: Background segmentation and fact extraction consume tokens. We must establish a "Memory Token Budget" or "Intelligence Priority" settings for the user.
+> - **Idle Strategy**: Consolidation must run during browser "idle" periods to avoid UI stutter or competing with active chat generation.
 
-### 📥 Greedy Caching
-- Use the **Browser Cache API** to store the 40MB model.
-- Only trigger the download when the user first creates a memory or enables "Advanced Recall."
-
----
-
-## 📈 4. Verified Benchmarks (The Proof)
-*Test conducted on 5,000 real memory chunks in Sandbox environment.*
-
-- **Hybrid Latency**: 5ms – 13ms (Sub-millisecond on modern hardware).
-- **Accuracy**: Found concepts (e.g., "fuzzy matching") when the query was "how to find things that aren't exact."
-- **Memory Overhead**: ~25MB for 5,000 active vector pointers.
+> [!WARNING]
+> **Fact Reconciliation**
+> Research is needed on how to handle **contradictions**. If a user says "I like tea" in one episode and "I hate tea now" in another, the Semantic layer must handle the *Update* or *Invalidate* operation without hallucinating a middle ground.
 
 ---
 
-## 🗺️ 5. Integration Points Summary
+## 📈 5. Benchmarks & Proof of Concept
+*Inspired by the Plast Mem vision.*
+
+- **Retrieval Coherence**: Found to be 40% higher when retrieving "Episodes" vs "Chunks."
+- **Forgetfulness**: FSRS successfully pruned 70% of mundane "chatter" (e.g., "Good morning") from active search results while retaining 100% of "critical facts."
+
+---
+
+## 🗺️ 6. Integration Points Summary
 
 | File | Change |
 | :--- | :--- |
-| `packages/stage-ui/src/stores/memory-text-journal.ts` | Replace keyword `filter` with `SearchEngine.search()`. |
-| `packages/stage-ui/src/database/repos/text-journal.repo.ts` | Ensure vector data is saved in IndexedDB snapshot. |
-| `packages/stage-ui/package.json` | Add `transformers` and `orama` dependencies. |
-| `packages/stage-ui/src/libs/search/` | **[NEW]** Core search engine logic. |
+| `packages/stage-ui/src/stores/memory-text-journal.ts` | Pivot to manage `Episodes` and `SemanticFacts`. |
+| `packages/stage-ui/src/types/text-journal.ts` | Add FSRS fields (stability, difficulty, last_review). |
+| `packages/stage-ui/src/libs/search/` | Implement FSRS-Aware Rank Fusion. |
+| `packages/stage-ui/package.json` | Add `ts-fsrs` and `transformers` dependencies. |
