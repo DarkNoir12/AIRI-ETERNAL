@@ -5,6 +5,7 @@ import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { useHearingStore } from '@proj-airi/stage-ui/stores/modules/hearing'
 import { useLiveSessionStore } from '@proj-airi/stage-ui/stores/modules/live-session'
 import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision'
+import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
 import { useTheme } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 const { isDark, toggleDark } = useTheme()
 const { t } = useI18n()
 
+const providersStore = useProvidersStore()
 const settingsAudioDeviceStore = useSettingsAudioDevice()
 const settingsStore = useSettings()
 const modelStore = useModelStore()
@@ -48,6 +50,11 @@ const { powerState } = storeToRefs(liveSessionStore)
 const { status: visionStatus } = storeToRefs(visionStore)
 const activeExpressions = computed(() => (modelStore as any).activeExpressions)
 const vrmIdleAnimation = toRef(modelStore as any, 'vrmIdleAnimation')
+
+const hasGeminiKey = computed(() => {
+  const creds = providersStore.getProviderConfig('google-generative-ai')
+  return !!(typeof creds?.apiKey === 'string' && creds.apiKey.trim())
+})
 
 // Watch for profile changes to provide feedback
 const lastCardId = ref(activeCardId.value)
@@ -73,12 +80,19 @@ const view = ref<'main' | 'emotions' | 'wardrobe' | 'profiles'>('main')
 // Expose whether hearing dialog is open so parent can disable click-through
 const hearingDialogOpen = ref(false)
 const geminiRef = ref<HTMLElement>()
+const geminiPanelRef = ref<HTMLElement>()
 
-defineExpose({ hearingDialogOpen, rootElement: islandRef, geminiRootElement: geminiRef })
+defineExpose({
+  hearingDialogOpen,
+  rootElement: islandRef,
+  geminiRootElement: geminiRef,
+  geminiPanelElement: geminiPanelRef,
+})
 
 watch(expanded, (isExp) => {
   if (!isExp) {
     view.value = 'main' // Reset sub-menu when collapsing
+    geminiExpanded.value = false
   }
 })
 
@@ -163,6 +177,14 @@ const geminiIconClasses = computed(() => {
     return 'text-green-500 scale-110 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]'
   return ''
 })
+
+function handleGeminiToggle() {
+  if (!hasGeminiKey.value) {
+    toast.error('Provide your API key in Settings > Providers > Google Gemini to take advantage of these exciting new features')
+    return
+  }
+  geminiExpanded.value = !geminiExpanded.value
+}
 
 /**
  * This is a know issue (or expected behavior maybe) to Electron.
@@ -686,7 +708,7 @@ function triggerWardrobeItem(id: string) {
         enter-from-class="opacity-0 translate-x-4 scale-95"
         leave-to-class="opacity-0 translate-x-4 scale-95"
       >
-        <div v-if="geminiExpanded" absolute bottom-0 left-full z-50 ml-2>
+        <div v-if="geminiExpanded" ref="geminiPanelRef" absolute bottom-0 left-full z-50 ml-2>
           <GeminiControls @close="geminiExpanded = false" />
         </div>
       </Transition>
@@ -694,7 +716,7 @@ function triggerWardrobeItem(id: string) {
       <ControlButtonTooltip side="right">
         <ControlButton
           :button-style="[adjustStyleClasses.button, geminiColorClasses].join(' ')"
-          @click="geminiExpanded = !geminiExpanded"
+          @click="handleGeminiToggle"
         >
           <div
             i-ph:sparkle
