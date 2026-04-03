@@ -759,6 +759,7 @@ onUnmounted(() => {
               value="vad"
               title="VAD (Default)"
               description="AI-powered speech detection to automatically start and stop recordings."
+              class="flex-1"
             />
             <RadioCardSimple
               id="detection-mode-manual"
@@ -767,6 +768,7 @@ onUnmounted(() => {
               value="manual"
               title="Manual (Pure Mic)"
               description="No automatic detection. Toggle the microphone manually to record."
+              class="flex-1"
             />
           </div>
         </div>
