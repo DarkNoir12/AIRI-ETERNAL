@@ -70,6 +70,11 @@ export const useProactivityStore = defineStore('proactivity', () => {
   const locTime = ref('')
   const volLevel = ref<number | undefined>(undefined)
 
+  const recentTtsCount = ref(0)
+  const recentSttCount = ref(0)
+  const recentChatCount = ref(0)
+  const recentJournalEntryCount = ref(0)
+
   const sessionMetrics = ref({
     ttsCount: 0,
     sttCount: 0,
@@ -112,6 +117,17 @@ export const useProactivityStore = defineStore('proactivity', () => {
         winHistory.value = await getActiveWindowHistoryInvoke() || []
       }
 
+      // Memoize usage metrics once per tick
+      const oneHourAgo = Date.now() - 3600000
+      recentJournalEntryCount.value = textJournalStore.entries.filter((entry) => {
+        return entry.characterId === activeCardId.value && (entry.createdAt || 0) > oneHourAgo
+      }).length
+
+      const recentMessages = chatSession.messages.filter(m => (m.createdAt || 0) > oneHourAgo)
+      recentTtsCount.value = recentMessages.filter(m => m.role === 'assistant').length
+      recentSttCount.value = recentMessages.filter(m => m.role === 'user').length
+      recentChatCount.value = recentMessages.length
+
       if (getSystemLoadInvoke) {
         sysLoad.value = await getSystemLoadInvoke()
       }
@@ -141,10 +157,6 @@ export const useProactivityStore = defineStore('proactivity', () => {
     const resolvedDefaultBackgroundName = activeBackgroundId && activeBackgroundId !== 'none'
       ? (backgroundStore.entries.get(activeBackgroundId)?.title ?? 'unknown')
       : 'none'
-    const oneHourAgo = Date.now() - 3600000
-    const recentJournalEntryCount = textJournalStore.entries.filter((entry) => {
-      return entry.characterId === activeCardId.value && entry.createdAt > oneHourAgo
-    }).length
 
     let payload = '[Sensor Data]\n'
 
@@ -192,18 +204,13 @@ export const useProactivityStore = defineStore('proactivity', () => {
     payload += `Active Character Default Background: ${resolvedDefaultBackgroundName}\n`
 
     if (config?.contextOptions?.usageMetrics !== false) {
-      const recentMessages = chatSession.messages.filter(m => (m.createdAt || 0) > oneHourAgo)
-
-      const ttsCount = recentMessages.filter(m => m.role === 'assistant').length
-      const sttCount = recentMessages.filter(m => m.role === 'user').length
-      const chatCount = recentMessages.length
       const turnCount = chatSession.messages.length
 
       payload += '\n[Usage Metrics (Last Hr)]\n'
-      payload += `TTS (Last Hr): ${ttsCount}\n`
-      payload += `STT (Last Hr): ${sttCount}\n`
-      payload += `Chat (Last Hr): ${chatCount}\n`
-      payload += `Journal Entries (Last Hr): ${recentJournalEntryCount}\n`
+      payload += `TTS (Last Hr): ${recentTtsCount.value}\n`
+      payload += `STT (Last Hr): ${recentSttCount.value}\n`
+      payload += `Chat (Last Hr): ${recentChatCount.value}\n`
+      payload += `Journal Entries (Last Hr): ${recentJournalEntryCount.value}\n`
       payload += `Turn Count: ${turnCount} (Next Target: ${nextMilestone.value})\n`
     }
     else {
