@@ -2822,16 +2822,22 @@ export const useProvidersStore = defineStore('providers', () => {
     }
 
     const runValidation = async () => {
+      // Logic for determining if a provider is configured
+      const isConfigured = isProviderConfigured(providerId)
+
+      // If not configured and not forced, bail out early with a "valid but unconfigured" state
+      // This prevents loud network errors on fresh startups.
+      if (!isConfigured && !options.force) {
+        if (providerRuntimeState.value[providerId]) {
+          providerRuntimeState.value[providerId].isConfigured = false
+          providerRuntimeState.value[providerId].validatedCredentialHash = configString
+        }
+        return false
+      }
+
       const validationResult = await metadata.validators.validateProviderConfig(config || {})
 
       // Suppress logging and toasts for unconfigured providers unless forced
-      const configObj = (config || {}) as Record<string, any>
-      const hasKey = !!configObj.apiKey?.trim()
-      const hasAwsKey = !!configObj.accessKeyId?.trim() && !!configObj.secretAccessKey?.trim()
-      const defaultUrl = (metadata.defaultOptions?.() as any)?.baseUrl || ''
-      const hasCustomUrl = !!configObj.baseUrl?.trim() && configObj.baseUrl !== defaultUrl
-
-      const isConfigured = hasKey || hasAwsKey || hasCustomUrl
       const isUnconfigured = !validationResult.valid && !isConfigured
 
       if ((window as any).electron?.ipcRenderer) {
@@ -2919,8 +2925,7 @@ export const useProvidersStore = defineStore('providers', () => {
   // Update configuration status for all configured providers
   const updateConfigurationStatus = debounce(async () => {
     await Promise.all(Object.entries(providerMetadata)
-      // TODO: ignore un-configured provider
-      // .filter(([_, provider]) => provider.configured)
+      .filter(([providerId]) => isProviderConfigured(providerId))
       .map(async ([providerId]) => {
         try {
           if (providerRuntimeState.value[providerId]) {
@@ -3249,6 +3254,24 @@ export const useProvidersStore = defineStore('providers', () => {
 
     const defaultOptions = getDefaultProviderConfig(providerId)
     return JSON.stringify(config) !== JSON.stringify(defaultOptions)
+  }
+
+  function isProviderConfigured(providerId: string) {
+    const config = providerCredentials.value[providerId]
+    if (!config)
+      return false
+
+    const metadata = providerMetadata[providerId]
+    if (!metadata)
+      return false
+
+    const configObj = config as Record<string, any>
+    const hasKey = !!configObj.apiKey?.trim()
+    const hasAwsKey = !!configObj.accessKeyId?.trim() && !!configObj.secretAccessKey?.trim()
+    const defaultUrl = (metadata.defaultOptions?.() as any)?.baseUrl || ''
+    const hasCustomUrl = !!configObj.baseUrl?.trim() && configObj.baseUrl !== defaultUrl
+
+    return hasKey || hasAwsKey || hasCustomUrl || !!addedProviders.value[providerId]
   }
 
   function shouldListProvider(providerId: string) {

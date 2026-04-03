@@ -574,28 +574,23 @@ export const useAiriCardStore = defineStore('airi-card', () => {
   function initialize() {
     cards.value = compactAllCardsMap(cards.value)
 
-    if (cards.value.has('default'))
-      return
-    const nextCards = new Map(cards.value)
-    nextCards.set('default', compactCard({
-      name: 'ReLU',
-      version: '1.0.0',
-      description: SystemPromptV2(
-        t('base.prompt.prefix'),
-        t('base.prompt.suffix'),
-      ).content,
-    }))
-    cards.value = nextCards
-    if (!activeCardId.value)
-      activeCardId.value = 'default'
-  }
-
-  async function seedDefaults(selectedId: string) {
     const nextCards = new Map(cards.value)
     let changed = false
 
+    if (!nextCards.has('default')) {
+      nextCards.set('default', compactCard({
+        name: 'ReLU',
+        version: '1.0.0',
+        description: SystemPromptV2(
+          t('base.prompt.prefix'),
+          t('base.prompt.suffix'),
+        ).content,
+      }))
+      changed = true
+    }
+
     if (!nextCards.has('aria')) {
-      const aria = compactCard({
+      nextCards.set('aria', compactCard({
         name: 'Dr. Aria',
         creator: 'AIRI',
         version: '1.0.0',
@@ -610,13 +605,12 @@ export const useAiriCardStore = defineStore('airi-card', () => {
             },
           },
         },
-      } as any)
-      nextCards.set('aria', aria)
+      } as any))
       changed = true
     }
 
     if (!nextCards.has('lupin')) {
-      const lupin = compactCard({
+      nextCards.set('lupin', compactCard({
         name: 'Lupin',
         creator: 'AIRI',
         version: '1.0.0',
@@ -631,8 +625,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
             },
           },
         },
-      } as any)
-      nextCards.set('lupin', lupin)
+      } as any))
       changed = true
     }
 
@@ -640,7 +633,14 @@ export const useAiriCardStore = defineStore('airi-card', () => {
       cards.value = nextCards
     }
 
-    if (selectedId && nextCards.has(selectedId)) {
+    if (!activeCardId.value)
+      activeCardId.value = 'default'
+  }
+
+  async function seedDefaults(selectedId: string) {
+    initialize()
+
+    if (selectedId && cards.value.has(selectedId)) {
       await activateCard(selectedId, true)
     }
     else {

@@ -20,6 +20,13 @@ This document tracks the current development state of the AIRI project, specific
 
 ## Recent Changes (in `airi-rebase-scratch`)
 
+#### 2026-04-02 - Performance Stability & Provider Expansion
+- **Performance Regression Fix (Windows)**: Successfully identified and reverted the Async PBO rendering implementation to the robust synchronous fallback. This resolved the "App Not Responding" and mouse jitter issues reported on Windows.
+- **Proactivity Memoization**: Optimized the `proactivity` store by memoizing usage metrics (TTS/STT/Chat counts). Heavy filtering logic is now throttled to the 10s sensor tick instead of running on every reactive update.
+- **AWS Polly Native Integration**: Implemented direct neural speech synthesis using `aws4fetch` for secure V4 signing, bypassing local proxies and supporting dynamic region-based voice discovery.
+- **MCP Management Dashboard**: Launched the premium Antigravity-inspired hub for Model Context Protocol servers. Includes curated discovery, tool titration (per-tool toggles), and real-time status counts.
+- **Localization Rollout (Z.ai & Azure)**: Completed professional marketing copy and backfilled missing titles for 9 locales.
+
 #### 2026-03-31 - Research: Standalone Sticker System & Multi-Window Widgets
 - **Multi-Window Widget Architecture**: Successfully refactored the `WidgetsWindowManager` to support spawning multiple, independent Electron windows instead of a single reusable panel. Each standalone widget now gets its own window lifecycle.
 - **Strict Sticker Transparency**: Implemented a specialized window configuration for stickers that disables "Acrylic" vibrancy to ensure perfect transparency.
@@ -99,35 +106,22 @@ This document tracks the current development state of the AIRI project, specific
 
 ## Pending Items (Roadmap)
 - **AIRI Card Export Preview Modes**: Explore an optional export mode that bakes the currently selected stage background into the composed PNG preview, while keeping the current transparent/framed export as the default. This should stay optional so card portability and predictable framing are not lost.
-- **Onboarding Overhaul (Phase 1)**: Successfully implemented **Sense Portal (Easy Mode)** with OAuth and automatic provider configuration.
-- **Modular Wardrobe System**: Successfully implemented.
-- **Integrated Profile Switcher**: Successfully implemented in the Control Island.
-- **Character Photo Mode / Saved Shots**: Successfully implemented (Full composite capture + Gallery Download + Selfie Previews).
 - **Character Outfit & Habitat Management**:
     - [ ] **Live2D Expression Mapping**: Bridge functionality from VRM to allow mapping Live2D expressions to Control Island emojis.
     - [ ] **Live2D Outfit System**: Port and enable the modular wardrobe/outfit system for Live2D models.
     - [ ] **Outfit Context**: Integrate available and active outfit labels into the Chat Context Manager.
     - [ ] **Permanent Outfit Changes (`change_outfit` tool)**: Implement a polymorphic tool for the AI to perform non-ephemeral swaps, supporting mutually exclusive swaps and additive layer/accessory controls. (Blocked until Live2D outfit system is ready).
 - **Browser-Integrated Card Imports (Phase 2)**: (Next Focus) Deep integration with external character sites via an in-app Electron browser. Hooks for direct importing while respecting site ads/iframes.
-- **Vision Feature Integration**: Bridge the interval-based "Vision Witness" feature from main branch (Alpha 22-23).
-  - [x] **Research Upstream Logic**: Analyze the "jankier" screenshot hacks used in main and identify the core capture-and-prompt pipeline. [x]
-  - [x] **Architect Vision Store**: Implement a proper `VisionStore` in `packages/stage-ui` to handle both "Reactive Vision" (User-sent) and "Witness Vision" (Ambient). [x]
-  - [x] **Ambient Modality**: Evaluate if this belongs in a new "Ambient Image" provider class or works within existing VLM abstractions. [x]
-  - [x] **Gemini Live API Integration**: Developed [Design Document](file:///c:/Users/h4rdc/Documents/Github/airi-rebase-scratch/docs/design-gemini-live-api-integration.md). Includes plans for real-time multimodal I/O, tool call plumbing, and chat history inscription using the `google-genai` SDK. [x]
+- **Vision Feature Integration**:
   - [/] **Gemini 2.5 vs 3.1 Support**: Implement support for both versions to compare the "richer" experience of 2.5 vs the standard 3.1 implementation. [/]
-  - [x] **ScrollLock Syncing Cleanup**: Fully remove or refactor the ScrollLock mic-toggle state syncing logic in the backend to prevent unwanted LED flickering and OS overlays. [x]
-- [ ] **Infrastructure & UI Health**:
-  - [ ] **Always Show Logic**: Fix the "Always Show" button logic in the control island so it treats the Gemini Controls as part of the boundaries so it doesn't hide the panel when hoviering over those icons.
+- **Infrastructure & UI Health**:
   - [ ] **Status Indicator Audit**: Revisit `settings>modules` and `settings>providers` to ensure the "green state" (connected/enabled) indicators are working accurately for all entries.
-- [x] **MCP Management UI (Settings > Modules)**: [x]
-  - [x] Refactor the basic `mcp.vue` into a premium, Antigravity-inspired interface. [x]
-  - [x] Implement the **MCP Store** for curated server discovery (Search, Filesystem, GitHub). [x]
-  - [x] Implement the **Server Manager** with tool status counts (e.g., `91/91 tools`) and per-tool toggles. [x]
-  - [x] Add **Integrated Guidance** templates at the top of the configuration view. [x]
-  - [x] Add a "Refresh" capability to re-poll available tools without restarting the app. [x]
 - [x] **Privacy Indicator**: Add visual feedback in Controls Island when AIRI is "Watching". [x]
-
-
 
 ## Defunct / Scrapped Ideas
 - **Live2D ZIP Repackaging**: Intercepting oversized ZIP imports on the Electron side (Scrapped; focus shifted to asset autonomy).
+- **Onboarding Overhaul (Phase 1)**: (Completed via Sense Portal / Easy Mode).
+- **Modular Wardrobe System**: (Completed).
+- **Integrated Profile Switcher**: (Completed).
+- **Character Photo Mode**: (Completed).
+- **MCP Management UI**: (Completed).

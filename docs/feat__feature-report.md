@@ -157,7 +157,19 @@ The floating interaction hub for the desktop experience.
 
 ---
 
-## 12. Modular Wardrobe System
+## 12. MCP Management Hub
+A premium, Antigravity-inspired interface for orchestrating the Model Context Protocol ecosystem.
+
+- **Curated Server Discovery**: Integrated discovery for MCP servers across the filesystem, GitHub, and pre-defined curated sources.
+- **Antigravity-Inspired UI**: A high-fidelity, settings-integrated dashboard (`Settings → Modules`) designed for maximum clarity and technical control.
+- **Tool Titration (Per-Tool Toggles)**: Granular control over the AI's capabilities. Users can toggle individual tools within an MCP server to precisely define the character's "skillset."
+- **Real-Time Status Monitoring**: Displays precise tool counts (e.g., `91/91 tools ready`) and provides an instant "Re-poll" capability to refresh toolsets without restarting the Electron host.
+- **Standardized Configuration Templates**: Integrated setup guidance and reusable templates at the top of the management view to lower the barrier for manual server additions.
+- **Canonical Path Resolution**: Hardened path handling for MCP configurations, ensuring consistency between Windows and Unix-like environments.
+
+---
+
+## 13. Modular Wardrobe System
 A persistent, multi-layered clothing and expression management system.
 
 - **Schema-Driven Outfits**: Outfits are stored as part of the AIRI character card, specifying `name`, `icon`, `base/overlay` type, and a set of `expressions`.
