@@ -60,8 +60,10 @@ export interface ProviderMetadata {
     listVoices?: (config: Record<string, unknown>) => Promise<VoiceInfo[]>
     getSpeechCapabilities?: (config: Record<string, unknown>) => Promise<SpeechCapabilitiesInfo | null>
     loadModel?: (config: Record<string, unknown>, hooks?: { onProgress?: (progress: ProgressInfo) => Promise<void> | void }) => Promise<void>
+    chatPingCheckAvailable?: boolean
   }
   validators: {
+    chatPingCheckAvailable?: boolean
     validateProviderConfig: (config: Record<string, unknown>) => Promise<ProviderValidationResult> | ProviderValidationResult
     runManualValidation?: (config: Record<string, unknown>) => Promise<ProviderValidationResult> | ProviderValidationResult
   }
@@ -120,8 +122,12 @@ export interface SpeechCapabilitiesInfo {
 
 export interface ProviderRuntimeState {
   isConfigured: boolean
-  validatedCredentialHash?: string
-  models: ModelInfo[]
+  isInitialized: boolean
   isLoadingModels: boolean
   modelLoadError: string | null
+  isAvailable: boolean
+  isValidating: boolean
+  lastValidated?: number
+  validatedCredentialHash?: string
+  models: ModelInfo[]
 }

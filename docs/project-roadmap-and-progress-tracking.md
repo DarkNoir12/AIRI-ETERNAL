@@ -117,6 +117,7 @@ This document tracks the current development state of the AIRI project, specific
   - [/] **Gemini 2.5 vs 3.1 Support**: Implement support for both versions to compare the "richer" experience of 2.5 vs the standard 3.1 implementation. [/]
   - [x] **ScrollLock Syncing Cleanup**: Fully remove or refactor the ScrollLock mic-toggle state syncing logic in the backend to prevent unwanted LED flickering and OS overlays. [x]
 - [ ] **Infrastructure & UI Health**:
+  - [ ] **Always Show Logic**: Fix the "Always Show" button logic in the control island so it treats the Gemini Controls as part of the boundaries so it doesn't hide the panel when hoviering over those icons.
   - [ ] **Status Indicator Audit**: Revisit `settings>modules` and `settings>providers` to ensure the "green state" (connected/enabled) indicators are working accurately for all entries.
 - [x] **MCP Management UI (Settings > Modules)**: [x]
   - [x] Refactor the basic `mcp.vue` into a premium, Antigravity-inspired interface. [x]

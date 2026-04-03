@@ -1,4 +1,4 @@
-import type { ModelInfo, ProviderMetadata } from './types'
+import type { ModelInfo, ProviderMetadata, VoiceInfo } from './types'
 
 import { generateSpeech } from '@xsai/generate-speech'
 import { generateText } from '@xsai/generate-text'
@@ -72,6 +72,8 @@ export function buildOpenAICompatibleProvider(
     ...rest
   } = options
 
+  const resolvedCategory = category ?? 'chat'
+
   const defaultCapabilities = {
     listModels: async (config: Record<string, unknown>) => {
       // Safer casting of apiKey/baseUrl (prevents .trim() crash if not a string)
@@ -89,7 +91,6 @@ export function buildOpenAICompatibleProvider(
         return []
       }
 
-      // Previously: fetch(`${baseUrl}models`)
       const models = await listModels({
         apiKey,
         baseURL: baseUrl,
@@ -107,6 +108,7 @@ export function buildOpenAICompatibleProvider(
         } satisfies ModelInfo
       })
     },
+    listVoices: async (_config: Record<string, unknown>) => [] as VoiceInfo[],
   }
 
   const finalCapabilities = {
@@ -143,7 +145,7 @@ export function buildOpenAICompatibleProvider(
       if (errors.length > 0) {
         return {
           errors,
-          reason: errors.map(e => e.message).join(', '),
+          reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
           valid: false,
         }
       }
@@ -270,8 +272,6 @@ export function buildOpenAICompatibleProvider(
       }
     },
   }
-
-  const resolvedCategory = category ?? 'chat'
 
   return {
     id,

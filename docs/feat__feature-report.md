@@ -118,6 +118,11 @@ Custom provider integrations not present in the upstream project.
 - **Amazon AWS Polly**: Native high-quality neural speech synthesis integration using `aws4fetch` for secure V4 signing. Supports both **Neural** and **Standard** engines with dynamic voice discovery across all AWS regions.
 - **DeepSeek / GLM-4 Streaming**: Added streaming support for `reasoning-delta` events and hardened the categorizer against **malformed tag typos** to prevent prompt stalls.
 - **Qwen Portal Provider**: Added a first-class **Qwen Portal** integration with dedicated OAuth plumbing through the unified provider registry.
+- **Gemini Live Streaming Pipeline**: Optimized the native Google Gemini Live API for production-grade performance:
+    - **Native Audio Playback Queue**: Pre-buffers audio chunks in the main process for gapless, zero-latency streaming.
+    - **Custom AI Voices**: Standardized support for Gemini-native voices like **Algenib** and **Fenrir**.
+    - **Marker Parser Layer**: Integrated a streaming categorizer that strips ACT, DELAY, and reasoning tokens before the audio stream reaches the user's ears.
+    - **Grounding UI**: Real-time awareness of specific external data sources, presented through a clean 3x3 control grid.
 
 ---
 
@@ -146,6 +151,9 @@ The floating interaction hub for the desktop experience.
 - **Transcription Feedback Toasts**: Real-time `🎤 You said: {text}` confirmation during voice interactions.
 - **Gallery "Download" Support**: Added a direct Download button to the Image Journal gallery in settings, allowing users to save their captured selfies to their local machine.
 - **UI Icon Hygiene**: Standardized the icons for Profile Switcher (`solar:users-group-rounded-outline`) and Emotions (`solar:mask-happly-outline`) to improve visual distinctness.
+- **Chat Hover Timestamps**: Contextual time display (e.g., "14:32") appears smoothly on message hover, providing immediate continuity feedback without cluttering the chat history.
+- **WhisperDock Flush Alignment**: Recalibrated the floating voice control hub's position to align perfectly with the side controls at all window scaling levels.
+- **Unified Gemini "Emerald" Brand**: System-wide update to use **Emerald/Emerald-Dark** accents for all Gemini-powered features, increasing visual consistency across the "Consciousness" modules.
 
 ---
 
@@ -175,6 +183,9 @@ Internal hardening to ensure the app remains a stable, performant "Daily Driver.
 - **Tray Position Restore**: Auto-restores last window position from a saved snapshot on startup.
 - **Improved Animation Cycles**: Hardened VRM idle cycle logic in `airi-card.ts` for more reliable cross-fading and state transitions during AI acting and manual overrides.
 - **Provider Onboarding & Metadata UX**: The provider settings surface now includes more beginner-friendly onboarding cues and richer provider metadata presentation to make initial setup easier to understand.
+- **MacOS Compatibility Support**: Relaxation of Node.js constraints (`<26.0.0`) and resolution of TextJournalEntry type mismatches to ensure the project builds flawlessly on modern Apple Silicon environments.
+- **Production Electron Sandbox**: Enabled the full Chromium sandbox for the Electron environment, dramatically improving security for web-facing provider integrations.
+- **MCP Config Stabilization**: Canonical path resolution for Model Context Protocol (MCP) servers, ensuring all custom toolsets reside in the `@appData/airi` directory for cross-platform reliability.
 
 ---
 
@@ -199,3 +210,5 @@ Features from pending upstream PRs that have been squatted, integrated, and main
 | #1302 | **OpenRouter TTS** — Adds OpenRouter as a speech (TTS) provider | @monolithic827 | [PR](https://github.com/moeru-ai/airi/pull/1302) |
 | #851 | **Configurable Chat Send Key** — Adds user-selectable send key option (Enter/Ctrl+Enter) | @cheesemori | [PR](https://github.com/moeru-ai/airi/pull/851) |
 | #1026 | **xAI Grok Voice Providers** — Adds Grok TTS/STT as speech providers | — | [PR](https://github.com/moeru-ai/airi/pull/1026) |
+| #1336 | **Chat Connection Guard** — Explicitly wait for LLM/Mind connection status before chat | — | [PR](https://github.com/moeru-ai/airi/pull/1336) |
+| #1065 | **Manual Model Entry** — Allows manual model string entry if auto-discovery fails | — | [PR](https://github.com/moeru-ai/airi/pull/1065) |

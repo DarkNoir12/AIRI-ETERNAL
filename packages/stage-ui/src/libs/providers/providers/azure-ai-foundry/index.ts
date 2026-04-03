@@ -19,14 +19,10 @@ export const providerAzureAIFoundry = defineProvider<AzureAIFoundryConfig>({
   order: 17,
   name: 'Azure AI Foundry',
   nameLocalize: ({ t }) => t('settings.pages.providers.provider.azure-ai-foundry.title'),
-  description: 'Enterprise Standard - Secure, robust Azure-hosted intelligence',
+  description: 'azure.com',
   descriptionLocalize: ({ t }) => t('settings.pages.providers.provider.azure-ai-foundry.description'),
   tasks: ['chat'],
   icon: 'i-lobe-icons:microsoft',
-  business: () => ({
-    pricing: 'paid',
-    deployment: 'cloud',
-  }),
 
   createProviderConfig: ({ t }) => azureAIFoundryConfigSchema.extend({
     apiKey: azureAIFoundryConfigSchema.shape.apiKey.meta({

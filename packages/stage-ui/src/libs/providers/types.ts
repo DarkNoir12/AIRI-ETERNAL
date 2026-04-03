@@ -170,3 +170,13 @@ export interface ProviderDefinition<TConfig extends any = any> {
     }
   }
 }
+
+export enum ProviderValidationCheck {
+  Health = 'health',
+  Connectivity = 'connectivity',
+  ModelList = 'model-list',
+  ChatCompletions = 'chat-completions',
+  Embeddings = 'embeddings',
+  Speech = 'speech',
+  Transcription = 'transcription',
+}

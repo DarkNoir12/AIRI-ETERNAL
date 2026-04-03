@@ -19,7 +19,14 @@ import type {
 } from 'unspeech'
 
 import type { AliyunRealtimeSpeechExtraOptions } from './providers/aliyun/stream-transcription'
-import type { ModelInfo, ProviderMetadata, ProviderRuntimeState, SpeechCapabilitiesInfo, VoiceInfo } from './providers/types'
+import type {
+  ModelInfo,
+  ProviderMetadata,
+  ProviderRuntimeState,
+  ProviderValidationResult,
+  SpeechCapabilitiesInfo,
+  VoiceInfo,
+} from './providers/types'
 
 import { isStageTamagotchi, isUrl } from '@proj-airi/stage-shared'
 import { computedAsync, useLocalStorage } from '@vueuse/core'
@@ -73,6 +80,15 @@ import { buildOpenAICompatibleProvider } from './providers/openai-compatible-bui
 import { createProviderRegistry } from './providers/registry'
 import { createWebSpeechAPIProvider } from './providers/web-speech-api'
 
+export type {
+  ModelInfo,
+  ProviderMetadata,
+  ProviderRuntimeState,
+  ProviderValidationResult,
+  SpeechCapabilitiesInfo,
+  VoiceInfo,
+}
+
 const ALIYUN_NLS_REGIONS = [
   'cn-shanghai',
   'cn-shanghai-internal',
@@ -84,14 +100,6 @@ const ALIYUN_NLS_REGIONS = [
 
 type AliyunNlsRegion = typeof ALIYUN_NLS_REGIONS[number]
 
-export type {
-  ModelInfo,
-  ProviderMetadata,
-  ProviderRuntimeState,
-  SpeechCapabilitiesInfo,
-  VoiceInfo,
-} from './providers/types'
-
 export const useProvidersStore = defineStore('providers', () => {
   const providerCredentials = useLocalStorage<Record<string, Record<string, unknown>>>('settings/credentials/providers', {})
   const addedProviders = useLocalStorage<Record<string, boolean>>('settings/providers/added', {})
@@ -100,7 +108,7 @@ export const useProvidersStore = defineStore('providers', () => {
   const baseUrlValidator = { value: validateProviderBaseUrl }
 
   // Centralized provider metadata with provider factory functions
-  const legacyProviderMetadata: Record<string, ProviderMetadata> = {
+  const providerDefinitions: Record<string, ProviderMetadata> = {
     'speech-noop': {
       id: 'speech-noop',
       category: 'speech',
@@ -393,7 +401,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.baseUrl,
           }
         },
@@ -816,7 +824,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.map(e => e.message).join(', '),
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: errors.length === 0,
           }
         },
@@ -894,7 +902,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.baseUrl,
           }
         },
@@ -1015,6 +1023,7 @@ export const useProvidersStore = defineStore('providers', () => {
             },
           ]
         },
+        listVoices: async () => [],
       },
       validators: {
         validateProviderConfig: (config) => {
@@ -1164,7 +1173,7 @@ export const useProvidersStore = defineStore('providers', () => {
             } satisfies ModelInfo
           })
         },
-        listVoices: async (config) => {
+        listVoices: async (config: Record<string, unknown>) => {
           const apiKey = (config.apiKey as string).trim()
           const baseUrl = (config.baseUrl as string).trim().replace(/\/$/, '')
 
@@ -1215,7 +1224,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.baseUrl,
           }
         },
@@ -1271,7 +1280,7 @@ export const useProvidersStore = defineStore('providers', () => {
             },
           ]
         },
-        listVoices: async (config) => {
+        listVoices: async (config: Record<string, unknown>) => {
           const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
           const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
           const provider = createUnDeepgram(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnDeepgramOptions>
@@ -1299,14 +1308,14 @@ export const useProvidersStore = defineStore('providers', () => {
             errors.push(new Error('API key is required.'))
           }
 
-          const baseUrlValidationResult = baseUrlValidator.value(config.baseUrl)
+          const baseUrlValidationResult = baseUrlValidator.value(config.baseUrl as string)
           if (baseUrlValidationResult) {
             errors.push(...(baseUrlValidationResult.errors as Error[]))
           }
 
           return {
             errors,
-            reason: errors.map(e => e.message).join(', '),
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: errors.length === 0,
           }
         },
@@ -1391,7 +1400,7 @@ export const useProvidersStore = defineStore('providers', () => {
             },
           ]
         },
-        listVoices: async (config) => {
+        listVoices: async (config: Record<string, unknown>) => {
           const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
           const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
           const provider = createUnMicrosoft(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnMicrosoftOptions>
@@ -1426,7 +1435,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.baseUrl,
           }
         },
@@ -1472,7 +1481,7 @@ export const useProvidersStore = defineStore('providers', () => {
             },
           ]
         },
-        listVoices: async (config) => {
+        listVoices: async (config: Record<string, unknown>) => {
           const voicesUrl = config.baseUrl as string
           const response = await fetch(`${voicesUrl}audio/voices`)
           if (!response.ok) {
@@ -1519,7 +1528,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: errors.length === 0,
           }
         },
@@ -1545,7 +1554,7 @@ export const useProvidersStore = defineStore('providers', () => {
         return createUnAlibabaCloud(apiKey, baseUrl)
       },
       capabilities: {
-        listVoices: async (config) => {
+        listVoices: async (config: Record<string, unknown>) => {
           const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
           const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
           const provider = createUnAlibabaCloud(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnAlibabaCloudOptions>
@@ -1588,6 +1597,7 @@ export const useProvidersStore = defineStore('providers', () => {
         },
       },
       validators: {
+        chatPingCheckAvailable: false,
         validateProviderConfig: (config) => {
           const errors = [
             !config.apiKey && new Error('API key is required.'),
@@ -1601,7 +1611,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.baseUrl,
           }
         },
@@ -1627,7 +1637,7 @@ export const useProvidersStore = defineStore('providers', () => {
         return createUnVolcengine(apiKey, baseUrl)
       },
       capabilities: {
-        listVoices: async (config) => {
+        listVoices: async (config: Record<string, unknown>) => {
           const apiKey = (config.apiKey as string | undefined)?.trim() ?? ''
           const baseUrl = (config.baseUrl as string | undefined)?.trim() ?? ''
           const provider = createUnVolcengine(apiKey, baseUrl) as VoiceProviderWithExtraOptions<UnVolcengineOptions>
@@ -1675,8 +1685,8 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
-            valid: !!config.apiKey && !!config.baseUrl && !!config.app && !!(config.app as any).appId,
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
+            valid: errors.length === 0,
           }
         },
       },
@@ -1878,12 +1888,12 @@ export const useProvidersStore = defineStore('providers', () => {
           if (config.baseUrl) {
             const res = baseUrlValidator.value(config.baseUrl)
             if (res)
-              return res
+              errors.push(...(res.errors as Error[]))
           }
 
           return {
             errors,
-            reason: errors.map(e => e.message).join(', '),
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: errors.length === 0,
           }
         },
@@ -1966,7 +1976,7 @@ export const useProvidersStore = defineStore('providers', () => {
         })
       },
       capabilities: {
-        listModels: async (config) => {
+        listModels: async (config: Record<string, unknown>) => {
           return [{ id: config.modelId }].map((model) => {
             return {
               id: model.id as string,
@@ -1978,6 +1988,7 @@ export const useProvidersStore = defineStore('providers', () => {
             } satisfies ModelInfo
           })
         },
+        listVoices: async () => [],
       },
       validators: {
         validateProviderConfig: (config) => {
@@ -1991,8 +2002,8 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
-            valid: !!config.apiKey && !!config.resourceName && !!config.modelId,
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
+            valid: errors.length === 0,
           }
         },
       },
@@ -2102,7 +2113,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.baseUrl,
           }
         },
@@ -2152,7 +2163,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.baseUrl,
           }
         },
@@ -2217,7 +2228,7 @@ export const useProvidersStore = defineStore('providers', () => {
         },
       },
       validators: {
-        validateProviderConfig: (config) => {
+        validateProviderConfig: async (config) => {
           if (!config.baseUrl) {
             return {
               errors: [new Error('Base URL is required.')],
@@ -2226,31 +2237,31 @@ export const useProvidersStore = defineStore('providers', () => {
             }
           }
 
-          const res = baseUrlValidator.value(config.baseUrl)
+          const res = baseUrlValidator.value(config.baseUrl as string)
           if (res) {
             return res
           }
 
           // Check if the vLLM is reachable
-          return fetch(`${(config.baseUrl as string).trim()}models`, { headers: (config.headers as HeadersInit) || undefined })
-            .then((response) => {
-              const errors = [
-                !response.ok && new Error(`vLLM returned non-ok status code: ${response.statusText}`),
-              ].filter(Boolean)
+          try {
+            const response = await fetch(`${(config.baseUrl as string).trim()}models`, { headers: (config.headers as HeadersInit) || undefined })
+            const errors = [
+              !response.ok && new Error(`vLLM returned non-ok status code: ${response.statusText}`),
+            ].filter((e): e is Error => e instanceof Error)
 
-              return {
-                errors,
-                reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
-                valid: response.ok,
-              }
-            })
-            .catch((err) => {
-              return {
-                errors: [err],
-                reason: `Failed to reach vLLM, error: ${String(err)} occurred.`,
-                valid: false,
-              }
-            })
+            return {
+              errors,
+              reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
+              valid: response.ok,
+            }
+          }
+          catch (err) {
+            return {
+              errors: [err as Error],
+              reason: `Failed to reach vLLM, error: ${String(err)} occurred.`,
+              valid: false,
+            }
+          }
         },
       },
     },
@@ -2312,7 +2323,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: !!config.apiKey && !!config.accountId,
           }
         },
@@ -2412,36 +2423,36 @@ export const useProvidersStore = defineStore('providers', () => {
             }
           }
 
-          const res = baseUrlValidator.value(config.baseUrl)
+          const res = baseUrlValidator.value(config.baseUrl as string)
           if (res) {
             return res
           }
 
           // Check if the local running Player 2 is reachable
-          return await fetch(`${config.baseUrl}health`, {
-            method: 'GET',
-            headers: {
-              'player2-game-key': 'airi',
-            },
-          })
-            .then((response) => {
-              const errors = [
-                !response.ok && new Error(`Player 2 returned non-ok status code: ${response.statusText}`),
-              ].filter(Boolean)
+          try {
+            const response = await fetch(`${config.baseUrl}health`, {
+              method: 'GET',
+              headers: {
+                'player2-game-key': 'airi',
+              },
+            })
+            const errors = [
+              !response.ok && new Error(`Player 2 returned non-ok status code: ${response.statusText}`),
+            ].filter((e): e is Error => e instanceof Error)
 
-              return {
-                errors,
-                reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
-                valid: response.ok,
-              }
-            })
-            .catch((err) => {
-              return {
-                errors: [err],
-                reason: `Failed to reach Player 2, error: ${String(err)} occurred. If you do not have Player 2 running, please start it and try again.`,
-                valid: false,
-              }
-            })
+            return {
+              errors,
+              reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
+              valid: response.ok,
+            }
+          }
+          catch (err) {
+            return {
+              errors: [err as Error],
+              reason: `Failed to reach Player 2, error: ${String(err)} occurred. If you do not have Player 2 running, please start it and try again.`,
+              valid: false,
+            }
+          }
         },
       },
     },
@@ -2474,7 +2485,7 @@ export const useProvidersStore = defineStore('providers', () => {
             },
           ]
         },
-        listVoices: async (config) => {
+        listVoices: async (config: Record<string, unknown>) => {
           const baseUrl = (config.baseUrl as string).endsWith('/') ? (config.baseUrl as string).slice(0, -1) : config.baseUrl as string
           return await fetch(`${baseUrl}/tts/voices`).then(res => res.json()).then(({ voices }) => (voices as { id: string, language: 'american_english' | 'british_english' | 'japanese' | 'mandarin_chinese' | 'spanish' | 'french' | 'hindi' | 'italian' | 'brazilian_portuguese', name: string, gender: string }[]).map(({ id, language, name, gender }) => (
             {
@@ -2562,7 +2573,7 @@ export const useProvidersStore = defineStore('providers', () => {
 
           return {
             errors,
-            reason: errors.filter(e => e).map(e => String(e)).join(', ') || '',
+            reason: errors.filter((e): e is Error => e instanceof Error).map(e => e.message).join(', '),
             valid: errors.length === 0,
           }
         },
@@ -2758,7 +2769,7 @@ export const useProvidersStore = defineStore('providers', () => {
     },
   }
 
-  const providerMetadata = createProviderRegistry(t, legacyProviderMetadata)
+  const providerMetadata = createProviderRegistry(t, providerDefinitions)
 
   // const validatedCredentials = ref<Record<string, string>>({})
   const providerRuntimeState = ref<Record<string, ProviderRuntimeState>>({})
@@ -2893,9 +2904,12 @@ export const useProvidersStore = defineStore('providers', () => {
     if (!providerRuntimeState.value[providerId]) {
       providerRuntimeState.value[providerId] = {
         isConfigured: false,
-        models: [],
+        isInitialized: false,
         isLoadingModels: false,
         modelLoadError: null,
+        isAvailable: false,
+        isValidating: false,
+        models: [],
       }
     }
   }

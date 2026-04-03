@@ -25,6 +25,10 @@ export default defineConfig({
       externalizeDeps: {
         include: [
           'electron-click-drag-plugin',
+          '@proj-airi/electron-screen-capture',
+          '@proj-airi/electron-eventa',
+          '@proj-airi/electron-vueuse',
+          '@proj-airi/plugin-sdk',
         ],
       },
     },
