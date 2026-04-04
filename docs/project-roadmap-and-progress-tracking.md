@@ -20,6 +20,14 @@ This document tracks the current development state of the AIRI project, specific
 
 ## Recent Changes (in `airi-rebase-scratch`)
 
+#### 2026-04-04 - Control Island UX & Modular Artistry
+- **Control Island Mutual Exclusion**: Refactored the UI to ensure the Main island and Gemini/Module islands auto-collapse each other, preventing desktop clutter.
+- **Gemini Control Island UX**: Implemented specialized auto-hide logic (Action vs. Cycle) and disabled legacy settings buttons to match the premium Main island experience.
+- **Native Performance (Koffi)**: Migrated the proactivity sensor pipeline to Koffi for Win32 FFI, achieving sub-1s telemetry heartbeat ticks (optimized from ~1.5s).
+- **Context-Width Inheritance**: Implemented a global `localStorage` map for model-specific context defaults. Characters now automatically inherit their token limit from this map if not explicitly set.
+- **Artistry Module Controls**: Added a global "None" provider and per-character disable switches.
+- **Dynamic Prompt Stripping**: Implemented logic to automatically strip image-generation instructions from the system prompt whenever Artistry is disabled.
+
 #### 2026-04-02 - Performance Stability & Provider Expansion
 - **Performance Regression Fix (Windows)**: Successfully identified and reverted the Async PBO rendering implementation to the robust synchronous fallback. This resolved the "App Not Responding" and mouse jitter issues reported on Windows.
 - **Proactivity Memoization**: Optimized the `proactivity` store by memoizing usage metrics (TTS/STT/Chat counts). Heavy filtering logic is now throttled to the 10s sensor tick instead of running on every reactive update.
@@ -106,12 +114,12 @@ This document tracks the current development state of the AIRI project, specific
 
 ## Pending Items (Roadmap)
 - **Artistry & Proactivity Refinement**:
-    - [ ] **Artistry Character Toggle**: Allow users to fully disable artistry features on a per-character basis, which will dynamically update the character's system prompt builder to omit relevant image-generation instructions and tool definitions.
-    - [ ] **Artistry Global "None" Provider**: Implement a "none" state at the global provider level to allow disabling image generation across the entire app, regardless of individual character settings.
+    - [x] **Artistry Character Toggle**: Allow users to fully disable artistry features on a per-character basis, which will dynamically update the character's system prompt builder to omit relevant image-generation instructions and tool definitions. [x]
+    - [x] **Artistry Global "None" Provider**: Implement a \"none\" state at the global provider level to allow disabling image generation across the entire app, regardless of individual character settings. [x]
     - [ ] **Proactivity Pipeline Overhaul**: Revisit the end-to-end proactivity pipeline focusing on three key tenets:
         - **Cross-Platform Compatibility**: Ensure robust performance on Windows, macOS, and Linux with graceful fallbacks for platform-specific sensors (e.g., fallback for PowerShell-based volume on non-Windows).
-        - **Performance Optimization**: Minimize main-thread blocking and resource consumption during sensor polling and evaluation ticks.
-        - **Context Parity**: Ensure the proactivity engine receives the same high-fidelity context payload (same sensors, tool definitions, and history) as the standard chat pipeline to prevent inconsistent reasoning or a "brain-split" where the AI thinks it has access to sensors/tools that are actually missing or broken.
+        - [x] **Performance Optimization**: Minimize main-thread blocking and resource consumption during sensor polling and evaluation ticks. [x]
+        - **Context Parity**: Ensure the proactivity engine receives the same high-fidelity context payload (same sensors, tool definitions, and history) as the standard chat pipeline to prevent inconsistent reasoning or a \"brain-split\" where the AI thinks it has access to sensors/tools that are actually missing or broken.
 
 - **Speech Experience & Transformation**:
     - [ ] **Universal Speech Transformer**: Develop a lightweight middleware for the Speech Module to clean/transform text before TTS synthesis.
