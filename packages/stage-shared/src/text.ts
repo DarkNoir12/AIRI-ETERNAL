@@ -28,3 +28,106 @@ export function estimateTokens(text: string): number {
   const nonCjkCount = trimmed.length - cjkCount
   return Math.max(1, cjkCount + Math.ceil(nonCjkCount / 4))
 }
+
+/**
+ * Mapping of Windows-1252 specific high-range Unicode characters back to their original byte values.
+ * This is used to "un-mismatch" encoding when a UTF-8 stream was misinterpreted as Windows-1252.
+ */
+const WIN1252_TO_BYTE: Record<number, number> = {
+  0x20AC: 0x80, // €
+  0x201A: 0x82, // ‚
+  0x0192: 0x83, // ƒ
+  0x201E: 0x84, // „
+  0x2026: 0x85, // …
+  0x2020: 0x86, // †
+  0x2021: 0x87, // ‡
+  0x02C6: 0x88, // ˆ
+  0x2030: 0x89, // ‰
+  0x0160: 0x8A, // Š
+  0x2039: 0x8B, // ‹
+  0x0152: 0x8C, // Œ
+  0x017D: 0x8E, // Ž
+  0x2018: 0x91, // ‘
+  0x2019: 0x92, // ’
+  0x201C: 0x93, // “
+  0x201D: 0x94, // ”
+  0x2022: 0x95, // •
+  0x2013: 0x96, // –
+  0x2014: 0x97, // —
+  0x02DC: 0x98, // ˜
+  0x2122: 0x99, // ™
+  0x0161: 0x9A, // š
+  0x203A: 0x9B, // ›
+  0x0153: 0x9C, // œ
+  0x017E: 0x9E, // ž
+  0x0178: 0x9F, // Ÿ
+}
+
+/**
+ * Heals "Mozibake" (character scramble) where UTF-8 bytes were interpreted as Windows-1252/Latin-1.
+ * Matches common mangled Kaomoji fragments like 'Ê·' -> 'ʷ' by identifying sequences of
+ * misinterpreted characters and restoring them while leaving valid Unicode symbols untouched.
+ */
+export function healMozibake(text: string): string {
+  if (!text || !/[^\x00-\x7F]/.test(text))
+    return text
+
+  // Literal mappings for common fragments that are hard to recover via bit-shifting
+  const commonScrambles: Record<string, string> = {
+    'Ê·': 'ʷ',
+    'â—´': '◴',
+    'â—•': '•',
+    'á´¥': 'ᴥ',
+    'â‰§': '≧',
+    'ï¿£': '￣',
+    'ãƒ˜': 'ヘ',
+    'â¬½': '⬽',
+    'Â¬': '¬',
+    'â–½': '▽',
+    'Ê•': 'ʕ',
+    'Ê"': 'ʔ',
+    'â‰¦': '≦',
+  }
+
+  let healed = text
+  for (const [key, val] of Object.entries(commonScrambles)) {
+    healed = healed.replaceAll(key, val)
+  }
+
+  // Selective healing of remaining misinterpreted byte sequences
+  // We scan the string for "suspicious" sequences that are likely UTF-8 start/cont bytes
+  try {
+    const bytes: number[] = []
+    let changed = false
+
+    for (let i = 0; i < healed.length; i++) {
+      const code = healed.charCodeAt(i)
+
+      // If it's a character that COULD be a mis-decoded byte (0x80-0xFF or mapping)
+      if (code <= 0xFF || WIN1252_TO_BYTE[code] !== undefined) {
+        const byte = (code <= 0xFF) ? code : WIN1252_TO_BYTE[code]
+        bytes.push(byte)
+        if (code !== byte)
+          changed = true
+      }
+      else {
+        // It's a high-range character (> 255).
+        // To preserve it, we'll encode it back to its UTF-8 bytes and push those.
+        // This keeps the byte stream consistent for the final TextDecoder.
+        const encoded = new TextEncoder().encode(healed[i])
+        for (const b of encoded) bytes.push(b)
+      }
+    }
+
+    if (changed || bytes.length !== healed.length) {
+      const decoded = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(bytes))
+      if (decoded && decoded !== healed)
+        return decoded
+    }
+  }
+  catch {
+    // If selective byte-reconstruction fails, stick with the literal replacements.
+  }
+
+  return healed
+}

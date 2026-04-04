@@ -822,7 +822,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
       vrmStore.shouldUpdateView('outfit-applied')
     },
 
-    currentModels: computed(() => {
+    currentModels: computed<AiriExtension['modules']>(() => {
       return {
         consciousness: {
           provider: activeConsciousnessProvider.value,
@@ -834,7 +834,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
           voice_id: activeSpeechVoiceId.value,
         },
         displayModelId: stageModelStore.stageModelSelected,
-      } satisfies AiriExtension['modules']
+      }
     }),
     systemPrompt: computed(() => buildSystemPrompt(activeCard.value)),
   }

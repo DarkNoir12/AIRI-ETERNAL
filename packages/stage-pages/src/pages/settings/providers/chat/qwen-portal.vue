@@ -2,7 +2,6 @@
 import {
   ProviderBaseUrlInput,
   ProviderBasicSettings,
-  ProviderQwenOAuthSection,
   ProviderSettingsContainer,
   ProviderSettingsLayout,
   ProviderValidationAlerts,
@@ -53,7 +52,7 @@ async function refetch() {
   // Trigger generic validation if needed
 }
 
-watch([baseUrl], refetch, { immediate: true, deep: true })
+watch(baseUrl, refetch, { immediate: true, deep: true })
 </script>
 
 <template>
@@ -75,8 +74,8 @@ watch([baseUrl], refetch, { immediate: true, deep: true })
         />
       </ProviderBasicSettings>
 
-      <!-- OAuth Section -->
-      <ProviderQwenOAuthSection />
+      <!-- OAuth Section (WIP) -->
+      <!-- <ProviderQwenOAuthSection /> -->
 
       <!-- Validation Status -->
       <ProviderValidationAlerts

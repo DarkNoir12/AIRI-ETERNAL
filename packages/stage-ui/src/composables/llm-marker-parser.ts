@@ -118,9 +118,18 @@ function createLlmMarkerParser(options?: MarkerParserOptions) {
           const openTagIndex = buffer.indexOf(TAG_OPEN)
           if (openTagIndex < 0) {
             if (buffer.length - tailLength >= minLiteralEmitLength) {
-              const emit = buffer.slice(0, -tailLength)
-              buffer = buffer.slice(-tailLength)
-              await onLiteral(emit)
+              // Ensure we don't split a surrogate pair
+              let emitEnd = buffer.length - tailLength
+              const charCodeAtEmitEndMinusOne = buffer.charCodeAt(emitEnd - 1)
+              if (charCodeAtEmitEndMinusOne >= 0xD800 && charCodeAtEmitEndMinusOne <= 0xDBFF) {
+                emitEnd--
+              }
+
+              if (emitEnd >= minLiteralEmitLength) {
+                const emit = buffer.slice(0, emitEnd)
+                buffer = buffer.slice(emitEnd)
+                await onLiteral(emit)
+              }
             }
             break
           }

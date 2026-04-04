@@ -15,15 +15,15 @@ const authToken = useLocalStorageManualReset('settings/connection/auth-token', '
     <!-- // TODO: Make this array, support to connect to multiple WebSocket server -->
     <FieldInput
       v-model="websocketUrl"
-      :label="t('settings.connection.websocket-url.label')"
-      :description="t('settings.connection.websocket-url.description')"
-      :placeholder="t('settings.connection.websocket-url.placeholder')"
+      :label="t('settings.pages.connection.websocket-url.label')"
+      :description="t('settings.pages.connection.websocket-url.description')"
+      :placeholder="t('settings.pages.connection.websocket-url.placeholder')"
     />
     <FieldInput
       v-model="authToken"
-      :label="t('settings.connection.auth-token.label')"
-      :description="t('settings.connection.auth-token.description')"
-      :placeholder="t('settings.connection.auth-token.placeholder')"
+      :label="t('settings.pages.connection.auth-token.label')"
+      :description="t('settings.pages.connection.auth-token.description')"
+      :placeholder="t('settings.pages.connection.auth-token.placeholder')"
       type="password"
     />
     <slot name="platform-specific" />

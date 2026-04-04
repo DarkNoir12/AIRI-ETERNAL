@@ -417,11 +417,10 @@ pages:
             search_voices_placeholder: Buscar voces...
             search_voices_results: Encontradas {count} de {total} voces
             unsupported_voice_warning_title: No supported voices
-            unsupported_voice_warning_content: >-
-              Try a different model or provider. We are working on supporting
-              all the voice for this model as quickly as possible. If you need
-              it urgently, please let us know on GitHub at
-              https://github.com/moeru-ai/airi/issues.
+            unsupported_voice_warning_content: 'Try a different model or provider. We are
+              working on supporting all the voice for this model as quickly as
+              possible. If you need it urgently, please let us know on GitHub at
+              https://github.com/moeru-ai/airi/issues.'
             show_less: Mostrar menos
             show_more: Mostrar más
             title: Proveedor
@@ -535,9 +534,8 @@ pages:
                   placeholder: sk-...
                 base-url:
                   label: Base URL
-                  description: >-
-                    The base url used to connect to remote service. Often looks
-                    like http://localhost:11434/v1 or https://example.com/v1.
+                  description: 'The base url used to connect to remote service. Often looks like
+                    http://localhost:11434/v1 or https://example.com/v1.'
                   placeholder: Base url...
                 headers:
                   label: Custom HTTP Headers
@@ -583,15 +581,14 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Configuración extra necesaria para Ollama
-                    content: >-
-                      Lamentamos escuchar que la conexion con Ollama falló. No
-                      te preocupes, para las instancias de Ollama, es necesaria
-                      una configuración extra para que pase por Ollama. Debe
+                    content: "Lamentamos escuchar que la conexion con Ollama falló. No te preocupes,
+                      para las instancias de Ollama, es necesaria una
+                      configuración extra para que pase por Ollama. Debe
                       establecer <code>OLLAMA_HOST</code> explícitamente al
                       iniciar la aplicación Ollama o el servidor CLI de Ollama,
                       para obtener información detallada, consulte la guía <a
-                      href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">de
-                      integración Ollama</a>.
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">de integración Ollama</a>."
     common:
       continueAnyway: Continuar de todos modos
       goToModelSelection: 'Select Model →'
@@ -812,8 +809,8 @@ pages:
         title: OpenAI
       azure-openai:
         title: Azure OpenAI Service
-        description: IA Empresarial a Escala - Infraestructura segura, compatible y dedicada
-          para aplicaciones críticas
+        description: IA Empresarial a Escala - Infraestructura segura, compatible y
+          dedicada para aplicaciones críticas
       openai-compatible:
         description: Bring Your Own Endpoint - Connect any OpenAI-style API or
           self-hosted gateway
@@ -867,8 +864,8 @@ pages:
         title: xAI
       zai:
         title: Z.ai (Zhipu AI)
-        description: Potencia Agéntica - Los mejores modelos de rol con planes de programación
-          económicos de $10/mes
+        description: Potencia Agéntica - Los mejores modelos de rol con planes de
+          programación económicos de $10/mes
       xai-audio-speech:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
@@ -924,9 +921,29 @@ pages:
     description: Configure WebSocket server connection
     title: Connection
     websocket-url:
-      description: Full address of the WebSocket server (e.g., ws://localhost:6121/ws)
+      description: 'Full address of the WebSocket server (e.g., ws://localhost:6121/ws)'
       label: WebSocket Server Address
-      placeholder: ws://localhost:6121/ws
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: Habilitar WebSocket Seguro (WSS)
+      description: >-
+        Habilite WSS (WebSocket Secure) para permitir conexiones HTTPS para
+        móvil (pocket) en modo de desarrollo. Esto generará automáticamente un
+        certificado autofirmado.
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   scene:
     description: Configurar el entorno donde vive el personaje
     title: Escena
@@ -1129,27 +1146,8 @@ vrm:
   skybox:
     skybox-intensity: SkyBox Intensity
     skybox-specular-mix: Specular Mix
-websocket-secure-enabled:
-  title: Habilitar WebSocket Seguro (WSS)
-  description: >-
-    Habilite WSS (WebSocket Secure) para permitir conexiones HTTPS para móvil
-    (pocket) en modo de desarrollo. Esto generará automáticamente un certificado
-    autofirmado.
 wip:
   title: Work in Progress
   description: >-
     This feature is currently under development and not yet publicly available.
     Check back in future updates for this functionality.
-
-      openai-audio-transcription:
-        title: OpenAI STT
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: OpenAI Compatible STT
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: Aliyun NLS STT
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        title: CometAPI STT
-        description: Enterprise-grade cloud transcription

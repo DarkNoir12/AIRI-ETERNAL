@@ -5,7 +5,8 @@ animations:
     title: Tắt hiệu ứng chuyển cảnh
   use-page-specific-transitions:
     description: >-
-      Một số trang sẽ có hiệu ứng chuyển cảnh riêng, điều này sẽ ghi đè hiệu ứng chuyển cảnh mặc định
+      Một số trang sẽ có hiệu ứng chuyển cảnh riêng, điều này sẽ ghi đè hiệu ứng
+      chuyển cảnh mặc định
     title: Dùng hiệu ứng chuyển cảnh riêng cho từng trang
 dialogs:
   onboarding:
@@ -29,7 +30,8 @@ dialogs:
     select-model: Chọn mô hình
     no-models: Không có mô hình khả dụng
     no-models-help: >-
-      Vui lòng quay lại bước trước và kiểm tra khóa API, hoặc kiểm tra kết nối mạng.
+      Vui lòng quay lại bước trước và kiểm tra khóa API, hoặc kiểm tra kết nối
+      mạng.
     permissions:
       title: Notifications
       description: You can allow notifications now or continue and set it up later.
@@ -46,7 +48,8 @@ dialogs:
 language:
   title: Ngôn ngữ
   description: >
-    Thay đổi ngôn ngữ giao diện AIRI. Điều này sẽ không ảnh hưởng đến ngôn ngữ phản hồi của nhân vật.
+    Thay đổi ngôn ngữ giao diện AIRI. Điều này sẽ không ảnh hưởng đến ngôn ngữ
+    phản hồi của nhân vật.
 controls-island:
   icon-size:
     title: Kích thước biểu tượng đảo
@@ -132,12 +135,14 @@ pages:
         systemprompt: Bạn sẽ nhận tin nhắn và trả lời như một con người thực sự.
         posthistoryinstructions: Nhớ bắt chước như một con người.
       modules_info: >-
-        Cấu hình các module cho thẻ nhân vật này. Nếu không thiết lập, cấu hình mặc định sẽ được sử dụng.
+        Cấu hình các module cho thẻ nhân vật này. Nếu không thiết lập, cấu hình
+        mặc định sẽ được sử dụng.
       use_default: Sử dụng mặc định
       use_default_not_configured: Sử dụng mặc định (chưa cấu hình)
       fields_info:
         subtitle: >-
-          Bạn có thể thêm chi tiết về nhân vật, giải thích lịch sử, bối cảnh và cách nhân vật nên trả lời.
+          Bạn có thể thêm chi tiết về nhân vật, giải thích lịch sử, bối cảnh và
+          cách nhân vật nên trả lời.
         name: Tên chính thức của nhân vật.
         nickname: Có thể đặt biệt danh để ưu tiên dùng.
         description: Mô tả nhân vật này.
@@ -209,7 +214,8 @@ pages:
         reset: Đặt lại cài đặt nhà cung cấp
       danger:
         title: Cảnh báo
-        description: Các hành động không thể khôi phục. Hãy xuất những dữ liệu cần thiết trước khi tiếp tục.
+        description: Các hành động không thể khôi phục. Hãy xuất những dữ liệu cần thiết
+          trước khi tiếp tục.
       all:
         title: Xóa tất cả dữ liệu
         description: Xóa sạch toàn bộ thiết lập cục bộ, cấu hình nhà cung cấp và mô hình.
@@ -263,25 +269,29 @@ pages:
           parameters:
             adaptive_threshold:
               description: >-
-                Áp dụng ngưỡng thích ứng dựa trên sự biến thiên tín hiệu theo thời gian.
+                Áp dụng ngưỡng thích ứng dựa trên sự biến thiên tín hiệu theo
+                thời gian.
               label: Ngưỡng thích ứng
             buffer_duration:
               description: Thời gian của bộ đệm phân tích nội bộ.
               label: Thời lượng bộ đệm
             envelope_filter_frequency:
               description: >-
-                Tần số cho bộ lọc bao bì (envelope filter) để làm mượt các thay đổi năng lượng.
+                Tần số cho bộ lọc bao bì (envelope filter) để làm mượt các thay
+                đổi năng lượng.
               label: Tần số lọc bao bì
             highpass_filter_frequency:
               description: >-
-                Tần số cho bộ lọc thông cao giúp giảm tần số thấp như tiếng ồn trầm.
+                Tần số cho bộ lọc thông cao giúp giảm tần số thấp như tiếng ồn
+                trầm.
               label: Tần số lọc thông cao
             lowpass_filter_frequency:
               description: >-
                 Tần số cho bộ lọc thông thấp giúp giảm tần số cao như giọng hát.
               label: Tần số lọc thông thấp
             min_beat_interval:
-              description: BPM tối đa hoặc khoảng thời gian tối thiểu giữa các nhịp được phát hiện.
+              description: BPM tối đa hoặc khoảng thời gian tối thiểu giữa các nhịp được phát
+                hiện.
               label: BPM tối đa / Khoảng nhịp tối thiểu
             sensitivity:
               label: Độ nhạy
@@ -400,7 +410,9 @@ pages:
             search_voices_results: Tìm thấy {count}/{total} giọng nói
             unsupported_voice_warning_title: Không có giọng nói được hỗ trợ
             unsupported_voice_warning_content: >-
-              Hãy thử nhà cung cấp hoặc mô hình khác. Chúng tôi đang nỗ lực cập nhật thêm giọng nói sớm nhất có thể. Nếu cần gấp, hãy báo cho chúng tôi trên GitHub.
+              Hãy thử nhà cung cấp hoặc mô hình khác. Chúng tôi đang nỗ lực cập
+              nhật thêm giọng nói sớm nhất có thể. Nếu cần gấp, hãy báo cho
+              chúng tôi trên GitHub.
             show_less: Ẩn bớt
             show_more: Hiện thêm
             title: Nhà cung cấp
@@ -443,18 +455,20 @@ pages:
         apply-and-restart: Lưu và khởi động lại MCP
       messages:
         opened: Tệp cấu hình đã mở tại {path}
-        restarted: >-
-          Đã khởi động lại MCP. Thành công: {started}, Thất bại: {failed}, Bỏ qua: {skipped}
+        restarted: 'Đã khởi động lại MCP. Thành công: {started}, Thất bại: {failed}, Bỏ
+          qua: {skipped}'
   providers:
     explained:
       chat: 'Nhà cung cấp mô hình tạo văn bản. Ví dụ: OpenRouter, OpenAI, Ollama.'
-      Speech: 'Nhà cung cấp mô hình giọng nói (text-to-speech). Ví dụ: ElevenLabs, Azure Speech.'
-      Transcription: >-
-        Nhà cung cấp mô hình chuyển giọng nói thành văn bản. Ví dụ: Whisper.cpp, OpenAI, Azure Speech
+      Speech: 'Nhà cung cấp mô hình giọng nói (text-to-speech). Ví dụ: ElevenLabs,
+        Azure Speech.'
+      Transcription: 'Nhà cung cấp mô hình chuyển giọng nói thành văn bản. Ví dụ:
+        Whisper.cpp, OpenAI, Azure Speech'
     helpinfo:
       title: Lần đầu tới đây?
       description: >
-        {chat} AIRI cần ít nhất một nhà cung cấp để suy nghĩ và hoạt động đúng cách. Có thể coi nó như bộ não của nhân vật AIRI trong hệ thống.
+        {chat} AIRI cần ít nhất một nhà cung cấp để suy nghĩ và hoạt động đúng
+        cách. Có thể coi nó như bộ não của nhân vật AIRI trong hệ thống.
     catalog:
       edit:
         config-id-not-found: Không tìm thấy cấu hình nhà cung cấp.
@@ -478,8 +492,8 @@ pages:
                   placeholder: sk-...
                 base-url:
                   label: URL cơ sở
-                  description: >-
-                    Địa chỉ kết nối dịch vụ. Thường là http://localhost:11434/v1 hoặc tương tự.
+                  description: 'Địa chỉ kết nối dịch vụ. Thường là http://localhost:11434/v1 hoặc
+                    tương tự.'
                   placeholder: URL cơ sở...
                 headers:
                   label: Tiêu đề HTTP tùy chỉnh
@@ -525,7 +539,9 @@ pages:
                   openai-compatible-check-connectivity:
                     label: Cần cấu hình thêm cho Ollama
                     content: >-
-                      Kiểm tra kết nối thất bại. Đối với Ollama, bạn cần đặt biến môi trường <code>OLLAMA_HOST</code> khi khởi động để cho phép kết nối. Xem hướng dẫn tại trang tài liệu.
+                      Kiểm tra kết nối thất bại. Đối với Ollama, bạn cần đặt
+                      biến môi trường <code>OLLAMA_HOST</code> khi khởi động để
+                      cho phép kết nối. Xem hướng dẫn tại trang tài liệu.
     common:
       continueAnyway: Vẫn tiếp tục
       goToModelSelection: 'Chọn Mô hình →'
@@ -557,15 +573,18 @@ pages:
         description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: Ứng dụng (Local)
-        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+        description: Private Voice Engine - High-performance local speech synthesis
+          (xsai-transformers)
       browser-local-audio-transcription:
         title: Trình duyệt (Local)
         description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: Trình duyệt (Local)
-        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech
+          API or local engine
       alibaba-cloud-model-studio:
-        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice
+          models
         title: Mô hình Studio Alibaba Cloud
       amazon-bedrock:
         title: Amazon Bedrock
@@ -584,9 +603,11 @@ pages:
             part2: (xem thêm tại đây)
             part3: nhưng do chi tiết triển khai đi kèm
             part4: >-
-              với hạn chế không tương thích hoàn toàn với SDK OpenAI, hiện chưa thể dùng nhà cung cấp này trong trình duyệt.
+              với hạn chế không tương thích hoàn toàn với SDK OpenAI, hiện chưa
+              thể dùng nhà cung cấp này trong trình duyệt.
             part5: >-
-              Nếu cần dùng, bạn phải có proxy backend riêng như Serverless Function
+              Nếu cần dùng, bạn phải có proxy backend riêng như Serverless
+              Function
             part6: hoặc dịch vụ bypass CORS để vượt hạn chế.
       cloudflare-workers-ai:
         description: AI on the Edge - 10k free Neurons/day across many models
@@ -615,7 +636,8 @@ pages:
               description: Điều chỉnh âm lượng
               label: Âm lượng
       deepgram-tts:
-        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
+        description: High-Performance Aura - Low-latency speech synthesis for real-time
+          agents
         title: Deepgram
       speech-noop:
         title: Không có
@@ -624,7 +646,8 @@ pages:
         description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: DeepSeek
       elevenlabs:
-        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
+        description: Industry-Leading Realism - Unparalleled expressive neural voices
+          (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -672,7 +695,8 @@ pages:
         models:
           fp32-webgpu:
             description: >-
-              Mô hình độ chính xác cao dùng WebGPU - Khuyên dùng cho thiết bị hỗ trợ
+              Mô hình độ chính xác cao dùng WebGPU - Khuyên dùng cho thiết bị hỗ
+              trợ
           fp32:
             description: Độ chính xác đầy đủ (Full precision)
           fp16:
@@ -699,7 +723,8 @@ pages:
               label: Khu vực
         title: Microsoft / Azure Speech
       index-tts-vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: Bilibili / IndexTTS
         callout_indextts2_unavailable_title: Hỗ trợ hạn chế
         callout_indextts2_unavailable: IndexTTS2 hiện chưa hỗ trợ. Vui lòng dùng IndexTTS.
@@ -707,7 +732,8 @@ pages:
         description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI Foundry
       minimax:
-        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and
+          coding models
         title: MiniMax
       minimax-global:
         description: Aggressive Pricing - High-performance LLMs at market-low rates
@@ -728,13 +754,16 @@ pages:
         description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: Industry Standard - Reliable flagship models for chat, coding, and vision
+        description: Industry Standard - Reliable flagship models for chat, coding, and
+          vision
         title: OpenAI
       azure-openai:
         title: Azure OpenAI Service
-        description: Quy mô AI doanh nghiệp - Hạ tầng bảo mật, tuân thủ và chuyên dụng cho các ứng dụng quan trọng
+        description: Quy mô AI doanh nghiệp - Hạ tầng bảo mật, tuân thủ và chuyên dụng
+          cho các ứng dụng quan trọng
       openai-compatible:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or
+          self-hosted gateway
         title: Tương thích OpenAI
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
@@ -752,7 +781,8 @@ pages:
         description: player2.game
         title: Player2
       together:
-        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
+        description: Open Model Fast Lane - Cost-effective access to fast open-source
+          inference
         title: Together.ai
       google-generative-ai:
         description: Gemini Integration - Native Google ecosystem intelligence
@@ -767,10 +797,12 @@ pages:
         description: Local Desktop GUI - Serve any GGUF model locally
         title: LM Studio
       vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for
+          natural interactions
         fields:
           field:
             appId:
@@ -782,12 +814,14 @@ pages:
         title: xAI
       zai:
         title: Z.ai (Zhipu AI)
-        description: Sức mạnh Agentic - Các mô hình nhập vai tốt nhất trong phân khúc với các gói lập trình giá cả phải chăng chỉ 10 USD/tháng
+        description: Sức mạnh Agentic - Các mô hình nhập vai tốt nhất trong phân khúc
+          với các gói lập trình giá cả phải chăng chỉ 10 USD/tháng
       xai-audio-speech:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
+        description: Real-time Intelligence - High-accuracy speech recognition natively
+          in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
         description: Resource Hub - Pay-as-you-go access to all major AI brands
@@ -800,14 +834,17 @@ pages:
         description: Industry Standard - Reliable flagship TTS voices from OpenAI
       openai-compatible-audio-speech:
         title: OpenAI Tương thích TTS
-        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or
+          self-hosted gateway
       player2-speech:
-        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+        description: Game-Ready AI - High-fidelity character voices with zero developer
+          costs and revenue sharing
       comet-api-speech:
         title: CometAPI TTS
         description: Unified Speech Gateway - Hosted speech models through Comet API
       chatterbox:
-        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and
+          high-performance playback
         title: Chatterbox
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
@@ -816,7 +853,8 @@ pages:
         description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
+          dialect support
         title: Aliyun NLS
       browser-web-speech-api:
         description: Browser-native dictation (OS-dependent)
@@ -826,15 +864,36 @@ pages:
           title: Thử nghiệm chuyển văn bản
       aihubmix:
         title: AIHubMix
-        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
+        description: Unified API Bridge - Versatile router aggregating major models into
+          one endpoint
     title: Nhà cung cấp
   connection:
     description: Cấu hình kết nối máy chủ WebSocket
     title: Kết nối
     websocket-url:
-      description: Địa chỉ đầy đủ máy chủ WebSocket (ví dụ ws://localhost:6121/ws)
+      description: 'Địa chỉ đầy đủ của máy chủ WebSocket (ví dụ: ws://localhost:6121/ws)'
       label: Địa chỉ máy chủ WebSocket
-      placeholder: ws://localhost:6121/ws
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: Bật WebSocket bảo mật (WSS)
+      description: >-
+        Bật WSS (WebSocket Secure) để cho phép kết nối HTTPS cho di động
+        (pocket) ở chế độ phát triển. Điều này sẽ tự động tạo một chứng chỉ tự
+        ký.
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   scene:
     description: Cấu hình môi trường nhân vật sinh sống
     title: Bối cảnh
@@ -905,7 +964,8 @@ pages:
               providers-transcription-realtime-aliyun-nls:
                 title: Aliyun Real-time Transcriber
                 description: >-
-                  Truyền âm thanh micro tới Aliyun NLS và kiểm tra văn bản trực tiếp
+                  Truyền âm thanh micro tới Aliyun NLS và kiểm tra văn bản trực
+                  tiếp
               performance-playground:
                 title: Khu thử nghiệm hiệu năng
                 description: 'VRM expressions + TTS lip sync playground'
@@ -975,7 +1035,8 @@ pages:
                 color-7: Xanh lam
                 color-8: Thổ hoàng
               description: >-
-                Màu sắc truyền thống Trung Hoa, lấy cảm hứng từ dệt may, gốm sứ và hội họa cổ
+                Màu sắc truyền thống Trung Hoa, lấy cảm hứng từ dệt may, gốm sứ
+                và hội họa cổ
               title: Màu truyền thống Trung Hoa
           title: Bộ Màu Có Sẵn
     title: Giao Diện
@@ -1034,24 +1095,34 @@ vrm:
   skybox:
     skybox-intensity: Cường Độ SkyBox
     skybox-specular-mix: Độ Trộn Phản Chiếu
-websocket-secure-enabled:
-  title: Bật WebSocket bảo mật (WSS)
-  description: >-
-    Bật WSS để hỗ trợ kết nối HTTPS cho thiết bị di động trong quá trình phát triển. Chứng chỉ tự ký sẽ được tạo tự động.
 wip:
   title: Đang phát triển
-  description: >-
-    Tính năng này hiện đang được hoàn thiện và chưa sẵn sàng công khai. Hãy chờ bản cập nhật trong tương lai nhé!
+  description: "Tính năng này hiện đang được hoàn thiện và chưa sẵn sàng công
+    khai. Hãy chờ bản cập nhật trong tương lai nhé!
 
-      openai-audio-transcription:
-        title: Nhận diện giọng nói OpenAI
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: Nhận diện giọng nói OpenAI Tương thích
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: Nhận diện giọng nói Aliyun NLS
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        title: Nhận diện giọng nói CometAPI
-        description: Enterprise-grade cloud transcription
+    \  openai-audio-transcription:
+
+    \    title: Nhận diện giọng nói OpenAI
+
+    \    description: Industry Standard - Reliable and widely compatible Whisper
+    API
+
+    \  openai-compatible-audio-transcription:
+
+    \    title: Nhận diện giọng nói OpenAI Tương thích
+
+    \    description: Bring Your Own Endpoint - Custom OpenAI-compatible STT
+    endpoint
+
+    \  aliyun-nls-transcription:
+
+    \    title: Nhận diện giọng nói Aliyun NLS
+
+    \    description: Multilingual Powerhouse - Robust real-time STT with deep
+    Chinese dialect support
+
+    \  comet-api-transcription:
+
+    \    title: Nhận diện giọng nói CometAPI
+
+    \    description: Enterprise-grade cloud transcription"

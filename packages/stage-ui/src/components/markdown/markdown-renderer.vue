@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DOMPurify from 'dompurify'
 
+import { healMozibake } from '@proj-airi/stage-shared'
 import { onMounted, ref, watch } from 'vue'
 
 import { useMarkdown } from '../../composables/markdown'
@@ -21,12 +22,46 @@ async function processContent() {
     return
   }
 
+  const sample = props.content.slice(0, 10).split('').map(c => `${c} (0x${c.charCodeAt(0).toString(16)})`).join(', ')
+  console.debug(`[MarkdownRenderer] Healing input (sample: ${sample})...`)
+
+  let healed = healMozibake(props.content)
+
+  // FAILSAFE: Level 2 Literal Mappings directly in component to bypass potential shared-package cache stale
+  const commonScrambles: Record<string, string> = {
+    'Ê·': 'ʷ',
+    'â—´': '◴',
+    'â—•': '•',
+    'á´¥': 'ᴥ',
+    'â‰§': '≧',
+    'ï¿£': '￣',
+    'ãƒ˜': 'ヘ',
+    'â¬½': '⬽',
+    'Â¬': '¬',
+    'â–½': '▽',
+    'Ê•': 'ʕ',
+    'Ê"': 'ʔ',
+    'â‰¦': '≦',
+  }
+
+  for (const [key, val] of Object.entries(commonScrambles)) {
+    healed = healed.replaceAll(key, val)
+  }
+
+  if (healed !== props.content) {
+    console.debug('[MarkdownRenderer] Scrambled Unicode healed successfully.')
+  }
+  else {
+    // If it's still scrambled but healing failed, log the actual codes
+    console.debug('[MarkdownRenderer] No changes made by healer.')
+  }
+
   try {
-    processedContent.value = DOMPurify.sanitize(await process(props.content))
+    processedContent.value = DOMPurify.sanitize(await process(healed))
   }
   catch (error) {
     console.warn('Failed to process markdown with syntax highlighting, using fallback:', error)
-    processedContent.value = DOMPurify.sanitize(processSync(props.content))
+    processedContent.value = DOMPurify.sanitize(processSync(healed))
   }
 }
 

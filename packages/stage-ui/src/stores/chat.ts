@@ -5,6 +5,7 @@ import type { CommonContentPart, Message, ToolMessage } from '@xsai/shared-chat'
 import type { ChatAssistantMessage, ChatSlices, ChatStreamEventContext } from '../types/chat'
 import type { StreamEvent, StreamOptions } from './llm'
 
+import { healMozibake } from '@proj-airi/stage-shared'
 import { createQueue } from '@proj-airi/stream-kit'
 import { nanoid } from 'nanoid'
 import { defineStore, storeToRefs } from 'pinia'
@@ -633,23 +634,27 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
                 result: event.result,
               })
               break
-            case 'text-delta':
-              console.log('[ChatDebug] text-delta:', event.text)
-              fullText += event.text
+            case 'text-delta': {
+              const healedText = healMozibake(event.text)
+              console.log('[ChatDebug] text-delta:', healedText)
+              fullText += healedText
               ;(window as any).electron.ipcRenderer.send('llm-raw-output', {
                 type: 'delta',
-                text: event.text,
+                text: healedText,
                 sessionId,
               })
-              await parser.consume(event.text)
+              await parser.consume(healedText)
               break
-            case 'reasoning-delta':
+            }
+            case 'reasoning-delta': {
+              const healedText = healMozibake(event.text)
               if (!(buildingMessage as any).categorization) {
                 ;(buildingMessage as any).categorization = { speech: '', reasoning: '' }
               }
-              ;(buildingMessage as any).categorization.reasoning += event.text
+              ;(buildingMessage as any).categorization.reasoning += healedText
               updateUI()
               break
+            }
             case 'finish':
               console.log('[ChatDebug] Stream finished. Reason:', (event as any).finishReason, 'fullText length:', fullText.length)
               ;(window as any).electron.ipcRenderer.send('llm-raw-output', {

@@ -117,6 +117,12 @@ This document tracks the current development state of the AIRI project, specific
 - **Infrastructure & UI Health**:
   - [ ] **Status Indicator Audit**: Revisit `settings>modules` and `settings>providers` to ensure the "green state" (connected/enabled) indicators are working accurately for all entries.
 - [x] **Privacy Indicator**: Add visual feedback in Controls Island when AIRI is "Watching". [x]
+- **[Experimental] Widget-Native Transient Chat Bubbles**:
+  - Context-aware, at-a-glance chat history overlaid directly on the transparent `Stage.vue` model layer.
+  - Typed queries from Whisperdock push directly to the Stage as right-aligned bubbles, with the AI's response cascading below it.
+  - Maintains only the active context (last 2-3 turns) so the model isn't obscured. Designed optimally for characters tuned for short, conversational responses.
+  - Frosted glass aesthetics to blend seamlessly with the desktop background and model canvas.
+  - Focuses on TTS audio delivery; text is aggressively truncated to save space, but expands to reveal the full response upon click/hover if the user missed the audio cue.
 
 ## Defunct / Scrapped Ideas
 - **Live2D ZIP Repackaging**: Intercepting oversized ZIP imports on the Electron side (Scrapped; focus shifted to asset autonomy).

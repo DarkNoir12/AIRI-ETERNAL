@@ -399,8 +399,8 @@ pages:
             search_voices_placeholder: 搜尋聲線...
             search_voices_results: 找到 {count} / {total} 條聲線
             unsupported_voice_warning_title: 未支援的語音
-            unsupported_voice_warning_content: >-
-              嘗試使用不同的模型或提供者。我們正努力盡快支援此模型的所有語音；若你急需此功能，請在 GitHub 回報：https://github.com/moeru-ai/airi/issues。
+            unsupported_voice_warning_content: '嘗試使用不同的模型或提供者。我們正努力盡快支援此模型的所有語音；若你急需此功能，請在
+              GitHub 回報：https://github.com/moeru-ai/airi/issues。'
             show_less: 顯示更少
             show_more: 顯示更多
             title: 選擇語音合成服務來源
@@ -478,8 +478,8 @@ pages:
                   placeholder: sk-...
                 base-url:
                   label: 基礎 URL
-                  description: >-
-                    用於連接遠端服務的基礎 URL。通常看起來像 http://localhost:11434/v1 或 https://example.com/v1
+                  description: '用於連接遠端服務的基礎 URL。通常看起來像 http://localhost:11434/v1 或
+                    https://example.com/v1'
                   placeholder: 基礎 url...
                 headers:
                   label: 自訂 HTTP 標頭
@@ -524,8 +524,11 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: 需要為 Ollama 進行額外配置
-                    content: >-
-                      很抱歉，Ollama 連接檢查失敗。不要擔心，如果使用 Ollama，需要額外配置才能通過 Ollama。 您需要在啟動 Olama 應用程序或 Ollama CLI 伺服器時明確設置 <code>OLLAMA_HOST</code> 詳情，請檢查 <a href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama 集成指南</a>。
+                    content: "很抱歉，Ollama 連接檢查失敗。不要擔心，如果使用 Ollama，需要額外配置才能通過 Ollama。 您需要在啟動 Olama
+                      應用程序或 Ollama CLI 伺服器時明確設置 <code>OLLAMA_HOST</code> 詳情，請檢查
+                      <a
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">Ollama 集成指南</a>。"
     common:
       continueAnyway: 仍然繼續
       goToModelSelection: '選擇模型→'
@@ -557,15 +560,18 @@ pages:
         description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: 應用程式內（本機）
-        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+        description: Private Voice Engine - High-performance local speech synthesis
+          (xsai-transformers)
       browser-local-audio-transcription:
         title: 瀏覽器內（本機）
         description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: 瀏覽器內（本機）
-        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech
+          API or local engine
       alibaba-cloud-model-studio:
-        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice
+          models
         title: 阿里百煉
       amazon-bedrock:
         title: Amazon Bedrock
@@ -615,7 +621,8 @@ pages:
               description: 調整語音的響度
               label: 響度
       deepgram-tts:
-        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
+        description: High-Performance Aura - Low-latency speech synthesis for real-time
+          agents
         title: Deepgram
       speech-noop:
         title: 無
@@ -624,7 +631,8 @@ pages:
         description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: 深度求索 DeepSeek
       elevenlabs:
-        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
+        description: Industry-Leading Realism - Unparalleled expressive neural voices
+          (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -699,7 +707,8 @@ pages:
               label: Endpoint 地區
         title: Microsoft / Azure 語音服務
       index-tts-vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: Bilibili / IndexTTS
         callout_indextts2_unavailable_title: 有限支援
         callout_indextts2_unavailable: IndexTTS2 目前尚未支援，請改用 IndexTTS。
@@ -707,7 +716,8 @@ pages:
         description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI Foundry
       minimax:
-        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and
+          coding models
         title: MiniMax
       minimax-global:
         description: Aggressive Pricing - High-performance LLMs at market-low rates
@@ -728,13 +738,15 @@ pages:
         description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: Industry Standard - Reliable flagship models for chat, coding, and vision
+        description: Industry Standard - Reliable flagship models for chat, coding, and
+          vision
         title: OpenAI
       azure-openai:
         title: Azure OpenAI 服務
         description: 企業級 AI 規模化 - 為關鍵業務提供安全、合規且專用的基礎設施
       openai-compatible:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or
+          self-hosted gateway
         title: OpenAI 兼容性
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
@@ -752,7 +764,8 @@ pages:
         description: player2.game
         title: Player2
       together:
-        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
+        description: Open Model Fast Lane - Cost-effective access to fast open-source
+          inference
         title: Together.ai
       google-generative-ai:
         description: Gemini Integration - Native Google ecosystem intelligence
@@ -767,10 +780,12 @@ pages:
         description: Local Desktop GUI - Serve any GGUF model locally
         title: LM Studio
       vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for
+          natural interactions
         fields:
           field:
             appId:
@@ -787,7 +802,8 @@ pages:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
+        description: Real-time Intelligence - High-accuracy speech recognition natively
+          in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
         description: Resource Hub - Pay-as-you-go access to all major AI brands
@@ -800,14 +816,17 @@ pages:
         description: Industry Standard - Reliable flagship TTS voices from OpenAI
       openai-compatible-audio-speech:
         title: OpenAI 兼容 TTS
-        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or
+          self-hosted gateway
       player2-speech:
-        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+        description: Game-Ready AI - High-fidelity character voices with zero developer
+          costs and revenue sharing
       comet-api-speech:
         title: CometAPI TTS
         description: Unified Speech Gateway - Hosted speech models through Comet API
       chatterbox:
-        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and
+          high-performance playback
         title: Chatterbox
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
@@ -816,7 +835,8 @@ pages:
         description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
+          dialect support
         title: 阿里雲 NLS
       browser-web-speech-api:
         description: Browser-native dictation (OS-dependent)
@@ -826,15 +846,34 @@ pages:
           title: 實驗平台
       aihubmix:
         title: AIHubMix
-        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
+        description: Unified API Bridge - Versatile router aggregating major models into
+          one endpoint
     title: 服務來源
   connection:
-    description: 配置 WebSocket 伺服器連接
-    title: 連線
+    description: 設置 WebSocket 伺服器連接
+    title: 連接
     websocket-url:
-      description: WebSocket 伺服器的完整位址（例如：ws://localhost:6121/ws）
+      description: 'WebSocket 伺服器的完整位址 (例如，ws://localhost:6121/ws)'
       label: WebSocket 伺服器位址
-      placeholder: ws://localhost:6121/ws
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: 啟用安全 WebSocket (WSS)
+      description: >-
+        啟用 WSS (WebSocket Secure) 以允許開發模式下行動端 (pocket) 的 HTTPS 連接。這將自動生成自簽名證書。
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   scene:
     description: 設定角色所在環境
     title: 場景
@@ -1034,24 +1073,33 @@ vrm:
   skybox:
     skybox-intensity: 天空盒光照強度
     skybox-specular-mix: 漫反射／鏡面反射混合係數
-websocket-secure-enabled:
-  title: 啟用安全 WebSocket (WSS)
-  description: >-
-    啟用 WSS（WebSocket Secure）以允許開發模式下行動裝置（pocket）的 HTTPS 連線。這將自動產生自簽名憑證。
 wip:
   title: 正在開發中
-  description: >-
-    此功能正在開發中，尚未公開發佈。請在未來的更新中再次查看此功能。
+  description: "此功能正在開發中，尚未公開發佈。請在未來的更新中再次查看此功能。
 
-      openai-audio-transcription:
-        title: OpenAI 語音識別
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: OpenAI 兼容語音識別
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: 阿里雲 NLS 語音識別
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        title: CometAPI 語音識別
-        description: Enterprise-grade cloud transcription
+    \  openai-audio-transcription:
+
+    \    title: OpenAI 語音識別
+
+    \    description: Industry Standard - Reliable and widely compatible Whisper
+    API
+
+    \  openai-compatible-audio-transcription:
+
+    \    title: OpenAI 兼容語音識別
+
+    \    description: Bring Your Own Endpoint - Custom OpenAI-compatible STT
+    endpoint
+
+    \  aliyun-nls-transcription:
+
+    \    title: 阿里雲 NLS 語音識別
+
+    \    description: Multilingual Powerhouse - Robust real-time STT with deep
+    Chinese dialect support
+
+    \  comet-api-transcription:
+
+    \    title: CometAPI 語音識別
+
+    \    description: Enterprise-grade cloud transcription"

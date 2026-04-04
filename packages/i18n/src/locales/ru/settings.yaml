@@ -169,7 +169,7 @@ pages:
     name_asc: Имя (А-Я)
     name_desc: Имя (Я-А)
     no_cards: Карточек пока нет. Нажмите кнопку выше, чтобы загрузить!
-    no_results: Карточки не найдены :(
+    no_results: 'Карточки не найдены :('
     personality: Личность
     posthistoryinstructions: Инструкции после истории
     recent: Недавно добавленные
@@ -407,11 +407,10 @@ pages:
             search_voices_placeholder: Поиск голосов...
             search_voices_results: Найдено {count} из {total} голосов
             unsupported_voice_warning_title: No supported voices
-            unsupported_voice_warning_content: >-
-              Try a different model or provider. We are working on supporting
-              all the voice for this model as quickly as possible. If you need
-              it urgently, please let us know on GitHub at
-              https://github.com/moeru-ai/airi/issues.
+            unsupported_voice_warning_content: 'Try a different model or provider. We are
+              working on supporting all the voice for this model as quickly as
+              possible. If you need it urgently, please let us know on GitHub at
+              https://github.com/moeru-ai/airi/issues.'
             show_less: Показать меньше
             show_more: Показать больше
             title: Провайдер
@@ -476,8 +475,7 @@ pages:
     explained:
       chat: Провайдеры текстогенерации, напр. OpenRouter, OpenAI, Ollama.
       Speech: Провайдеры речи (TTS), напр. ElevenLabs, Azure Speech.
-      Transcription: >-
-        Провайдеры транскрипции (STT): Whisper.cpp, OpenAI, Azure Speech.
+      Transcription: 'Провайдеры транскрипции (STT): Whisper.cpp, OpenAI, Azure Speech.'
     helpinfo:
       title: Впервые здесь?
       description: >
@@ -507,9 +505,8 @@ pages:
                   placeholder: sk-...
                 base-url:
                   label: Base URL
-                  description: >-
-                    The base url used to connect to remote service. Often looks
-                    like http://localhost:11434/v1 or https://example.com/v1.
+                  description: 'The base url used to connect to remote service. Often looks like
+                    http://localhost:11434/v1 or https://example.com/v1.'
                   placeholder: Base url...
                 headers:
                   label: Custom HTTP Headers
@@ -555,15 +552,15 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Extra configuration needed for Ollama
-                    content: >-
-                      Sorry to hear that Connectivity check failed for Ollama.
-                      Don't worry, for Ollama instances, extra configuration is
-                      needed for making it pass for Ollama. You need to set
+                    content: "Sorry to hear that Connectivity check failed for Ollama. Don't worry,
+                      for Ollama instances, extra configuration is needed for
+                      making it pass for Ollama. You need to set
                       <code>OLLAMA_HOST</code> explicitly when start the Ollama
                       application or Ollama CLI server, for detailed
                       information, check <a
-                      href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama
-                      integration guide</a>.
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">Ollama integration
+                      guide</a>."
     common:
       continueAnyway: Продолжить всё равно
       goToModelSelection: 'Select Model →'
@@ -782,7 +779,8 @@ pages:
         title: OpenAI
       azure-openai:
         title: Azure OpenAI Service
-        description: Корпоративный ИИ в масштабе - Безопасная, соответствующая требованиям и выделенная инфраструктура
+        description: Корпоративный ИИ в масштабе - Безопасная, соответствующая
+          требованиям и выделенная инфраструктура
       openai-compatible:
         description: Bring Your Own Endpoint - Connect any OpenAI-style API or
           self-hosted gateway
@@ -836,7 +834,8 @@ pages:
         title: xAI
       zai:
         title: Z.ai (Zhipu AI)
-        description: Агентская мощь - Лучшие в своем классе модели для ролевых игр с доступными планами кодирования за 10 долларов в месяц
+        description: Агентская мощь - Лучшие в своем классе модели для ролевых игр с
+          доступными планами кодирования за 10 долларов в месяц
       xai-audio-speech:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
@@ -889,12 +888,32 @@ pages:
           one endpoint
     title: Провайдеры
   connection:
-    description: Configure WebSocket server connection
-    title: Connection
+    description: Настройка подключения к WebSocket-серверу
+    title: Подключение
     websocket-url:
-      description: Full address of the WebSocket server (e.g., ws://localhost:6121/ws)
-      label: WebSocket Server Address
-      placeholder: ws://localhost:6121/ws
+      description: 'Полный адрес WebSocket-сервера (например, ws://localhost:6121/ws)'
+      label: Адрес WebSocket-сервера
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: Включить защищенный WebSocket (WSS)
+      description: >-
+        Включите WSS (WebSocket Secure), чтобы разрешить HTTPS-соединения для
+        мобильных устройств (pocket) в режиме разработки. Это автоматически
+        создаст самоподписанный сертификат.
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   scene:
     description: Настройте окружение, в котором живёт персонаж
     title: Сцена
@@ -917,33 +936,7 @@ pages:
               primary-color:
                 label: Основной цвет
                 rgb-on:
-                  title: Хочу динамический!
-          title: Цветовая схема
-        developer:
-          title: Разработчик
-          sections:
-            section:
-              performance-visualizer:
-                title: Performance Visualizer
-                description: Toggle FPS/long task/memory overlay
-              markdown-stress:
-                title: Markdown Stress
-                description: Stress markdown parsing and rendering with heavy chat payloads
-              use-magic-keys:
-                title: useMagicKeys Tool
-                description: Test shortcuts
-              audio-record:
-                title: Audio Record
-                description: Test Audio related composables
-              background-gradient-blending:
-                title: Background Theme color blending
-                description: Test blending & theme
-              background-removal:
-                title: Background removal (WebGPU required)
-                description: Utility for background removal
-              chat:
-                title: Chat
-                description: Chat
+                  title: Хочу!
               gesture-circle:
                 title: Gesture Circle (Desktop only)
                 description: Test gesture recognition
@@ -1108,16 +1101,3 @@ wip:
   description: >-
     This feature is currently under development and not yet publicly available.
     Check back in future updates for this functionality.
-
-      openai-audio-transcription:
-        title: Распознавание речи OpenAI
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: OpenAI Совместимое распознавание речи
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: Распознавание речи Aliyun NLS
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        title: Распознавание речи CometAPI
-        description: Enterprise-grade cloud transcription

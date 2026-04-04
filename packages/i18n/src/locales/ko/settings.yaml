@@ -137,7 +137,8 @@ pages:
       use_default_not_configured: 기본값 사용 (구성 안됨)
       fields_info:
         subtitle: >-
-          여기에 당신이 만들고 있는 캐릭터에 대한 몇 가지 세부 사항을 입력하고, 그의 역사와 맥락을 설명하며, 당신의 상호작용에 어떻게 답해야 하는지 설명할 수 있습니다.
+          여기에 당신이 만들고 있는 캐릭터에 대한 몇 가지 세부 사항을 입력하고, 그의 역사와 맥락을 설명하며, 당신의 상호작용에
+          어떻게 답해야 하는지 설명할 수 있습니다.
         name: 이 캐릭터의 정식 이름입니다.
         nickname: 우선적으로 사용할 별명을 지정할 수도 있습니다.
         description: 이 캐릭터에 대한 설명을 지정합니다.
@@ -399,8 +400,9 @@ pages:
             search_voices_placeholder: 음성 검색...
             search_voices_results: '{total}개의 항목 중에 {count}개의 모델 찾음'
             unsupported_voice_warning_title: 지원되는 음성 없음
-            unsupported_voice_warning_content: >-
-              다른 모델 및 제공자를 이용해 주세요. 이 모델의 모든 음성을 최대한 빨리 지원하기 위해 노력하고 있습니다. 긴급하게 필요한 경우 GitHub(https://github.com/moeru-ai/airi/issues)로 알려주시기 바랍니다.
+            unsupported_voice_warning_content: '다른 모델 및 제공자를 이용해 주세요. 이 모델의 모든 음성을 최대한 빨리
+              지원하기 위해 노력하고 있습니다. 긴급하게 필요한 경우
+              GitHub(https://github.com/moeru-ai/airi/issues)로 알려주시기 바랍니다.'
             show_less: 간략히 보기
             show_more: 더 보기
             title: 제공자
@@ -443,18 +445,18 @@ pages:
         apply-and-restart: 표준 입출력 MCP 저장 후 재시작
       messages:
         opened: '{path}에서 설정 파일 열림'
-        restarted: >-
-          MCP 서버 재시작 완료. 시작: {started}, 실패: {failed}, 건너뜀: {skipped}
+        restarted: 'MCP 서버 재시작 완료. 시작: {started}, 실패: {failed}, 건너뜀: {skipped}'
   providers:
     explained:
       chat: '텍스트 생성 모델 제공자를 구성합니다. (예시: OpenRouter, OpenAI, Ollama)'
       Speech: '음성(TTS) 모델 제공자를 구성합니다. (예시: ElevenLabs, Azure Speech)'
-      Transcription: >-
-        전사(speech에서 텍스트로) 모델 제공자를 구성합니다. (예시: Whisper.cpp, OpenAI, Azure Speech)
+      Transcription: '전사(speech에서 텍스트로) 모델 제공자를 구성합니다. (예시: Whisper.cpp, OpenAI, Azure
+        Speech)'
     helpinfo:
       title: 여기 처음 오셨나요?
       description: >
-        AIRI는 적어도 하나의 {chat} 제공자가 올바르게 생각하고 행동하도록 구성되어야 합니다. AIRI 시스템에 거주하는 캐릭터의 두뇌라고 생각할 수 있습니다.
+        AIRI는 적어도 하나의 {chat} 제공자가 올바르게 생각하고 행동하도록 구성되어야 합니다. AIRI 시스템에 거주하는 캐릭터의
+        두뇌라고 생각할 수 있습니다.
     catalog:
       edit:
         config-id-not-found: 제공자 구성을 찾을 수 없습니다.
@@ -478,8 +480,8 @@ pages:
                   placeholder: sk-...
                 base-url:
                   label: 기본 URL
-                  description: >-
-                    원격 서비스에 연결하는 데 사용되는 기본 URL입니다. 종종 http://localhost:11434/v1 또는 https://example.com/v1 와 같이 보입니다.
+                  description: '원격 서비스에 연결하는 데 사용되는 기본 URL입니다. 종종 http://localhost:11434/v1 또는
+                    https://example.com/v1 와 같이 보입니다.'
                   placeholder: 기본 URL...
                 headers:
                   label: 사용자 정의 HTTP 헤더
@@ -524,8 +526,12 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Ollama에 필요한 추가 구성
-                    content: >-
-                      Ollama에 대한 연결 검사가 실패했다는 소식을 듣게 되어 유감입니다. 걱정하지 마세요. Ollama 인스턴스의 경우 Ollama를 통과시키기 위해 추가 구성이 필요합니다. Ollama 애플리케이션 또는 Ollama CLI 서버를 시작할 때 <code>OLLAMA_HOST</code>를 명시적으로 설정해야 하며, 자세한 정보는 <a href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama 통합 가이드</a>를 확인하세요.
+                    content: "Ollama에 대한 연결 검사가 실패했다는 소식을 듣게 되어 유감입니다. 걱정하지 마세요. Ollama 인스턴스의 경우
+                      Ollama를 통과시키기 위해 추가 구성이 필요합니다. Ollama 애플리케이션 또는 Ollama CLI
+                      서버를 시작할 때 <code>OLLAMA_HOST</code>를 명시적으로 설정해야 하며, 자세한 정보는
+                      <a
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">Ollama 통합 가이드</a>를 확인하세요."
     common:
       continueAnyway: 계속 진행
       goToModelSelection: 'Select Model →'
@@ -557,15 +563,18 @@ pages:
         description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: 앱 (로컬)
-        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+        description: Private Voice Engine - High-performance local speech synthesis
+          (xsai-transformers)
       browser-local-audio-transcription:
         title: 브라우저 (로컬)
         description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: 브라우저 (로컬)
-        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech
+          API or local engine
       alibaba-cloud-model-studio:
-        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice
+          models
         title: Alibaba 클라우드 모델 스튜디오
       amazon-bedrock:
         title: Amazon Bedrock
@@ -615,7 +624,8 @@ pages:
               description: 음성의 음량 조절
               label: 음량
       deepgram-tts:
-        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
+        description: High-Performance Aura - Low-latency speech synthesis for real-time
+          agents
         title: Deepgram
       speech-noop:
         title: 없음
@@ -624,7 +634,8 @@ pages:
         description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: DeepSeek
       elevenlabs:
-        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
+        description: Industry-Leading Realism - Unparalleled expressive neural voices
+          (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -699,7 +710,8 @@ pages:
               label: 지역
         title: Microsoft / Azure 음성
       index-tts-vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: Bilibili / IndexTTS
         callout_indextts2_unavailable_title: 제한된 지원
         callout_indextts2_unavailable: 현재 IndexTTS2에 대한 지원이 제공되지 않습니다. IndexTTS를 사용해 주세요.
@@ -707,7 +719,8 @@ pages:
         description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI 파운드리
       minimax:
-        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and
+          coding models
         title: MiniMax
       minimax-global:
         description: Aggressive Pricing - High-performance LLMs at market-low rates
@@ -728,13 +741,15 @@ pages:
         description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: Industry Standard - Reliable flagship models for chat, coding, and vision
+        description: Industry Standard - Reliable flagship models for chat, coding, and
+          vision
         title: OpenAI
       azure-openai:
         title: Azure OpenAI Service
         description: 엔터프라이즈 AI 스케일링 - 미션 크리티컬 앱을 위한 안전하고 규정 준수 전용 인프라
       openai-compatible:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or
+          self-hosted gateway
         title: OpenAI 호환
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
@@ -752,7 +767,8 @@ pages:
         description: player2.game
         title: Player2
       together:
-        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
+        description: Open Model Fast Lane - Cost-effective access to fast open-source
+          inference
         title: Together.ai
       google-generative-ai:
         description: Gemini Integration - Native Google ecosystem intelligence
@@ -767,10 +783,12 @@ pages:
         description: Local Desktop GUI - Serve any GGUF model locally
         title: LM 스튜디오
       vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for
+          natural interactions
         fields:
           field:
             appId:
@@ -787,7 +805,8 @@ pages:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
+        description: Real-time Intelligence - High-accuracy speech recognition natively
+          in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
         description: Resource Hub - Pay-as-you-go access to all major AI brands
@@ -800,14 +819,17 @@ pages:
         description: Industry Standard - Reliable flagship TTS voices from OpenAI
       openai-compatible-audio-speech:
         title: OpenAI 호환 TTS
-        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or
+          self-hosted gateway
       player2-speech:
-        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+        description: Game-Ready AI - High-fidelity character voices with zero developer
+          costs and revenue sharing
       comet-api-speech:
         title: CometAPI TTS
         description: Unified Speech Gateway - Hosted speech models through Comet API
       chatterbox:
-        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and
+          high-performance playback
         title: Chatterbox
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
@@ -816,7 +838,8 @@ pages:
         description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
+          dialect support
         title: Aliyun NLS
       browser-web-speech-api:
         description: Browser-native dictation (OS-dependent)
@@ -826,15 +849,35 @@ pages:
           title: 전사 놀이터
       aihubmix:
         title: AIHubMix
-        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
+        description: Unified API Bridge - Versatile router aggregating major models into
+          one endpoint
     title: 제공자
   connection:
-    description: 웹소켓 서버 연결 구성
+    description: WebSocket 서버 연결 구성
     title: 연결
     websocket-url:
-      description: '웹소켓 서버의 전체 주소(예: ws://localhost:6121/ws)'
-      label: 웹소켓 서버 주소
-      placeholder: ws://localhost:6121/ws
+      description: 'WebSocket 서버의 전체 주소 (예: ws://localhost:6121/ws)'
+      label: WebSocket 서버 주소
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: 보안 WebSocket(WSS) 활성화
+      description: >-
+        개발 모드에서 모바일(pocket)의 HTTPS 연결을 허용하려면 WSS(WebSocket Secure)를 활성화하십시오. 이
+        설정은 자체 서명된 인증서를 자동으로 생성합니다.
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   scene:
     description: 캐릭터가 사는 환경 구성하기
     title: 장면
@@ -1034,24 +1077,7 @@ vrm:
   skybox:
     skybox-intensity: 스카이박스 강도
     skybox-specular-mix: 스페큘러 믹스
-websocket-secure-enabled:
-  title: 보안 웹소켓 (WSS) 활성화
-  description: >-
-    개발 모드에서 모바일(pocket)의 HTTPS 연결을 허용하기 위해 WSS(WebSocket Secure)를 활성화합니다. 자체 서명 인증서가 자동으로 생성됩니다.
 wip:
   title: 개발 중
   description: >-
     이 기능은 현재 개발 중이며 아직 공개되지 않았습니다. 이 기능은 향후 업데이트에서 다시 확인해 보세요.
-
-      openai-audio-transcription:
-        title: OpenAI 음성 인식
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: OpenAI 호환 음성 인식
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: Aliyun NLS 음성 인식
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        title: CometAPI 음성 인식
-        description: Enterprise-grade cloud transcription

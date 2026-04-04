@@ -399,10 +399,9 @@ pages:
             search_voices_placeholder: 音声を検索…
             search_voices_results: 結果{total}個中{count}個の音声が見つかりました
             unsupported_voice_warning_title: サポートされている音声がありません
-            unsupported_voice_warning_content: >-
-              別のモデルまたはプロバイダーを試してください。このモデルのすべての音声をできるだけ早くサポートできるように取り組んでいます。
-              緊急に必要な場合は、GitHubの https://github.com/moeru-ai/airi/issues
-              でお知らせください。
+            unsupported_voice_warning_content: "別のモデルまたはプロバイダーを試してください。このモデルのすべての音声をできるだけ早く\
+              サポートできるように取り組んでいます。 緊急に必要な場合は、GitHubの
+              https://github.com/moeru-ai/airi/issues でお知らせください。"
             show_less: 表示を減らす
             show_more: もっと表示
             title: プロバイダー
@@ -496,9 +495,8 @@ pages:
                   placeholder: sk-…
                 base-url:
                   label: ベースURL
-                  description: >-
-                    リモートサービスへの接続に使用されるベースURL。多くの場合、http://localhost:11434/v1 または
-                    https://example.com/v1 のようになります。
+                  description: 'リモートサービスへの接続に使用されるベースURL。多くの場合、http://localhost:11434/v1 または
+                    https://example.com/v1 のようになります。'
                   placeholder: ベースURL…
                 headers:
                   label: カスタムHTTPヘッダー
@@ -544,10 +542,12 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Ollamaに追加設定が必要です
-                    content: >-
-                      残念ながら、Ollamaの接続チェックが失敗したようです。Ollamaインスタンスの場合、正常に動作させるためには追加の設定が必要です。OllamaアプリケーションまたはOllama
-                      CLIサーバーを起動する際には、<code>OLLAMA_HOST</code>環境変数を明示的に設定する必要があります。詳細な手順については、<a
-                      href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama統合ガイド</a>をご参照ください。
+                    content: "残念ながら、Ollamaの接続チェックが失敗したようです。Ollamaインスタンスの場合、正常に動作させるためには追加の設定が必要です。O\
+                      llamaアプリケーションまたはOllama
+                      CLIサーバーを起動する際には、<code>OLLAMA_HOST</code>環境変数を明示的に設定する必要があ\
+                      ります。詳細な手順については、<a
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">Ollama統合ガイド</a>をご参照ください。"
     common:
       continueAnyway: 続行する
       goToModelSelection: 'Select Model →'
@@ -874,7 +874,26 @@ pages:
     websocket-url:
       description: 'WebSocket サーバーの完全なアドレス (例: ws://localhost:6121/ws)'
       label: WebSocket サーバーアドレス
-      placeholder: ws://localhost:6121/ws
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: セキュア WebSocket (WSS) を有効にする
+      description: >-
+        開発モードでモバイル（pocket）のHTTPS接続を許可するために、WSS（WebSocket
+        Secure）を有効にします。これにより自己署名証明書が自動的に生成されます。
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   scene:
     description: キャラクターが過ごす環境を設定する
     title: シーン
@@ -1074,21 +1093,7 @@ vrm:
   skybox:
     skybox-intensity: スカイボックスの強度
     skybox-specular-mix: 鏡面反射の混合
-websocket-secure-enabled:
-  title: セキュア WebSocket (WSS) を有効にする
-  description: >-
-    開発モードでモバイル（pocket）のHTTPS接続を許可するために、WSS（WebSocket
-    Secure）を有効にします。これにより自己署名証明書が自動的に生成されます。
 wip:
   title: 開発中
   description: >-
     この機能は現在開発中で、まだ一般には公開されていません。今後のアップデートで利用可能になる予定ですので、しばらくお待ちください。
-
-      openai-audio-transcription:
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        description: Enterprise-grade cloud transcription

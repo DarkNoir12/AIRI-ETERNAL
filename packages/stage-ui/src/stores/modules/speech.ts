@@ -38,7 +38,7 @@ export const useSpeechStore = defineStore('speech', () => {
   const ssmlEnabled = useLocalStorageManualReset<boolean>('settings/speech/ssml-enabled', false)
   const isLoadingSpeechProviderVoices = refManualReset<boolean>(false)
   const speechProviderError = refManualReset<string | null>(null)
-  const availableVoices = refManualReset<Record<string, VoiceInfo[]>>(() => ({}))
+  const availableVoices = refManualReset<Record<string, VoiceInfo[]>>({})
   const selectedLanguage = useLocalStorageManualReset<string>('settings/speech/language', 'en-US')
   const modelSearchQuery = refManualReset<string>('')
 
@@ -140,7 +140,7 @@ export const useSpeechStore = defineStore('speech', () => {
   }, { immediate: true })
 
   // Self-healing: Reset active provider if it no longer exists
-  watch([activeSpeechProvider, () => providersStore.providerMetadata], () => {
+  const selfHealProvider = () => {
     // Bypass self-healing during onboarding
     if (onboardingStore.needsOnboarding)
       return
@@ -158,7 +158,10 @@ export const useSpeechStore = defineStore('speech', () => {
       activeSpeechVoiceId.value = ''
       activeSpeechVoice.value = undefined
     }
-  }, { immediate: true })
+  }
+
+  watch(activeSpeechProvider, selfHealProvider, { immediate: true })
+  watch(() => providersStore.providerMetadata, selfHealProvider, { deep: true })
 
   if (!activeSpeechProvider.value) {
     activeSpeechProvider.value = 'speech-noop'
@@ -172,7 +175,9 @@ export const useSpeechStore = defineStore('speech', () => {
     })
   })
 
-  watch([activeSpeechVoiceId, availableVoices], ([voiceId, voices]) => {
+  const updateActiveVoice = () => {
+    const voiceId = activeSpeechVoiceId.value
+    const voices = availableVoices.value
     if (voiceId) {
       // For OpenAI Compatible, create a custom voice object if no voices were discovered
       if (activeSpeechProvider.value === 'openai-compatible-audio-speech') {
@@ -201,10 +206,10 @@ export const useSpeechStore = defineStore('speech', () => {
         }
       }
     }
-  }, {
-    immediate: true,
-    deep: true,
-  })
+  }
+
+  watch(activeSpeechVoiceId, updateActiveVoice, { immediate: true })
+  watch(availableVoices, updateActiveVoice, { deep: true })
 
   /**
    * Generate speech using the specified provider and settings

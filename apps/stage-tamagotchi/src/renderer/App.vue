@@ -246,7 +246,9 @@ watch(
 )
 
 watch(
-  () => [route.path, route.meta.titleKey, route.meta.title],
+  () => {
+    return [route.path, route.meta.titleKey, route.meta.title]
+  },
   () => {
     if (!route.path.startsWith('/settings'))
       return
@@ -274,7 +276,9 @@ watch(
 )
 
 watch(
-  () => [route.path, activeCard.value?.name],
+  () => {
+    return [route.path, activeCard.value?.name]
+  },
   () => {
     if (route.path.startsWith('/settings') || route.path === '/chat')
       return

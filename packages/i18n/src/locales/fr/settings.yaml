@@ -5,7 +5,8 @@ animations:
     title: Désactiver les transitions de scène
   use-page-specific-transitions:
     description: >-
-      Certaines pages auront leurs propres transitions, ceci remplacera les transitions de scène.
+      Certaines pages auront leurs propres transitions, ceci remplacera les
+      transitions de scène.
     title: Utiliser les transitions spécifiques à chaque page
 dialogs:
   onboarding:
@@ -16,7 +17,8 @@ dialogs:
     apiKey: Clé API
     apiKeyHelp: Obtenez votre clé API {provider} et collez-la ici
     baseUrl: URL de base
-    baseUrlHelp: URL de l'endpoint API (utilisez la valeur par défaut si vous n’êtes pas sûr)
+    baseUrlHelp: URL de l'endpoint API (utilisez la valeur par défaut si vous n’êtes
+      pas sûr)
     accountId: ID du compte
     validationSuccess: Validation de la configuration réussie
     validationFailed: La validation de la configuration a échouée.
@@ -29,7 +31,8 @@ dialogs:
     select-model: Choisissez un modèle
     no-models: Pas de modèle disponible
     no-models-help: >-
-      Veuillez revenir à l’étape précédente et vérifier votre clé API, ou bien vérifier la connexion réseau.
+      Veuillez revenir à l’étape précédente et vérifier votre clé API, ou bien
+      vérifier la connexion réseau.
     permissions:
       title: Notifications
       description: You can allow notifications now or continue and set it up later.
@@ -46,7 +49,8 @@ dialogs:
 language:
   title: Langage
   description: >
-    Modifier le langage de l'inteface d'AIRI. Cela n'affectera pas le langage des réponses du personnage.
+    Modifier le langage de l'inteface d'AIRI. Cela n'affectera pas le langage
+    des réponses du personnage.
 controls-island:
   icon-size:
     title: Taille des icônes de l'îlot de contrôle
@@ -128,31 +132,38 @@ pages:
       defaults:
         name: Nom
         personality: Vous êtes une personne normale, curieuse de tout.
-        scenario: Vous vous êtes récemment réveillé et avez tout oublié de votre vie passée.
+        scenario: Vous vous êtes récemment réveillé et avez tout oublié de votre vie
+          passée.
         systemprompt: Vous recevrez des messages et y répondrez comme un humain.
         posthistoryinstructions: N’oubliez pas d’imiter un humain.
       modules_info: >-
-        Modules de configuration pour cette carte de personnage. Si non défini, la configuration par défaut sera utilisée.
+        Modules de configuration pour cette carte de personnage. Si non défini,
+        la configuration par défaut sera utilisée.
       use_default: Utiliser la configuration par défaut
       use_default_not_configured: Utiliser la configuration par défaut (non configurée)
       fields_info:
         subtitle: >-
-          Vous pouvez ici ajouter des détails sur le personnage que vous créez, expliquer son histoire et son contexte, et comment vos interactions devraient être répondues.
+          Vous pouvez ici ajouter des détails sur le personnage que vous créez,
+          expliquer son histoire et son contexte, et comment vos interactions
+          devraient être répondues.
         name: Le nom officiel du personnage.
         nickname: Vous pouvez également donner un surnom qui sera utilisé en priorité.
         description: Description du personnage.
         notes: Si vous souhaitez ajouter des notes personnelles.
         personality: >-
-          Décrivez ici la personnalité de votre personnage. Timide ? Curieux ? Autre chose ?
+          Décrivez ici la personnalité de votre personnage. Timide ? Curieux ?
+          Autre chose ?
         scenario: Quel est l’environnement ? Quelle est la situation actuelle ?
         greetings_field: Salutations
         greetings: Comment votre personnage devrait dire « bonjour » ?
         systemprompt: Expliquez ici à l’IA comment elle doit répondre lorsqu’on l’interroge.
         posthistoryinstructions: Placez ici tout ce que l’IA doit lire après l’historique des messages.
         version: >-
-          Version de la carte, vous devez l’incrémenter si vous apportez des modifications par rapport à une carte précédente.
+          Version de la carte, vous devez l’incrémenter si vous apportez des
+          modifications par rapport à une carte précédente.
         consciousness_model: Sélectionnez le modèle de conscience (modèle AB) pour ce caractère.
-        speech_model: Sélectionnez le modèle de synthèse vocale et la voix pour ce personnage.
+        speech_model: Sélectionnez le modèle de synthèse vocale et la voix pour ce
+          personnage.
       errors:
         name: Le nom doit être valide ou non vide.
         version: 'Erreur : numéro de version invalide !'
@@ -164,7 +175,8 @@ pages:
     modules: Modules
     name_asc: Nom (A-Z)
     name_desc: Nom (Z-A)
-    no_cards: Aucune carte pour le moment. Cliquez sur le bouton ci-dessus pour en téléverser une !
+    no_cards: Aucune carte pour le moment. Cliquez sur le bouton ci-dessus pour en
+      téléverser une !
     no_results: Aucune carte correspondante trouvée
     personality: Personnalité
     posthistoryinstructions: Instructions post-historique
@@ -209,10 +221,12 @@ pages:
         reset: Réinitialiser les paramètres du fournisseur
       danger:
         title: Zone dangereuse
-        description: Actions irréversibles. Exportez ce dont vous avez besoin avant de continuer.
+        description: Actions irréversibles. Exportez ce dont vous avez besoin avant de
+          continuer.
       all:
         title: Supprimer toutes les données
-        description: Effacer tous les réglages, configurations de fournisseurs et modèles locaux.
+        description: Effacer tous les réglages, configurations de fournisseurs et
+          modèles locaux.
         delete: Supprimer toutes les données
       desktop:
         title: Réinitialiser les paramètres et états du bureau
@@ -224,7 +238,8 @@ pages:
     status:
       exported: Sessions de discussion exportées.
       imported: Sessions de discussion importées.
-      import_error: Échec de l'importation des sessions. Veuillez vérifier le format du fichier.
+      import_error: Échec de l'importation des sessions. Veuillez vérifier le format
+        du fichier.
       chats_deleted: Sessions de discussion supprimées.
       models_deleted: Modèles supprimés.
       modules_reset: Paramètres du module réinitialisés.
@@ -263,22 +278,26 @@ pages:
           parameters:
             adaptive_threshold:
               description: >-
-                Appliquer ou non des seuils adaptatifs basés sur la variance du signal dans le temps.
+                Appliquer ou non des seuils adaptatifs basés sur la variance du
+                signal dans le temps.
               label: Seuil adaptatif
             buffer_duration:
               description: Durée du tampon (buffer) d'analyse interne.
               label: Durée du tampon
             envelope_filter_frequency:
               description: >-
-                Fréquence du filtre d'enveloppe appliqué pour lisser les variations d'énergie.
+                Fréquence du filtre d'enveloppe appliqué pour lisser les
+                variations d'énergie.
               label: Fréquence du filtre d'enveloppe
             highpass_filter_frequency:
               description: >-
-                Fréquence du filtre passe-haut appliqué pour réduire les basses fréquences comme les bruits de sub-basses.
+                Fréquence du filtre passe-haut appliqué pour réduire les basses
+                fréquences comme les bruits de sub-basses.
               label: Fréquence du filtre passe-haut
             lowpass_filter_frequency:
               description: >-
-                Fréquence du filtre passe-bas appliqué pour réduire les hautes fréquences comme les voix.
+                Fréquence du filtre passe-bas appliqué pour réduire les hautes
+                fréquences comme les voix.
               label: Fréquence du filtre passe-bas
             min_beat_interval:
               description: BPM maximum ou intervalle minimum entre les battements détectés.
@@ -286,10 +305,12 @@ pages:
             sensitivity:
               label: Sensibilité
             spectral_flux:
-              description: Activer ou non la détection d'attaque (onset) basée sur le flux spectral.
+              description: Activer ou non la détection d'attaque (onset) basée sur le flux
+                spectral.
               label: Flux spectral
             warmup:
-              description: Si vous voulez un échauffement pour une détection de rythme plus précise.
+              description: Si vous voulez un échauffement pour une détection de rythme plus
+                précise.
               label: Échauffement
     consciousness:
       description: Personnalité, modèle désiré, etc.
@@ -313,7 +334,8 @@ pages:
             no_search_results: Aucun modèle correspondant
             no_search_results_description: Aucun modèle ne correspond à '{query}'. Essayez un autre terme.
             not_supported: Liste des modèles non supportée
-            not_supported_description: Ce fournisseur ne supporte pas la fonctionnalité de liste des modèles
+            not_supported_description: Ce fournisseur ne supporte pas la fonctionnalité de
+              liste des modèles
             search_placeholder: Rechercher des modèles...
             search_results: '{count} modèles trouvés sur {total}'
             show_less: Afficher moins
@@ -399,8 +421,10 @@ pages:
             search_voices_placeholder: Rechercher des voix...
             search_voices_results: '{count} voix trouvées sur {total}'
             unsupported_voice_warning_title: Aucune voix prise en charge
-            unsupported_voice_warning_content: >-
-              Essayez un autre modèle ou fournisseur. Nous travaillons à prendre en charge toutes les voix pour ce modèle dès que possible. En cas d'urgence, n'hésitez pas à nous le signaler sur GitHub : https://github.com/moeru-ai/airi/issues.
+            unsupported_voice_warning_content: "Essayez un autre modèle ou fournisseur. Nous
+              travaillons à prendre en charge toutes les voix pour ce modèle dès
+              que possible. En cas d'urgence, n'hésitez pas à nous le signaler
+              sur GitHub : https://github.com/moeru-ai/airi/issues."
             show_less: Afficher moins
             show_more: Afficher plus
             title: Fournisseur
@@ -443,18 +467,23 @@ pages:
         apply-and-restart: Enregistrer et redémarrer stdio MCP
       messages:
         opened: 'Fichier de configuration ouvert à : {path}'
-        restarted: >-
-          Serveurs MCP redémarrés. Lancés : {started}, en échec : {failed}, ignorés : {skipped}
+        restarted: 'Serveurs MCP redémarrés. Lancés : {started}, en échec : {failed},
+          ignorés : {skipped}'
   providers:
     explained:
-      chat: Fournisseurs de modèles de génération de texte, par ex. OpenRouter, OpenAI, Ollama.
-      Speech: Fournisseurs de modèles de synthèse vocale, par ex. ElevenLabs, Azure Speech.
+      chat: Fournisseurs de modèles de génération de texte, par ex. OpenRouter,
+        OpenAI, Ollama.
+      Speech: Fournisseurs de modèles de synthèse vocale, par ex. ElevenLabs, Azure
+        Speech.
       Transcription: >-
-        Fournisseurs de modèles de transcription (speech-to-text), par ex. Whisper.cpp, OpenAI, Azure Speech
+        Fournisseurs de modèles de transcription (speech-to-text), par ex.
+        Whisper.cpp, OpenAI, Azure Speech
     helpinfo:
       title: Première fois ici ?
       description: >
-        AIRI nécessite qu’au moins un fournisseur {chat} soit configuré pour penser et se comporter correctement. On peut le considérer comme le cerveau des personnages vivant dans le système AIRI.
+        AIRI nécessite qu’au moins un fournisseur {chat} soit configuré pour
+        penser et se comporter correctement. On peut le considérer comme le
+        cerveau des personnages vivant dans le système AIRI.
     catalog:
       edit:
         config-id-not-found: Configuration du fournisseur introuvable.
@@ -466,7 +495,8 @@ pages:
           failed:
             title: Veuillez vérifier les paramètres du fournisseur, la validation a échoué.
             description: >-
-              Vous pouvez enregistrer la configuration actuelle si vous souhaitez continuer.
+              Vous pouvez enregistrer la configuration actuelle si vous
+              souhaitez continuer.
             action: Enregistrer quand même
         config:
           common:
@@ -474,12 +504,14 @@ pages:
               field:
                 api-key:
                   label: Clé API
-                  description: Clé API utilisée pour autoriser les requêtes auprès de ce fournisseur
+                  description: Clé API utilisée pour autoriser les requêtes auprès de ce
+                    fournisseur
                   placeholder: sk-...
                 base-url:
                   label: URL de base
-                  description: >-
-                    L'URL de base utilisée pour se connecter au service distant. Ressemble souvent à http://localhost:11434/v1 ou https://exemple.com/v1.
+                  description: "L'URL de base utilisée pour se connecter au service distant.
+                    Ressemble souvent à http://localhost:11434/v1 ou
+                    https://exemple.com/v1."
                   placeholder: URL de base...
                 headers:
                   label: En-têtes HTTP personnalisés
@@ -491,7 +523,9 @@ pages:
                 thinking-mode:
                   label: Mode de réflexion
                   description: >
-                    Contrôle le comportement de réflexion d'Ollama. GPT-OSS ne prend en charge que les niveaux bas/moyen/haut (low/medium/high).
+                    Contrôle le comportement de réflexion d'Ollama. GPT-OSS ne
+                    prend en charge que les niveaux bas/moyen/haut
+                    (low/medium/high).
                   options:
                     auto: Auto (par défaut du fournisseur)
                     disable: Désactiver
@@ -524,8 +558,15 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Configuration supplémentaire requise pour Ollama
-                    content: >-
-                      Nous sommes désolés que le test de connectivité pour Ollama ait échoué. Ne vous inquiétez pas, une configuration supplémentaire est nécessaire pour les instances Ollama. Vous devez définir explicitement <code>OLLAMA_HOST</code> lors du lancement de l'application ou du serveur CLI Ollama. Pour plus d'informations, consultez le <a href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">guide d'intégration Ollama</a>.
+                    content: "Nous sommes désolés que le test de connectivité pour Ollama ait
+                      échoué. Ne vous inquiétez pas, une configuration
+                      supplémentaire est nécessaire pour les instances Ollama.
+                      Vous devez définir explicitement <code>OLLAMA_HOST</code>
+                      lors du lancement de l'application ou du serveur CLI
+                      Ollama. Pour plus d'informations, consultez le <a
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">guide d'intégration
+                      Ollama</a>."
     common:
       continueAnyway: Continuer quand même
       goToModelSelection: 'Sélectionnez un Modèle'
@@ -557,15 +598,18 @@ pages:
         description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: Application (Locale)
-        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+        description: Private Voice Engine - High-performance local speech synthesis
+          (xsai-transformers)
       browser-local-audio-transcription:
         title: Navigateur (Local)
         description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: Navigateur (Local)
-        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech
+          API or local engine
       alibaba-cloud-model-studio:
-        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice
+          models
         title: Studio de modèles Alibaba Cloud
       amazon-bedrock:
         title: Amazon Bedrock
@@ -580,13 +624,17 @@ pages:
           title: Avant de commencer
           description:
             part1: >-
-              Bien qu’Anthropic ait récemment annoncé un support bêta pour la compatibilité SDK OpenAI
+              Bien qu’Anthropic ait récemment annoncé un support bêta pour la
+              compatibilité SDK OpenAI
             part2: (vous pouvez en lire plus ici)
             part3: en raison de détails d’implémentation
             part4: >-
-              des restrictions non alignées avec le SDK OpenAI, il n’est actuellement pas possible d’utiliser ce fournisseur dans le navigateur.
+              des restrictions non alignées avec le SDK OpenAI, il n’est
+              actuellement pas possible d’utiliser ce fournisseur dans le
+              navigateur.
             part5: >-
-              Si vous devez utiliser ce fournisseur, vous aurez besoin d’un proxy backend dédié comme une fonction serverless
+              Si vous devez utiliser ce fournisseur, vous aurez besoin d’un
+              proxy backend dédié comme une fonction serverless
             part6: ou des services contournant le CORS pour éviter les restrictions CORS.
       cloudflare-workers-ai:
         description: AI on the Edge - 10k free Neurons/day across many models
@@ -606,7 +654,8 @@ pages:
         fields:
           field:
             pitch:
-              description: 'Ajuster la hauteur de la voix synthétisée (ex : plus aiguë ou plus grave)'
+              description: 'Ajuster la hauteur de la voix synthétisée (ex : plus aiguë ou plus
+                grave)'
               label: Hauteur
             speed:
               description: Ajuster la vitesse de la parole
@@ -615,7 +664,8 @@ pages:
               description: Ajuster le volume de la parole
               label: Volume
       deepgram-tts:
-        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
+        description: High-Performance Aura - Low-latency speech synthesis for real-time
+          agents
         title: Deepgram
       speech-noop:
         title: Aucun
@@ -624,7 +674,8 @@ pages:
         description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: DeepSeek
       elevenlabs:
-        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
+        description: Industry-Leading Realism - Unparalleled expressive neural voices
+          (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -668,11 +719,13 @@ pages:
           field:
             model:
               label: Choix du modèle
-              description: Les modèles plus petits se chargent plus rapidement mais peuvent avoir une qualité légèrement inférieure.
+              description: Les modèles plus petits se chargent plus rapidement mais peuvent
+                avoir une qualité légèrement inférieure.
         models:
           fp32-webgpu:
             description: >-
-              Modèle en pleine précision utilisant WebGPU - Recommandé pour les appareils compatibles
+              Modèle en pleine précision utilisant WebGPU - Recommandé pour les
+              appareils compatibles
           fp32:
             description: Modèle en pleine précision
           fp16:
@@ -699,15 +752,18 @@ pages:
               label: Région
         title: Microsoft / Azure Speech
       index-tts-vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: Bilibili / IndexTTS
         callout_indextts2_unavailable_title: Support limité
-        callout_indextts2_unavailable: Le support pour IndexTTS2 est actuellement indisponible. Veuillez utiliser IndexTTS.
+        callout_indextts2_unavailable: Le support pour IndexTTS2 est actuellement
+          indisponible. Veuillez utiliser IndexTTS.
       azure-ai-foundry:
         description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI Foundry
       minimax:
-        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and
+          coding models
         title: MiniMax
       minimax-global:
         description: Aggressive Pricing - High-performance LLMs at market-low rates
@@ -728,13 +784,16 @@ pages:
         description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: Industry Standard - Reliable flagship models for chat, coding, and vision
+        description: Industry Standard - Reliable flagship models for chat, coding, and
+          vision
         title: OpenAI
       azure-openai:
         title: Azure OpenAI Service
-        description: IA d'entreprise à l'échelle - Infrastructure sécurisée, conforme et dédiée
+        description: IA d'entreprise à l'échelle - Infrastructure sécurisée, conforme et
+          dédiée
       openai-compatible:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or
+          self-hosted gateway
         title: Compatible avec OpenAI
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
@@ -752,7 +811,8 @@ pages:
         description: player2.game
         title: Player2
       together:
-        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
+        description: Open Model Fast Lane - Cost-effective access to fast open-source
+          inference
         title: Together.ai
       google-generative-ai:
         description: Gemini Integration - Native Google ecosystem intelligence
@@ -767,14 +827,17 @@ pages:
         description: Local Desktop GUI - Serve any GGUF model locally
         title: LM Studio
       vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for
+          natural interactions
         fields:
           field:
             appId:
-              description: ID de l’application du projet, que vous pouvez obtenir dans la Console
+              description: ID de l’application du projet, que vous pouvez obtenir dans la
+                Console
               label: ID de l’application
         title: Volcano Engine
       xai:
@@ -782,12 +845,14 @@ pages:
         title: xAI
       zai:
         title: Z.ai (Zhipu AI)
-        description: Expert en Agents - Les meilleurs modèles de jeu de rôle avec des forfaits de codage à 10 $/mois
+        description: Expert en Agents - Les meilleurs modèles de jeu de rôle avec des
+          forfaits de codage à 10 $/mois
       xai-audio-speech:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
+        description: Real-time Intelligence - High-accuracy speech recognition natively
+          in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
         description: Resource Hub - Pay-as-you-go access to all major AI brands
@@ -800,14 +865,17 @@ pages:
         description: Industry Standard - Reliable flagship TTS voices from OpenAI
       openai-compatible-audio-speech:
         title: OpenAI Compatible TTS
-        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or
+          self-hosted gateway
       player2-speech:
-        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+        description: Game-Ready AI - High-fidelity character voices with zero developer
+          costs and revenue sharing
       comet-api-speech:
         title: CometAPI TTS
         description: Unified Speech Gateway - Hosted speech models through Comet API
       chatterbox:
-        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and
+          high-performance playback
         title: Chatterbox
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
@@ -816,7 +884,8 @@ pages:
         description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
+          dialect support
         title: Aliyun NLS
       browser-web-speech-api:
         description: Browser-native dictation (OS-dependent)
@@ -826,15 +895,37 @@ pages:
           title: Terrain de test de transcription
       aihubmix:
         title: AIHubMix
-        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
+        description: Unified API Bridge - Versatile router aggregating major models into
+          one endpoint
     title: Fournisseurs
   connection:
-    description: Configurer la connexion au serveur WebSocket
+    description: Configuration de la connexion au serveur WebSocket
     title: Connexion
     websocket-url:
-      description: 'Adresse complète du serveur WebSocket (ex: ws://localhost:6121/ws)'
+      description: 'Adresse complète du serveur WebSocket (par exemple,
+        ws://localhost:6121/ws)'
       label: Adresse du serveur WebSocket
-      placeholder: ws://localhost:6121/ws
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: Activer le WebSocket sécurisé (WSS)
+      description: >-
+        Activez le WSS (WebSocket Secure) pour permettre les connexions HTTPS
+        pour mobile (pocket) en mode développement. Cela générera
+        automatiquement un certificat auto-signé.
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   scene:
     description: Configurer l’environnement où vit le personnage
     title: Scène
@@ -868,7 +959,8 @@ pages:
                 description: Afficher/masquer l'incrustation FPS / tâches longues / mémoire
               markdown-stress:
                 title: Test de stress Markdown
-                description: Tester l'analyse et le rendu Markdown avec des charges de chat lourdes
+                description: Tester l'analyse et le rendu Markdown avec des charges de chat
+                  lourdes
               use-magic-keys:
                 title: Outil useMagicKeys
                 description: Tester les raccourcis
@@ -895,7 +987,8 @@ pages:
                 description: Utilitaire pour prendre des clichés de modèles
               context-flow:
                 description: >-
-                  Inspecter les mises à jour de contexte entrantes et les événements de flux de chat sortants
+                  Inspecter les mises à jour de contexte entrantes et les
+                  événements de flux de chat sortants
               websocket-inspector:
                 title: Inspecteur WebSocket
                 description: Inspecter le trafic WebSocket brut
@@ -905,7 +998,8 @@ pages:
               providers-transcription-realtime-aliyun-nls:
                 title: Transcripteur temps réel Aliyun
                 description: >-
-                  Diffuser l'audio du microphone vers Aliyun NLS et inspecter les transcriptions en direct
+                  Diffuser l'audio du microphone vers Aliyun NLS et inspecter
+                  les transcriptions en direct
               performance-playground:
                 title: Zone d'essai de performance
                 description: 'Expressions VRM + synchro labiale TTS'
@@ -975,7 +1069,8 @@ pages:
                 color-7: Bleu azur
                 color-8: Ocre
               description: >-
-                Couleurs traditionnelles chinoises, issues des textiles anciens, de la porcelaine et des peintures
+                Couleurs traditionnelles chinoises, issues des textiles anciens,
+                de la porcelaine et des peintures
               title: Couleurs traditionnelles chinoises
           title: Préréglages de couleurs
     title: Apparence
@@ -1034,24 +1129,9 @@ vrm:
   skybox:
     skybox-intensity: Intensité de la SkyBox
     skybox-specular-mix: Mélange spéculaire
-websocket-secure-enabled:
-  title: Activer WebSocket Sécurisé (WSS)
-  description: >-
-    Activez WSS (WebSocket Secure) pour permettre les connexions HTTPS pour mobile (pocket) en mode développement. Cela générera automatiquement un certificat auto-signé.
 wip:
   title: Travail en cours
   description: >-
-    Cette fonctionnalité est actuellement en cours de développement et n'est pas disponible publiquement. Revenez ultérieurement pour les mises-à-jour futures.
-
-      openai-audio-transcription:
-        title: Transcription vocal OpenAI
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: Transcription vocal compatible OpenAI
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: Transcription vocal Aliyun NLS
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        title: Transcription vocal CometAPI
-        description: Enterprise-grade cloud transcription
+    Cette fonctionnalité est actuellement en cours de développement et n'est pas
+    disponible publiquement. Revenez ultérieurement pour les mises-à-jour
+    futures.

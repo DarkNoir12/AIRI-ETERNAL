@@ -26,8 +26,7 @@ dialogs:
       consciousness: 'Consciousness'
       speech: 'Speech & Hearing'
       getOpenRouterKey: 'Get OpenRouter Key'
-      openRouterSubtext: 'Fast, high-quality, and free models. No complex verification
-        required.'
+      openRouterSubtext: 'Fast, high-quality, and free models. No complex verification required.'
       deepgramSubtext: '$200 credits for initial signups. Approximately 50 hours of
         transcription/speech services included.'
       senseKey: 'Sense Key'
@@ -549,10 +548,10 @@ pages:
             search_voices_placeholder: Search voices...
             search_voices_results: Found {count} of {total} voices
             unsupported_voice_warning_title: No supported voices
-            unsupported_voice_warning_content: Try a different model or provider. We are
+            unsupported_voice_warning_content: 'Try a different model or provider. We are
               working on supporting all the voice for this model as quickly as
               possible. If you need it urgently, please let us know on GitHub at
-              https://github.com/moeru-ai/airi/issues.
+              https://github.com/moeru-ai/airi/issues.'
             show_less: Show less
             show_more: Show more
             title: Provider
@@ -692,8 +691,8 @@ pages:
                   placeholder: sk-...
                 base-url:
                   label: Base URL
-                  description: The base url used to connect to remote service. Often looks like
-                    http://localhost:11434/v1 or https://example.com/v1.
+                  description: 'The base url used to connect to remote service. Often looks like
+                    http://localhost:11434/v1 or https://example.com/v1.'
                   placeholder: Base url...
                 headers:
                   label: Custom HTTP Headers
@@ -738,14 +737,15 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Extra configuration needed for Ollama
-                    content: Sorry to hear that Connectivity check failed for Ollama. Don't worry,
+                    content: "Sorry to hear that Connectivity check failed for Ollama. Don't worry,
                       for Ollama instances, extra configuration is needed for
                       making it pass for Ollama. You need to set
                       <code>OLLAMA_HOST</code> explicitly when start the Ollama
                       application or Ollama CLI server, for detailed
                       information, check <a
-                      href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama
-                      integration guide</a>.
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">Ollama integration
+                      guide</a>."
     common:
       continueAnyway: Continue Anyway
       goToModelSelection: Select Model →
@@ -989,8 +989,8 @@ pages:
         title: OpenAI
       azure-openai:
         title: Azure OpenAI Service
-        description: Enterprise AI at Scale - Secure, compliant, and dedicated infrastructure
-          for mission-critical apps
+        description: Enterprise AI at Scale - Secure, compliant, and dedicated
+          infrastructure for mission-critical apps
       openai-compatible:
         description: Bring Your Own Endpoint - Connect any OpenAI-style API or
           self-hosted gateway
@@ -1051,8 +1051,8 @@ pages:
         title: xAI
       zai:
         title: Z.ai (Zhipu AI)
-        description: Agentic Powerhouse - Best-in-class roleplaying models with affordable
-          $10/mo coding plans
+        description: Agentic Powerhouse - Best-in-class roleplaying models with
+          affordable $10/mo coding plans
       xai-audio-speech:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
@@ -1103,12 +1103,25 @@ pages:
     websocket-url:
       label: WebSocket URL
       description: The URL of the WebSocket server.
-      placeholder: ws://localhost:3000
+      placeholder: 'ws://localhost:3000'
     auth-token:
       label: App Key (Auth Token)
       description: The authentication token for the WebSocket server. Check your
         Gateway logs on first run for the auto-generated key.
       placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: Secure AIRI Gateway Connection (WSS)
+      description: Start the AIRI Gateway over WSS (WebSocket Secure). When disabled,
+        WebSockets are unencrypted (WS).
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   system:
     color-scheme:
       description: Change the color scheme of the stage.
@@ -1305,18 +1318,6 @@ vrm:
   skybox:
     skybox-intensity: SkyBox Intensity
     skybox-specular-mix: Specular Mix
-websocket-secure-enabled:
-  title: Secure AIRI Gateway Connection (WSS)
-  description: Start the AIRI Gateway over WSS (WebSocket Secure). When disabled,
-    WebSockets are unencrypted (WS).
-server-hostname:
-  title: AIRI Gateway Hostname
-  description: Set zero (0.0.0.0) to bind to all available IP addresses on your
-    WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local security.
-server-auth-token:
-  title: Application Gateway Key
-  description: Security key to authenticate clients connecting to your node over
-    the network. If empty, the gateway will not require authentication.
 wip:
   title: Work in Progress
   description: This feature is currently under development and not yet publicly
@@ -1367,17 +1368,3 @@ providers:
       description: Transcription running in the browser via Web Speech API or local engine.
       device_id: Device ID
       device_id_placeholder: Auto
-
-      openai-audio-transcription:
-        title: OpenAI STT
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: OpenAI Compatible STT
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: Aliyun NLS STT
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
-          dialect support
-      comet-api-transcription:
-        title: CometAPI STT
-        description: Enterprise-grade cloud transcription

@@ -30,8 +30,8 @@ const websocketTlsEnabled = computed({
         :enter="{ opacity: 1, y: 0 }"
         :duration="250 + (5 * 10)"
         :delay="5 * 50"
-        :label="t('settings.websocket-secure-enabled.title')"
-        :description="t('settings.websocket-secure-enabled.description')"
+        :label="t('settings.pages.connection.websocket-secure-enabled.label')"
+        :description="t('settings.pages.connection.websocket-secure-enabled.description')"
       />
 
       <FieldInput
@@ -41,8 +41,8 @@ const websocketTlsEnabled = computed({
         :enter="{ opacity: 1, y: 0 }"
         :duration="250 + (6 * 10)"
         :delay="6 * 50"
-        :label="t('settings.server-hostname.title')"
-        :description="t('settings.server-hostname.description')"
+        :label="t('settings.pages.connection.server-hostname.label')"
+        :description="t('settings.pages.connection.server-hostname.description')"
       />
 
       <FieldInput
@@ -52,8 +52,8 @@ const websocketTlsEnabled = computed({
         :enter="{ opacity: 1, y: 0 }"
         :duration="250 + (7 * 10)"
         :delay="7 * 50"
-        :label="t('settings.server-auth-token.title')"
-        :description="t('settings.server-auth-token.description')"
+        :label="t('settings.pages.connection.server-auth-token.label')"
+        :description="t('settings.pages.connection.server-auth-token.description')"
         type="password"
       />
     </template>

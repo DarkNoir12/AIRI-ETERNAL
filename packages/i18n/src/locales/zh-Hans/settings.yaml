@@ -249,8 +249,7 @@ pages:
     description: 为您的角色自定义虚拟环境。
     beta_label: 场景测试版
     beta_description: >-
-      欢迎使用新的场景系统！第二阶段增加了背景画廊。
-      每个角色卡片现在都可以从画廊中指定自己喜好的背景。
+      欢迎使用新的场景系统！第二阶段增加了背景画廊。 每个角色卡片现在都可以从画廊中指定自己喜好的背景。
     background_image:
       title: 全局默认背景
       no_background: 暂无全局活动背景。上传正方形或横向图像效果最佳。
@@ -423,8 +422,8 @@ pages:
             search_voices_placeholder: 搜索声线...
             search_voices_results: 找到 {count} / {total} 个声线
             unsupported_voice_warning_title: 没有支持的声线
-            unsupported_voice_warning_content: >-
-              我们正在尽快支持该模型的所有音色，如果你迫切希望支持该模型音色，请在 GitHub 上联系我们 https://github.com/moeru-ai/airi/issues
+            unsupported_voice_warning_content: '我们正在尽快支持该模型的所有音色，如果你迫切希望支持该模型音色，请在 GitHub
+              上联系我们 https://github.com/moeru-ai/airi/issues'
             show_less: 显示更少
             show_more: 显示更多
             title: 选择语音合成服务来源
@@ -502,8 +501,8 @@ pages:
                   placeholder: sk-……
                 base-url:
                   label: Base URL
-                  description: >-
-                    用于连接远程服务的 baseUrl。通常看起来像是 http://localhost:11434/v1 或 https://example.com/v1。
+                  description: '用于连接远程服务的 baseUrl。通常看起来像是 http://localhost:11434/v1 或
+                    https://example.com/v1。'
                   placeholder: 基础 Url……
                 headers:
                   label: 添加自定义 HTTP 标头
@@ -515,7 +514,8 @@ pages:
                 thinking-mode:
                   label: 思考模式
                   description: >
-                    Controls Ollama thinking behavior. GPT-OSS only supports low/medium/high levels.
+                    Controls Ollama thinking behavior. GPT-OSS only supports
+                    low/medium/high levels.
                   options:
                     auto: 自动（默认服务来源）
                     disable: 禁用
@@ -548,8 +548,11 @@ pages:
                 validators:
                   openai-compatible-check-connectivity:
                     label: Ollama需要额外的配置
-                    content: >-
-                      很抱歉，Ollama 连接检查失败。不要担心，如果是 Ollama，需要额外配置才能通过 Ollama。 您需要在启动 Olama 应用程序或 Ollama CLI 服务器时明确设置 <code>OLLAMA_HOST</code> 详情，请检查 <a href="https://airi.moeru.ai/docs/en/docs/manual/integrations/providers/chat/ollama">Ollama 集成指南</a>。
+                    content: "很抱歉，Ollama 连接检查失败。不要担心，如果是 Ollama，需要额外配置才能通过 Ollama。 您需要在启动 Olama
+                      应用程序或 Ollama CLI 服务器时明确设置 <code>OLLAMA_HOST</code> 详情，请检查
+                      <a
+                      href=\"https://airi.moeru.ai/docs/en/docs/manual/integrat\
+                      ions/providers/chat/ollama\">Ollama 集成指南</a>。"
     common:
       continueAnyway: 仍然继续
       goToModelSelection: '选择模型→'
@@ -581,15 +584,18 @@ pages:
         description: Native AI - High-performance local Whisper transcription
       app-local-audio-speech:
         title: 应用内（本地）
-        description: Private Voice Engine - High-performance local speech synthesis (xsai-transformers)
+        description: Private Voice Engine - High-performance local speech synthesis
+          (xsai-transformers)
       browser-local-audio-transcription:
         title: 浏览器内（本地）
         description: Private & Secure - In-browser transcription via WebGPU
       browser-local-audio-speech:
         title: 浏览器内（本地）
-        description: Private Voice Engine - In-browser speech synthesis via Web Speech API or local engine
+        description: Private Voice Engine - In-browser speech synthesis via Web Speech
+          API or local engine
       alibaba-cloud-model-studio:
-        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice models
+        description: Enterprise Voice Studio - High-performance Qwen3-TTS and CosyVoice
+          models
         title: 阿里百炼
       amazon-bedrock:
         title: Amazon Bedrock
@@ -639,7 +645,8 @@ pages:
               description: 调节语音的响度
               label: 响度
       deepgram-tts:
-        description: High-Performance Aura - Low-latency speech synthesis for real-time agents
+        description: High-Performance Aura - Low-latency speech synthesis for real-time
+          agents
         title: Deepgram
       speech-noop:
         title: 无
@@ -648,7 +655,8 @@ pages:
         description: Value Leader - Strong reasoning and coding at aggressive pricing
         title: 深度求索 DeepSeek
       elevenlabs:
-        description: Industry-Leading Realism - Unparalleled expressive neural voices (Premium Pricing)
+        description: Industry-Leading Realism - Unparalleled expressive neural voices
+          (Premium Pricing)
         fields:
           field:
             simularity-boost:
@@ -723,7 +731,8 @@ pages:
               label: Endpoint 地区
         title: Microsoft / Azure 语音服务
       index-tts-vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: Bilibili / IndexTTS
         callout_indextts2_unavailable_title: 暂不支持
         callout_indextts2_unavailable: 目前尚未支持 IndexTTS2，请使用 IndexTTS。
@@ -731,7 +740,8 @@ pages:
         description: Enterprise Standard - Secure, robust Azure-hosted intelligence
         title: Azure AI Foundry
       minimax:
-        description: CN Flagship - Leading Chinese LLM with specialized roleplay and coding models
+        description: CN Flagship - Leading Chinese LLM with specialized roleplay and
+          coding models
         title: MiniMax
       minimax-global:
         description: Aggressive Pricing - High-performance LLMs at market-low rates
@@ -752,13 +762,15 @@ pages:
         description: Private & Local - Run Llama, Mistral, and more on your machine
         title: Ollama
       openai:
-        description: Industry Standard - Reliable flagship models for chat, coding, and vision
+        description: Industry Standard - Reliable flagship models for chat, coding, and
+          vision
         title: OpenAI
       azure-openai:
         title: Azure OpenAI 服务
         description: 企业级 AI 规模化 - 为关键业务提供安全、合规且专用的基础设施
       openai-compatible:
-        description: Bring Your Own Endpoint - Connect any OpenAI-style API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style API or
+          self-hosted gateway
         title: OpenAI 兼容 API
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
@@ -776,7 +788,8 @@ pages:
         description: player2.game
         title: Player2
       together:
-        description: Open Model Fast Lane - Cost-effective access to fast open-source inference
+        description: Open Model Fast Lane - Cost-effective access to fast open-source
+          inference
         title: Together.ai
       google-generative-ai:
         description: Gemini Integration - Native Google ecosystem intelligence
@@ -791,10 +804,12 @@ pages:
         description: Local Desktop GUI - Serve any GGUF model locally
         title: LM Studio
       vllm:
-        description: High-Efficiency Serving - Industry standard for high-throughput local model serving and self-hosting
+        description: High-Efficiency Serving - Industry standard for high-throughput
+          local model serving and self-hosting
         title: vLLM
       volcengine:
-        description: Emotional Expression - Cutting-edge ByteDance speech tech for natural interactions
+        description: Emotional Expression - Cutting-edge ByteDance speech tech for
+          natural interactions
         fields:
           field:
             appId:
@@ -811,7 +826,8 @@ pages:
         description: Real-time Intelligence - Native xAI speech synthesis
         title: xAI Grok TTS
       xai-audio-transcription:
-        description: Real-time Intelligence - High-accuracy speech recognition natively in the xAI ecosystem
+        description: Real-time Intelligence - High-accuracy speech recognition natively
+          in the xAI ecosystem
         title: xAI Grok STT
       302-ai:
         description: Resource Hub - Pay-as-you-go access to all major AI brands
@@ -824,14 +840,17 @@ pages:
         description: Industry Standard - Reliable flagship TTS voices from OpenAI
       openai-compatible-audio-speech:
         title: OpenAI 兼容 TTS
-        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or self-hosted gateway
+        description: Bring Your Own Endpoint - Connect any OpenAI-style TTS API or
+          self-hosted gateway
       player2-speech:
-        description: Game-Ready AI - High-fidelity character voices with zero developer costs and revenue sharing
+        description: Game-Ready AI - High-fidelity character voices with zero developer
+          costs and revenue sharing
       comet-api-speech:
         title: CometAPI TTS
         description: Unified Speech Gateway - Hosted speech models through Comet API
       chatterbox:
-        description: Advanced Voice Engine - Supports tags, profiles, presets, and high-performance playback
+        description: Advanced Voice Engine - Supports tags, profiles, presets, and
+          high-performance playback
         title: Chatterbox
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
@@ -840,7 +859,8 @@ pages:
         description: 1M Free Tokens/Day - Insanely fast LPU inference
         title: Cerebras
       aliyun-nls:
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
+        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese
+          dialect support
         title: Aliyun 智能语音服务
       browser-web-speech-api:
         description: Browser-native dictation (OS-dependent)
@@ -850,15 +870,34 @@ pages:
           title: 实验平台
       aihubmix:
         title: AIHubMix
-        description: Unified API Bridge - Versatile router aggregating major models into one endpoint
+        description: Unified API Bridge - Versatile router aggregating major models into
+          one endpoint
     title: 服务来源
   connection:
     description: 配置 WebSocket 服务器连接
     title: 连接
     websocket-url:
-      description: WebSocket 服务器的完整地址(例如，ws://localhost:6121/ws)
+      description: 'WebSocket 服务器的完整地址(例如，ws://localhost:6121/ws)'
       label: WebSocket 服务器地址
-      placeholder: ws://localhost:6121/ws
+      placeholder: 'ws://localhost:6121/ws'
+    auth-token:
+      label: App Key (Auth Token)
+      description: The authentication token for the WebSocket server. Check your
+        Gateway logs on first run for the auto-generated key.
+      placeholder: Enter your App Key here
+    websocket-secure-enabled:
+      label: 启用安全 WebSocket (WSS)
+      description: >-
+        启用 WSS（WebSocket Secure）以允许开发模式下移动端（pocket）的 HTTPS 连接。这将自动生成自签名证书。
+    server-hostname:
+      label: AIRI Gateway Hostname
+      description: Set zero (0.0.0.0) to bind to all available IP addresses on your
+        WiFi network. Otherwise, bind this to 127.0.0.1 for maximum local
+        security.
+    server-auth-token:
+      label: Application Gateway Key
+      description: Security key to authenticate clients connecting to your node over
+        the network. If empty, the gateway will not require authentication.
   system:
     color-scheme:
       description: 更改舞台的配色方案
@@ -1055,24 +1094,33 @@ vrm:
   skybox:
     skybox-intensity: 天空盒光照强度
     skybox-specular-mix: 漫反射/镜面反射混合系数
-websocket-secure-enabled:
-  title: 启用安全 WebSocket (WSS)
-  description: >-
-    启用 WSS（WebSocket Secure）以允许开发模式下移动端（pocket）的 HTTPS 连接。这将自动生成自签名证书。
 wip:
   title: 正在开发中
-  description: >-
-    此功能正在开发中，尚未公开发布。请在未来的更新中再次查看此功能。
+  description: "此功能正在开发中，尚未公开发布。请在未来的更新中再次查看此功能。
 
-      openai-audio-transcription:
-        title: OpenAI 语音识别
-        description: Industry Standard - Reliable and widely compatible Whisper API
-      openai-compatible-audio-transcription:
-        title: OpenAI 兼容语音识别
-        description: Bring Your Own Endpoint - Custom OpenAI-compatible STT endpoint
-      aliyun-nls-transcription:
-        title: 阿里云 NLS 语音识别
-        description: Multilingual Powerhouse - Robust real-time STT with deep Chinese dialect support
-      comet-api-transcription:
-        title: CometAPI 语音识别
-        description: Enterprise-grade cloud transcription
+    \  openai-audio-transcription:
+
+    \    title: OpenAI 语音识别
+
+    \    description: Industry Standard - Reliable and widely compatible Whisper
+    API
+
+    \  openai-compatible-audio-transcription:
+
+    \    title: OpenAI 兼容语音识别
+
+    \    description: Bring Your Own Endpoint - Custom OpenAI-compatible STT
+    endpoint
+
+    \  aliyun-nls-transcription:
+
+    \    title: 阿里云 NLS 语音识别
+
+    \    description: Multilingual Powerhouse - Robust real-time STT with deep
+    Chinese dialect support
+
+    \  comet-api-transcription:
+
+    \    title: CometAPI 语音识别
+
+    \    description: Enterprise-grade cloud transcription"
