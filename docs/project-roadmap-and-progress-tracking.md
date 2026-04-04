@@ -125,6 +125,13 @@ This document tracks the current development state of the AIRI project, specific
 - **Browser-Integrated Card Imports (Phase 2)**: (Next Focus) Deep integration with external character sites via an in-app Electron browser. Hooks for direct importing while respecting site ads/iframes.
 - **Vision Feature Integration**:
   - [/] **Gemini 2.5 vs 3.1 Support**: Implement support for both versions to compare the "richer" experience of 2.5 vs the standard 3.1 implementation. [/]
+- **Discord Bot Enhancements**:
+    - [ ] **Discord Proactive Messaging**: Implement proactive message routing to Discord based on recent activity heuristics (e.g., routing heartbeats to the last active channel used by the user).
+    - [ ] **Slash Command: Character Switching**: Add a `/character` slash command to allow switching the active AIRI card directly from Discord.
+    - [ ] **Slash Command: Manual Emotions**: Add an `/emotion` slash command to manually trigger character expressions/animations on the desktop avatar from Discord.
+    - [ ] **Inline Artistry**: Integrate Artistry/Image generation into the Discord pipeline, allowing the bot to return generated images (widgets/backgrounds) as inline attachments in the Discord chat.
+    - [ ] **Interruption & Barge-in (Research)**: Investigate technical feasibility for conversational interruption/barge-in within the Discord bot context, allowing for more natural, overlapping dialogue.
+
 - **Infrastructure & UI Health**:
     - [ ] **Settings - System Revamp**: Completely overhaul the `settings > system` page to resolve the current "hodge-podge" of disjointed, nested, and potentially duplicated settings:
         - **Consolidation**: Pivot away from deep nesting and instead group related settings on a single, well-organized page with clear section headers.
