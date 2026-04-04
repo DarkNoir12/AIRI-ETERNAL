@@ -22,6 +22,8 @@ const require = createRequire(import.meta.url)
 export default defineConfig({
   main: {
     build: {
+      // NOTICE: Any package added to 'include' below MUST be listed in 'dependencies'
+      // (not 'devDependencies') in package.json to be available in production builds.
       externalizeDeps: {
         include: [
           'electron-click-drag-plugin',
