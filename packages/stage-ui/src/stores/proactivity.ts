@@ -93,6 +93,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
   }
 
   async function updateSensors() {
+    return // DISABLED: Restoring performance-focused state per user request
     // Fallback for non-electron or missing invoker
     const now = new Date()
     locTime.value = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
@@ -224,6 +225,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
   })
 
   async function evaluateHeartbeat(options?: { force?: boolean }) {
+    return // DISABLED: Restoring performance-focused state per user request
     if (isHeartbeatEvaluating.value && !options?.force) {
       // eslint-disable-next-line no-console
       console.log('[Proactivity] Evaluation already in progress, skipping.')
