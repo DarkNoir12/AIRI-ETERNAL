@@ -79,6 +79,9 @@ function handleLiveToggle() {
   else if (wasActive && isWitnessEnabled.value) {
     visionStore.toggleWitness()
   }
+
+  // Auto-hide when toggled
+  emit('close')
 }
 function handleCaptureNow() {
   visionStore.heartbeat({ force: true })
@@ -86,7 +89,22 @@ function handleCaptureNow() {
 }
 
 function handleOpenSettings() {
-  router.push('/settings')
+  // router.push('/settings')
+  // emit('close')
+}
+
+function handleToggleOutputMode() {
+  liveSessionStore.toggleOutputMode()
+  emit('close')
+}
+
+function handleToggleRespectSchedule() {
+  proactivityStore.toggleRespectSchedule()
+  emit('close')
+}
+
+function handleToggleGrounding() {
+  isGroundingEnabled.value = !isGroundingEnabled.value
   emit('close')
 }
 </script>
@@ -154,7 +172,7 @@ function handleOpenSettings() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" @click="liveSessionStore.toggleOutputMode()">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="handleToggleOutputMode">
           <div
             :class="[
               outputMode === 'gemini' ? 'i-solar:soundwave-bold text-sky-400' : 'i-solar:soundwave-outline text-violet-400',
@@ -178,7 +196,7 @@ function handleOpenSettings() {
 
       <!-- Row 3: System Cluster (Functional items marked amber) -->
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" @click="proactivityStore.toggleRespectSchedule()">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="handleToggleRespectSchedule">
           <div
             :class="[
               isRespectScheduleEnabled ? 'i-solar:clock-circle-bold text-amber-400' : 'i-solar:clock-circle-outline text-emerald-400',
@@ -192,7 +210,7 @@ function handleOpenSettings() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" @click="isGroundingEnabled = !isGroundingEnabled">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="handleToggleGrounding">
           <div
             :class="[
               isGroundingEnabled ? 'i-solar:globus-bold text-emerald-400' : 'i-solar:globus-outline text-amber-400',
@@ -206,7 +224,11 @@ function handleOpenSettings() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip side="right">
-        <ControlButton :button-style="adjustStyleClasses.button" @click="handleOpenSettings">
+        <ControlButton
+          :button-style="[adjustStyleClasses.button, 'opacity-30 cursor-not-allowed filter-grayscale'].join(' ')"
+          :disabled="true"
+          @click="handleOpenSettings"
+        >
           <div i-solar:settings-minimalistic-outline :class="adjustStyleClasses.icon" text="amber-400" />
         </ControlButton>
         <template #tooltip>

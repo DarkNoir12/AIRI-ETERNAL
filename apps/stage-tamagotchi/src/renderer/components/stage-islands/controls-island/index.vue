@@ -90,9 +90,11 @@ defineExpose({
 })
 
 watch(expanded, (isExp) => {
-  if (!isExp) {
-    view.value = 'main' // Reset sub-menu when collapsing
+  if (isExp) {
     geminiExpanded.value = false
+  }
+  else {
+    view.value = 'main' // Reset sub-menu when collapsing
   }
 })
 
@@ -184,6 +186,9 @@ function handleGeminiToggle() {
     return
   }
   geminiExpanded.value = !geminiExpanded.value
+  if (geminiExpanded.value) {
+    expanded.value = false
+  }
 }
 
 /**
