@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { toRef } from 'vue'
 
+import { useSettingsCaptions } from './captions'
 import { useSettingsChat } from './chat'
 import { useSettingsControlsIsland } from './controls-island'
 import { useSettingsGeneral } from './general'
@@ -33,6 +34,7 @@ export const useSettings = defineStore('settings', () => {
   const live2d = useSettingsLive2d()
   const theme = useSettingsTheme()
   const controlsIsland = useSettingsControlsIsland()
+  const captions = useSettingsCaptions()
 
   async function resetState() {
     await stageModel.resetState()
@@ -41,6 +43,7 @@ export const useSettings = defineStore('settings', () => {
     live2d.resetState()
     theme.resetState()
     controlsIsland.resetState()
+    captions.resetState()
   }
 
   return {
@@ -78,6 +81,16 @@ export const useSettings = defineStore('settings', () => {
     allowVisibleOnAllWorkspaces: toRef(controlsIsland, 'allowVisibleOnAllWorkspaces'),
     alwaysOnTop: toRef(controlsIsland, 'alwaysOnTop'),
     controlsIslandIconSize: toRef(controlsIsland, 'controlsIslandIconSize'),
+
+    // Caption settings
+    showCaptions: toRef(captions, 'showCaptions'),
+    captionFontSize: toRef(captions, 'fontSize'),
+    captionOpacity: toRef(captions, 'opacity'),
+    captionDocking: toRef(captions, 'docking'),
+    captionFollowStage: toRef(captions, 'followStage'),
+    captionLayoutMode: toRef(captions, 'layoutMode'),
+    captionResetTrigger: toRef(captions, 'resetTrigger'),
+    triggerCaptionReset: captions.triggerReset,
 
     // Methods
     setThemeColorsHue: theme.setThemeColorsHue,

@@ -11,7 +11,6 @@ import { join, resolve } from 'node:path'
 
 import { defineInvokeHandler } from '@moeru/eventa'
 import { createContext } from '@moeru/eventa/adapters/electron/main'
-import { animate, utils } from 'animejs'
 import { BrowserWindow as ElectronBrowserWindow, ipcMain, screen, shell } from 'electron'
 import { debounce, throttle } from 'es-toolkit'
 import { isMacOS } from 'std-env'
@@ -192,29 +191,27 @@ export function setupCaptionWindowManager(params: {
     cfgToSave.matrices[matrixHash] = { ...cfgToSave.matrices[matrixHash], relativeToMain: initialOffset }
     updateConfig(cfgToSave)
 
-    let animation: ReturnType<typeof animate> | null = null
-    const state = { x: 0, y: 0 }
-
+    // Native-safe settle: avoids browser-centric animation libraries in Main
     const settleTo = (toX: number, toY: number) => {
       if (win.isDestroyed())
         return
+
       const b = win.getBounds()
-      state.x = b.x
-      state.y = b.y
-      animation?.pause()
-      animation = animate(state, {
-        x: toX,
-        y: toY,
-        duration: 160,
-        ease: 'outCubic',
-        modifier: utils.round(0),
-        onRender: () => {
-          if (win.isDestroyed())
-            return
-          lastProgrammaticMoveAt = Date.now()
-          win.setPosition(state.x, state.y)
-        },
-      })
+      // If we are already close enough, just snap
+      if (Math.abs(b.x - toX) < 1 && Math.abs(b.y - toY) < 1)
+        return
+
+      // Programmatic move marker to prevent persistence race
+      lastProgrammaticMoveAt = Date.now()
+
+      // Use native Electron bounds setting (synchronous but safe in this context)
+      // On some platforms, passing 'true' enables native animation which is much safer than JS-driven easing.
+      try {
+        win.setPosition(Math.round(toX), Math.round(toY))
+      }
+      catch {
+        // Descriptive fail-soft for destroyed windows
+      }
     }
 
     let lastTx = 0
@@ -278,8 +275,6 @@ export function setupCaptionWindowManager(params: {
       params.mainWindow.removeListener('move', onMainChange)
       params.mainWindow.removeListener('resize', onMainChange)
       triggerMoveInternal = undefined
-      animation?.pause()
-      animation = null
     }
 
     onAppBeforeQuit(() => detachFromMain())

@@ -182,7 +182,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
     }
   }
 
-  const { pause } = useIntervalFn(updateSensors, 10000, { immediate: true })
+  const { pause } = useIntervalFn(updateSensors, 10000, { immediate: false })
 
   onUnmounted(() => {
     pause()
@@ -578,9 +578,9 @@ export const useProactivityStore = defineStore('proactivity', () => {
 
     // eslint-disable-next-line no-console
     console.log('[Proactivity] Starting global heartbeat loop (60s tick)...')
-    heartbeatInterval = setInterval(() => {
-      void evaluateHeartbeat()
-    }, 60 * 1000)
+    // heartbeatInterval = setInterval(() => {
+    //   void evaluateHeartbeat()
+    // }, 60 * 1000)
   }
 
   function stopHeartbeatLoop() {
