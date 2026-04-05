@@ -192,7 +192,7 @@ app.whenReady().then(async () => {
   })
 
   const captionWindow = injeca.provide('windows:caption', {
-    dependsOn: { mainWindow, serverChannel, i18n },
+    dependsOn: { mainWindow, serverChannel, i18n, appConfig },
     build: async ({ dependsOn }) => setupCaptionWindowManager(dependsOn),
   })
 
@@ -209,7 +209,7 @@ app.whenReady().then(async () => {
   })
 
   injeca.invoke({
-    dependsOn: { mainWindow, tray, serverChannel, pluginHost, mcpStdioManager, onboardingWindow: onboardingWindowManager, appConfig, i18n },
+    dependsOn: { mainWindow, tray, serverChannel, pluginHost, mcpStdioManager, onboardingWindow: onboardingWindowManager, appConfig, i18n, captionWindow },
     callback: (deps) => {
       const context = createContext(ipcMain).context
       createServerChannelService({ serverChannel: deps.serverChannel })
@@ -218,6 +218,20 @@ app.whenReady().then(async () => {
       createMicToggleService({ context, window: deps.mainWindow })
       createVisionService({ context })
       createSensorsService({ context })
+
+      const restoreCaption = () => {
+        // Auto-restore caption window if enabled in config
+        if (deps.appConfig.get()?.windows?.find((w: any) => w.tag === 'caption')?.enabled) {
+          deps.captionWindow.toggleVisibility()
+        }
+      }
+
+      if (deps.mainWindow.isVisible()) {
+        restoreCaption()
+      }
+      else {
+        deps.mainWindow.once('ready-to-show', restoreCaption)
+      }
 
       import('./libs/bootkit/lifecycle').then((m) => {
         m.onAppBeforeQuit(() => {

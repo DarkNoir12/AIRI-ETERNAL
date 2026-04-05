@@ -97,7 +97,7 @@
     "defu": "^6.1.4",
     "destr": "^2.0.5",
     "dompurify": "^3.3.1",
-    "electron-click-drag-plugin": "^2.0.2",
+    "electron-click-drag-plugin": "2.0.2",
     "es-toolkit": "^1.44.0",
     "injeca": "catalog:",
     "jszip": "^3.10.1",

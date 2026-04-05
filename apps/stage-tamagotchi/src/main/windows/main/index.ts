@@ -16,8 +16,6 @@ import { dirname, resolve } from 'node:path'
 import { env } from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import clickDragPlugin from 'electron-click-drag-plugin'
-
 import { is } from '@electron-toolkit/utils'
 import { defu } from 'defu'
 import { BrowserWindow, ipcMain, shell } from 'electron'
@@ -103,10 +101,6 @@ export async function setupMainWindow(params: {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
-
-  if (typeof clickDragPlugin === 'function') {
-    (clickDragPlugin as any)(window)
-  }
 
   load(window, baseUrl(resolve(dirname(fileURLToPath(import.meta.url)), '..', 'renderer')))
 

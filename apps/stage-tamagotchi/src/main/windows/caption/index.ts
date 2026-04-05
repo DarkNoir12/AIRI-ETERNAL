@@ -1,6 +1,8 @@
 import type { BrowserWindow, BrowserWindowConstructorOptions, Rectangle } from 'electron'
 import type { InferOutput } from 'valibot'
 
+import type { globalAppConfigSchema } from '../../configs/global'
+import type { Config } from '../../libs/electron/persistence'
 import type { I18n } from '../../libs/i18n'
 import type { ServerChannel } from '../../services/airi/channel-server'
 
@@ -18,6 +20,7 @@ import { boolean, number, object, optional, record, string } from 'valibot'
 import icon from '../../../../resources/icon.png?asset'
 
 import { captionGetIsFollowingWindow, captionIsFollowingWindowChanged } from '../../../shared/eventa'
+import { onAppBeforeQuit } from '../../libs/bootkit/lifecycle'
 import { baseUrl, getElectronMainDirname, load, withHashRoute } from '../../libs/electron/location'
 import { createConfig } from '../../libs/electron/persistence'
 import { createReusableWindow } from '../../libs/electron/window-manager'
@@ -149,6 +152,7 @@ export function setupCaptionWindowManager(params: {
   mainWindow: BrowserWindow
   serverChannel: ServerChannel
   i18n: I18n
+  appConfig: Config<typeof globalAppConfigSchema>
 }) {
   const matrixHash = computeDisplayMatrixHash()
 
@@ -219,11 +223,25 @@ export function setupCaptionWindowManager(params: {
     let lastAppliedTy = Number.NaN
 
     const moveThrottled = throttle(() => {
+      const config = params.appConfig.get()
+      const dock = config?.windows?.find((w: any) => w.tag === 'caption')?.dock
+
       const stored = getConfig()?.matrices[matrixHash]?.relativeToMain ?? initialOffset
       const main = params.mainWindow.getBounds()
       const b = win.getBounds()
+
       let tx = main.x + stored.dx
       let ty = main.y + stored.dy
+
+      if (dock === 'bottom') {
+        tx = main.x + Math.floor((main.width - b.width) / 2)
+        ty = main.y + main.height
+      }
+      else if (dock === 'top') {
+        tx = main.x + Math.floor((main.width - b.width) / 2)
+        ty = main.y - b.height
+      }
+
       const target = { x: tx, y: ty, width: b.width, height: b.height }
       const workArea = screen.getDisplayMatching(target).workArea
       const clamped = clampBoundsWithinRect(target, workArea)
@@ -247,21 +265,30 @@ export function setupCaptionWindowManager(params: {
       moveThrottled()
       settleDebounced()
     }
+    triggerMoveInternal = onMainChange
     onMainChange()
     params.mainWindow.on('move', onMainChange)
     params.mainWindow.on('resize', onMainChange)
     detachMainMoveListener = () => {
+      moveThrottled.cancel()
+      settleDebounced.cancel()
       params.mainWindow.removeListener('move', onMainChange)
       params.mainWindow.removeListener('resize', onMainChange)
+      triggerMoveInternal = undefined
       animation?.pause()
       animation = null
     }
+
+    onAppBeforeQuit(() => detachFromMain())
   }
 
   function detachFromMain() {
     detachMainMoveListener?.()
     detachMainMoveListener = undefined
+    triggerMoveInternal = undefined
   }
+
+  let triggerMoveInternal: (() => void) | undefined
 
   let eventaContext: ReturnType<typeof createContext>['context'] | undefined
   let currentWindow: BrowserWindow | undefined
@@ -449,5 +476,6 @@ export function setupCaptionWindowManager(params: {
     isVisible,
     toggleVisibility,
     onVisibilityChanged,
+    triggerMove: () => triggerMoveInternal?.(),
   }
 }

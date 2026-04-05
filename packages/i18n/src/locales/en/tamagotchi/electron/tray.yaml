@@ -26,6 +26,8 @@ menu:
       caption_overlay: Caption Overlay
       follow_window: Follow window
       reset_position: Reset position
+      dock_bottom: Dock to Bottom
+      dock_top: Dock to Top
       devtools: DevTools
       troubleshoot_beatsync: Troubleshoot BeatSync...
       quit: Quit
