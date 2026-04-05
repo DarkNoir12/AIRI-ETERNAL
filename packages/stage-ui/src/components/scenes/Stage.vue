@@ -142,7 +142,7 @@ function handleResizeStateChange(event: Event) {
   isWindowResizing.value = !!customEvent.detail?.active
 }
 
-const { currentMotion, availableExpressions: live2dExpressions, expressionData: live2dExpressionData, activeExpressions: live2dActiveExpressions, modelParameters: live2dModelParameters } = storeToRefs(live2dStore)
+const { currentMotion } = storeToRefs(live2dStore)
 
 const temporaryVrma = ref<string | null>(null)
 let temporaryVrmaTimeout: ReturnType<typeof setTimeout> | null = null

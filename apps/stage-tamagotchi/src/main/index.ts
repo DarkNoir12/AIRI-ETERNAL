@@ -217,7 +217,7 @@ app.whenReady().then(async () => {
       createI18nService({ context, window: deps.mainWindow, i18n: deps.i18n })
       createMicToggleService({ context, window: deps.mainWindow })
       createVisionService({ context })
-      createSensorsService({ context })
+      const sensorsServicePromise = createSensorsService({ context })
 
       const restoreCaption = () => {
         // Auto-restore caption window if enabled in config
@@ -234,8 +234,10 @@ app.whenReady().then(async () => {
       }
 
       import('./libs/bootkit/lifecycle').then((m) => {
-        m.onAppBeforeQuit(() => {
+        m.onAppBeforeQuit(async () => {
           console.log('[@proj-airi/stage-tamagotchi] App is quitting, flushing all configs...')
+          const sensorsService = await sensorsServicePromise
+          sensorsService.stop()
           flushAllConfigs()
         })
       })

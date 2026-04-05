@@ -223,6 +223,9 @@ export function setupCaptionWindowManager(params: {
     let lastAppliedTy = Number.NaN
 
     const moveThrottled = throttle(() => {
+      if (win.isDestroyed() || params.mainWindow.isDestroyed())
+        return
+
       const config = params.appConfig.get()
       const dock = config?.windows?.find((w: any) => w.tag === 'caption')?.dock
 

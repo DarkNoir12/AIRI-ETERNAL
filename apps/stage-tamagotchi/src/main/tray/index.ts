@@ -101,6 +101,9 @@ export function setupTray(params: {
     })
 
     const rebuildContextMenu = debounce((): void => {
+      if (!appTray || appTray.isDestroyed())
+        return
+
       const { x: areaX, y: areaY, width: areaWidth, height: areaHeight } = screen.getPrimaryDisplay().workArea
       const { width: windowWidth, height: windowHeight } = params.mainWindow.getBounds()
 

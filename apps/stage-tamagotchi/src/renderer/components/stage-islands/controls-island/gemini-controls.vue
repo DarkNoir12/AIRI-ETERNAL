@@ -6,7 +6,6 @@ import { useSettings } from '@proj-airi/stage-ui/stores/settings'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
 import ControlButtonTooltip from './control-button-tooltip.vue'
 import ControlButton from './control-button.vue'
@@ -32,7 +31,6 @@ const { isWitnessEnabled, status: visionStatus } = storeToRefs(visionStore)
 
 const { controlsIslandIconSize } = storeToRefs(settingsStore)
 const { heartbeatIntervalMinutes, isRespectScheduleEnabled } = storeToRefs(proactivityStore)
-const router = useRouter()
 
 // Grouped classes for icon / border / padding and combined style class
 const adjustStyleClasses = computed(() => {

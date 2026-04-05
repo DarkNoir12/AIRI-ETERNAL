@@ -135,7 +135,7 @@ export async function createSensorsService(params: { context: ReturnType<typeof 
 
   const MAX_HISTORY = 50
 
-  setInterval(async () => {
+  const pollInterval = setInterval(async () => {
     const current = await getActiveWindowInfo()
     if (!current)
       return
@@ -252,5 +252,8 @@ export async function createSensorsService(params: { context: ReturnType<typeof 
     },
   )
 
-  return context
+  return {
+    context,
+    stop: () => clearInterval(pollInterval),
+  }
 }
