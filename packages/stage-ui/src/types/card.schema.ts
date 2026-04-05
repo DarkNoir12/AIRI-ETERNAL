@@ -116,6 +116,9 @@ const AiriExtensionSchema = object({
     prompt: string(),
     enabled: optional(boolean()),
   }))),
+  imageJournal: optional(object({
+    selfie: optional(boolean()),
+  })),
 })
 
 /**

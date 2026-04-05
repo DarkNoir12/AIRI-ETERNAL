@@ -118,10 +118,11 @@ Custom provider integrations not present in the upstream project.
     - **Capability-Driven Helpers**: Provider capabilities (`supportsSpeechTags`, `availableMannerisms`) are queried at runtime to power context-aware helper UI in the Acting tab.
     - **Semantic Speech Pipeline**: End-to-end flow from ACT token parsing → provider-side text preprocessing → mannerism transformation → TTS synthesis.
 - **App (Local) Speech & Transcription**: Direct in-app, privacy-first implementation of **Whisper** (transcription) and **Kokoro** (speech synthesis) via `xsai-transformers`. Runs fully locally in the Electron main process with WebGPU acceleration support, requiring zero external dependencies or API keys.
+- **Qwen Portal Provider**: Added a first-class **Qwen Portal** integration with dedicated OAuth plumbing through the unified provider registry.
+- **OpenRouter (Easy Mode)**: Integrated **OpenRouter** as the primary backend for the "Sense Portal" Easy Mode, providing a streamlined, high-performance LLM experience with minimal configuration.
 - **Deepgram STT (Nova-2/Nova-3)**: Native integration for high-speed transcription with a secure **main-process JWT-based CORS bypass** for the Electron environment.
 - **Amazon AWS Polly**: Native high-quality neural speech synthesis integration using `aws4fetch` for secure V4 signing. Supports both **Neural** and **Standard** engines with dynamic voice discovery across all AWS regions.
 - **DeepSeek / GLM-4 Streaming**: Added streaming support for `reasoning-delta` events and hardened the categorizer against **malformed tag typos** to prevent prompt stalls.
-- **Qwen Portal Provider**: Added a first-class **Qwen Portal** integration with dedicated OAuth plumbing through the unified provider registry.
 - **Gemini Live Streaming Pipeline**: Optimized the native Google Gemini Live API for production-grade performance:
     - **Native Audio Playback Queue**: Pre-buffers audio chunks in the main process for gapless, zero-latency streaming.
     - **Custom AI Voices**: Standardized support for Gemini-native voices like **Algenib** and **Fenrir**.
@@ -211,7 +212,7 @@ Internal hardening to ensure the app remains a stable, performant "Daily Driver.
 A redesigned first-run experience that reduces setup friction through automation and intuitive terminology.
 
 - **The Sense Pivot**: Complete terminology shift from technical acronyms (LLM, TTS, STT) to human-centered terms (**Consciousness, Speech, Hearing**).
-- **Sense Portal (Easy Mode)**: A zero-config setup path that uses **Qwen Portal OAuth** (Device Flow) for instant LLM access and **Deepgram** for high-speed voice services.
+- **Sense Portal (Easy Mode)**: A zero-config setup path that uses **OpenRouter** for instant LLM access and **Deepgram** for high-speed voice services.
 - **Automated Provider Configuration**: Successfully completing the Easy Mode flow automatically configures all internal stores (Consciousness, Speech, Hearing) with optimal default models (e.g., `aura-2`, `nova-3`).
 - **Advanced Mode**: Retains granular control for power users who prefer custom OpenAI, Anthropic, or local (Ollama/LM Studio) configurations.
 - **Onboarding Orchestrator**: A modular, multi-step dialog system that handles branching setup paths and character initialization in a single unified flow.

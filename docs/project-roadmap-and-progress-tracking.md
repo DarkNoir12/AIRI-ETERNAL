@@ -68,7 +68,7 @@ This document tracks the current development state of the AIRI project, specific
 
 #### 2026-03-29 - Onboarding Overhaul, Modular Wardrobe & Interface Revamp
 - **Integrated Profile Switcher**: Redesigned the Character Profile Picker in the Control Island. Replaced the popover UI with an integrated sub-menu, adding utility buttons for Gallery and Profile Management. This resolves layout issues on small windows.
-- **Sense Portal (Easy Mode)**: Implemented a streamlined, zero-config onboarding path using **Qwen Portal OAuth** and **Deepgram**.
+- **Sense Portal (Easy Mode)**: Implemented a streamlined, zero-config onboarding path using **OpenRouter** and **Deepgram**.
 - **Onboarding Orchestration**: Developed a modular multi-step setup flow with branching paths (Easy vs. Advanced) and automatic provider/model initialization.
 - **Polymorphic UI Components**: Enhanced the core `Button` primitive to support polymorphism, enabling seamless integration of external setup links.
 - **Modular Wardrobe Architecture**: Implemented a schema-driven wardrobe system that persists outfit bundles (base vs. overlay) within the AIRI character card.
@@ -150,10 +150,11 @@ This document tracks the current development state of the AIRI project, specific
 - **Browser-Integrated Card Imports (Phase 2)**: (Next Focus) Deep integration with external character sites via an in-app Electron browser. Hooks for direct importing while respecting site ads/iframes.
 - **Vision Feature Integration**:
   - [/] **Gemini 2.5 vs 3.1 Support**: Implement support for both versions to compare the "richer" experience of 2.5 vs the standard 3.1 implementation. [/]
-- **Discord Bot Revamp**:
-  - [ ] **Unified Discord Service**: Transition the Discord bot from a standalone process to a native AIRI service with a deep, meaningful integration (slash commands, character syncing, and native context routing).
-  - [ ] **Advanced Features**: Implementation of character switching (`/character`), manual emotion triggering (`/emotion`), proactive heartbeat routing, and inline Artistry/media attachments.
-  - [ ] **Full Spec**: See [docs/feat__discord-revamp.md](docs/feat__discord-revamp.md) for the detailed technical roadmap and command registry.
+- **Unified Multi-Platform Service Revamp**:
+  - [ ] **Cross-Platform Service Layer**: Transition the messaging/bot integration from platform-specific standalone processes (Discord, Telegram, etc.) into a unified, abstract service layer within AIRI.
+  - [ ] **Unified Protocol Handlers**: Implement a standardized interface for common actions (e.g., character switching, manual emotion triggering, proactive heartbeat routing, and inline Artistry) that can be shared across all messaging platforms (Discord, Telegram, etc.).
+  - [ ] **Heuristic Routing Engine**: Develop a central engine to determine the last active channel across all connected platforms to intelligently route proactive turns.
+  - [ ] **Full Revamp Spec**: See [docs/feat__discord-revamp.md](docs/feat__discord-revamp.md) for the initial technical roadmap, which serves as the blueprint for the wider multi-platform rollout (including Telegram).
 
 - **Infrastructure & UI Health**:
     - [ ] **Settings - System Revamp**: Completely overhaul the `settings > system` page to resolve the current "hodge-podge" of disjointed, nested, and potentially duplicated settings:

@@ -153,7 +153,7 @@ export const useAiriCardStore = defineStore('airi-card', () => {
   const defaultPostHistoryInstructions = t('settings.pages.card.creation.defaults.posthistoryinstructions')
 
   const mapEntriesSerializer = {
-    read: (v: string) => new Map(JSON.parse(v)),
+    read: (v: string) => new Map(JSON.parse(v)) as Map<string, AiriCard>,
     write: (v: Map<string, AiriCard>) => JSON.stringify(Array.from(v.entries())),
   }
 

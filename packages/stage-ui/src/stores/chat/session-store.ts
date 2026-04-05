@@ -406,7 +406,7 @@ export const useChatSessionStore = defineStore('chat-session', () => {
     // NOTICE: Ensure prompt is up to date immediately after card-switch context is resolved.
     refreshActiveSystemMessage({
       sessionId: characterIndex.activeSessionId,
-      characterId: characterId,
+      characterId,
       prompt: systemPrompt.value,
     })
 
