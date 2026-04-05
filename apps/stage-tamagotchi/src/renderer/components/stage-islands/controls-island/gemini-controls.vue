@@ -65,22 +65,17 @@ const formattedCost = computed(() => {
 
 // === Functional Handlers ===
 function handleLiveToggle() {
-  const wasActive = isLiveActive.value
-
-  // Toggle both for a unified "Live API" experience
+  // Master Toggle: strictly manages the Live Session state.
+  // Proactivity and Vision captures will now independently respect isActive.
   liveSessionStore.toggle()
-
-  // Also sync vision witness to the live state for a true "On/Off" experience
-  if (!wasActive && !isWitnessEnabled.value) {
-    visionStore.toggleWitness()
-  }
-  else if (wasActive && isWitnessEnabled.value) {
-    visionStore.toggleWitness()
-  }
-
-  // Auto-hide when toggled
   emit('close')
 }
+
+function handleVisionToggle() {
+  visionStore.toggleWitness()
+  // We keep it open if toggling vision so user can see the state change
+}
+
 function handleCaptureNow() {
   visionStore.heartbeat({ force: true })
   emit('close')
@@ -126,7 +121,7 @@ function handleToggleGrounding() {
           />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.vision-witness') }}: {{ isLiveActive ? 'ON' : 'OFF' }}
+          {{ t('tamagotchi.stage.controls-island.live-api') }}: {{ isLiveActive ? 'ON' : 'OFF' }}
         </template>
       </ControlButtonTooltip>
 
@@ -223,14 +218,24 @@ function handleToggleGrounding() {
 
       <ControlButtonTooltip side="right">
         <ControlButton
-          :button-style="[adjustStyleClasses.button, 'opacity-30 cursor-not-allowed filter-grayscale'].join(' ')"
-          :disabled="true"
-          @click="handleOpenSettings"
+          :button-style="[
+            adjustStyleClasses.button,
+            !isLiveActive ? 'opacity-30' : '',
+          ].join(' ')"
+          @click="handleVisionToggle"
         >
-          <div i-solar:settings-minimalistic-outline :class="adjustStyleClasses.icon" text="amber-400" />
+          <div
+            :class="[
+              isWitnessEnabled ? 'i-solar:eye-scan-bold-duotone text-amber-500 animate-pulse' : 'i-solar:eye-scan-outline text-neutral-400',
+              adjustStyleClasses.icon,
+            ]"
+          />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.open-settings') }}
+          {{ t('tamagotchi.stage.controls-island.vision-witness') }}: {{ isWitnessEnabled ? 'ON' : 'OFF' }}
+          <template v-if="!isLiveActive">
+            (Requires Live API: ON)
+          </template>
         </template>
       </ControlButtonTooltip>
     </div>

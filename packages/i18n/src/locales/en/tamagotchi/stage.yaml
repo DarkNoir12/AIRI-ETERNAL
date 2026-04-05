@@ -16,7 +16,8 @@ controls-island:
     disable: Always show
   open-settings: Open settings
   open-gemini-controls: Open Gemini Controls
-  vision-witness: Live API
+  vision-witness: Vision/Witness
+  live-api: Live API
   capture-now: Capture Now
   pulse-rate: Pulse Rate
   model-version: Model Version

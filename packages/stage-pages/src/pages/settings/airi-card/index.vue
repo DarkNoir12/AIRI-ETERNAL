@@ -242,7 +242,7 @@ watch(inputFiles, async (newFiles) => {
     // Validate the normalized AIRI card shape
     const validation = safeParse(AiriCardSchema, normalizedForValidation)
     if (!validation.success) {
-      const errorMsg = validation.issues.map(i => i.message).join('\n')
+      const errorMsg = validation.issues.map(i => `${i.path?.[0]?.key || 'root'}: ${i.message}`).join(', ')
       toast.error('Card validation failed', {
         description: errorMsg,
       })
@@ -259,8 +259,10 @@ watch(inputFiles, async (newFiles) => {
     toast.success('Card imported successfully')
   }
   catch (error) {
-    console.error('Error processing card file:', error)
-    toast.error('Error processing card file')
+    console.error('[AiriCard] Error processing card file:', error)
+    toast.error('Error processing card file', {
+      description: error instanceof Error ? error.message : 'Unknown error',
+    })
   }
 })
 
@@ -305,16 +307,20 @@ function parseStMessageExamples(exampleStr: string): string[][] {
 }
 
 function addCardPreviewNormalize(card: any) {
-  // If it's already an AIRI card or has AIRI data, we might still want to ensure version
+  // Detect ST V2 (data wrapper) vs V1 (root fields)
+  const data = card.data || card
+
+  // If it's already an AIRI card, we still want to ensure universal fields like messageExample are valid arrays
   if (card.format === 'airi-card' || card.systemPrompt !== undefined) {
     return {
       ...card,
       version: card.version || '1.0.0',
+      // If messageExample is a string (stale AIRI or raw ST), normalize it to AIRI format[][]
+      messageExample: typeof card.messageExample === 'string'
+        ? parseStMessageExamples(card.messageExample)
+        : card.messageExample,
     }
   }
-
-  // Detect ST V2 (data wrapper) vs V1 (root fields)
-  const data = card.data || card
 
   return {
     name: data.name || 'Imported Card',

@@ -1,4 +1,4 @@
-import { array, boolean, literal, number, object, optional, pipe, record, regex, string, union, unknown } from 'valibot'
+import { array, boolean, intersect, literal, number, object, optional, pipe, record, regex, string, union, unknown } from 'valibot'
 
 /**
  * Message Example Item Schema
@@ -133,7 +133,12 @@ export const AiriCardSchema = object({
   postHistoryInstructions: optional(string()),
   greetings: optional(array(string())),
   messageExample: optional(MessageExampleSchema),
-  extensions: optional(record(string(), unknown())),
+  extensions: optional(intersect([
+    record(string(), unknown()),
+    object({
+      airi: optional(AiriExtensionSchema),
+    }),
+  ])),
 })
 // Exporting for use in the main schema later if needed
 export { AiriExtensionSchema }

@@ -858,15 +858,22 @@ export const useLiveSessionStore = defineStore('live-session', () => {
 
   const visionStore = useVisionStore()
   const powerState = computed(() => {
+    // Master off switch: if not active and not connecting, it's OFF.
+    if (!isActive.value && !isConnecting.value)
+      return 'off'
+
     if (chatOrchestrator.sending || visionStore.status === 'capturing')
       return 'busy'
     if (isConnecting.value)
       return 'connecting'
-    if (isActive.value)
-      return 'active'
+
+    // If we're here, we are active.
+    // If vision is also enabled, it's 'ambient' (orange).
+    // Otherwise, it's 'active' (red).
     if (visionStore.isWitnessEnabled)
       return 'ambient'
-    return 'off'
+
+    return 'active'
   })
 
   return {

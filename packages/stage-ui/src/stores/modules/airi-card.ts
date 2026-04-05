@@ -152,7 +152,14 @@ export const useAiriCardStore = defineStore('airi-card', () => {
   const defaultSystemPrompt = t('settings.pages.card.creation.defaults.systemprompt')
   const defaultPostHistoryInstructions = t('settings.pages.card.creation.defaults.posthistoryinstructions')
 
-  const cards = useLocalStorageManualReset<Map<string, AiriCard>>('airi-cards', new Map())
+  const mapEntriesSerializer = {
+    read: (v: string) => new Map(JSON.parse(v)),
+    write: (v: Map<string, AiriCard>) => JSON.stringify(Array.from(v.entries())),
+  }
+
+  const cards = useLocalStorageManualReset<Map<string, AiriCard>>('airi-cards', new Map(), {
+    serializer: mapEntriesSerializer,
+  })
   const activeCardId = useLocalStorageManualReset<string>('airi-card-active-id', 'default')
 
   const activeCard = computed(() => cards.value.get(activeCardId.value))
