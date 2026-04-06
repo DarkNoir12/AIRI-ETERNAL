@@ -849,10 +849,10 @@ export const useLiveSessionStore = defineStore('live-session', () => {
     resolvedToolRegistry = []
     sessionTokenHighWaterMark = 0
     audioPlaybackTime = 0
-    for (const src of activeAudioSources) {
-      try { src.stop() }
-      catch {}
-    }
+    activeAudioSources.forEach((src) => {
+      src.stop()
+      src.disconnect()
+    })
     activeAudioSources.clear()
   }
 

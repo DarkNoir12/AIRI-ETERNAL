@@ -70,7 +70,7 @@ const { stageModelSelected: defaultDisplayModelId } = storeToRefs(stageModelStor
 const { activeProvider: defaultArtistryProvider } = storeToRefs(artistryStore)
 const { availableExpressions } = storeToRefs(modelStore)
 const { animationOptions } = storeToRefs(customVrmAnimationsStore)
-const { activeCardId } = storeToRefs(cardStore)
+const { } = storeToRefs(cardStore)
 
 // Determine if we're in edit mode
 const isEditMode = computed(() => !!props.cardId)
@@ -590,7 +590,7 @@ function initializeCard(): Card {
   selectedSpeechModel.value = airiExt?.modules?.speech?.model || defaultSpeechModel.value
   selectedSpeechVoiceId.value = airiExt?.modules?.speech?.voice_id || defaultSpeechVoiceId.value
   selectedDisplayModelId.value = airiExt?.modules?.displayModelId || defaultDisplayModelId.value
-  const activeBg = airiExt?.modules?.activeBackgroundId || airiExt?.modules?.preferredBackgroundId
+  const activeBg = airiExt?.modules?.activeBackgroundId || (airiExt?.modules as any)?.preferredBackgroundId
   selectedActiveBackgroundId.value = !activeBg ? 'none' : activeBg
   selectedArtistryProvider.value = airiExt?.artistry?.provider || defaultArtistryProvider.value
   selectedArtistryModel.value = airiExt?.artistry?.model || ''

@@ -9,7 +9,6 @@ packages:
   - docs/**
   - apps/**
   - '!**/dist/**'
-
 overrides:
   array-flatten: npm:@nolyfill/array-flatten@^1.0.44
   axios: npm:feaxios@^0.0.23
@@ -22,6 +21,7 @@ overrides:
   string.prototype.matchall: npm:@nolyfill/string.prototype.matchall@^1.0.44
   vite: ~6.2.5
 patchedDependencies:
+  active-win@9.0.0: patches/active-win@9.0.0.patch
   mineflayer-pathfinder: patches/mineflayer-pathfinder.patch
   mineflayer@4.33.0: patches/mineflayer@4.33.0.patch
   pixi-live2d-display: patches/pixi-live2d-display.patch
@@ -158,6 +158,7 @@ onlyBuiltDependencies:
   - spawn-sync
   - utf-8-validate
   - vue-demi
+
 packageExtensions:
   '@formkit/auto-animate':
     peerDependencies:

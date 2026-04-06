@@ -5,7 +5,6 @@ import os from 'node:os'
 
 import { createRequire } from 'node:module'
 
-import activeWin from 'active-win'
 import loudness from 'loudness'
 import si from 'systeminformation'
 
@@ -19,6 +18,7 @@ import {
   sensorsGetSystemLoad,
   sensorsGetVolumeLevel,
 } from '@proj-airi/stage-shared'
+import { activeWindow } from 'active-win'
 import { powerMonitor } from 'electron'
 
 const require = createRequire(import.meta.url)
@@ -56,7 +56,7 @@ export async function createSensorsService(params: { context: ReturnType<typeof 
 
   async function getActiveWindowInfo(): Promise<WindowInfo | null> {
     try {
-      const result = await activeWin()
+      const result = await activeWindow()
       if (result) {
         return {
           title: result.title || 'Unknown',
