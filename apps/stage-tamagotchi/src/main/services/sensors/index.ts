@@ -5,7 +5,6 @@ import os from 'node:os'
 
 import { createRequire } from 'node:module'
 
-import activeWindow from 'active-win'
 import loudness from 'loudness'
 import si from 'systeminformation'
 
@@ -22,6 +21,8 @@ import {
 import { powerMonitor } from 'electron'
 
 const require = createRequire(import.meta.url)
+const activeWindow = require('active-win')
+
 const log = useLogg('main/sensors').useGlobalConfig()
 
 export async function createSensorsService(params: { context: ReturnType<typeof createContext>['context'] }) {
