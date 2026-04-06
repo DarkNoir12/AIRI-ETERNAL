@@ -180,6 +180,14 @@ This document tracks the current development state of the AIRI project, specific
         - **UI Enhancement**: If the active character's model configuration differs from the current Model Selector preview, display a non-intrusive warning: *"Your model will be restored to the one set on your character once you leave this page unless you click Apply Now."*
         - **Current Workaround (Kludgy)**: Users are currently forced to "Set model to {character}" just to avoid a reset, even if they aren't ready to commit to the change.
 - [x] **Privacy Indicator**: Add visual feedback in Controls Island when AIRI is "Watching". [x]
+### 🛠️ HUD & HUD-Bridge Improvements
+- [ ] **Fix**: Caption toggle in Controls Island fails to disable the panel (System Tray workaround only).
+- [ ] **Refactor**: Extend `image_journal` tool with `mode: "bg" | "widget" | "inline"` and `selfie: any` (boolean or expression).
+  - `bg`: Direct to background.
+  - `widget`: Open in standalone window.
+  - `inline`: Route to chat message.
+- [ ] **Character Photo Mode**: Trigger 3-2-1 countdown selfie natively via `image_journal(selfie: true)`.
+
 - [ ] **Caption System Overhaul**: Address critical usability issues with the current caption implementation:
     - **Alignment Stability**: Fix "alignment loss" where captions fail to follow their intended target.
     - **Font Customization**: Add controls for adjusting font size.

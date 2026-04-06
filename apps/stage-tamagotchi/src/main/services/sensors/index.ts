@@ -5,6 +5,7 @@ import os from 'node:os'
 
 import { createRequire } from 'node:module'
 
+import activeWindow from 'active-win'
 import loudness from 'loudness'
 import si from 'systeminformation'
 
@@ -18,7 +19,6 @@ import {
   sensorsGetSystemLoad,
   sensorsGetVolumeLevel,
 } from '@proj-airi/stage-shared'
-import { activeWindow } from 'active-win'
 import { powerMonitor } from 'electron'
 
 const require = createRequire(import.meta.url)

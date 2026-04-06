@@ -33,6 +33,7 @@ The Control Island is a floating UI component designed for the AIRI desktop envi
 | **Always on Top** | `i-solar:pin-bold` / `pin-linear` | Toggles window "Always on Top" state. |
 | **Fade on Hover** | (Custom Component) | Toggles the UI's transparency behavior when the mouse is over the model. |
 | **Emotions** | `i-solar:emoji-funny-square-outline` | Switches the island view to the Emotions sub-menu. |
+| **Camera/Selfie** | `i-solar:camera-outline` | Triggers a 3-2-1 countdown selfie capture. (Gemini/Module Island specific). |
 | **Favorite** | `i-solar:star-bold` / `star-linear` | Toggles a user-defined "favorite" expression. Highlights when active. |
 | **Cycle Animation**| `i-solar:running-2-linear` | Cycles through available VRM animations (Idle loops). |
 | **Close** | `i-solar:close-circle-outline` | Closes the application/window. |
