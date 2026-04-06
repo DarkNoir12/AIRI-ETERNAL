@@ -86,14 +86,13 @@ function navigateToMemory() {
   <PopoverRoot>
     <PopoverTrigger as-child>
       <button
-        :class="[
-          'size-7 rounded-lg flex items-center justify-center transition-all duration-200',
-          'text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800',
-          'active:scale-95',
-        ]"
+        class="max-h-[10lh] min-h-[1lh] flex items-center justify-center rounded-md p-2 outline-none transition-colors transition-transform active:scale-95"
+        bg="neutral-100 dark:neutral-800"
+        text="lg neutral-500 dark:neutral-400"
+        hover:text="primary-500 dark:primary-400"
         :title="title"
       >
-        <div class="i-solar:leaf-bold-duotone size-4" />
+        <div class="i-solar:leaf-bold-duotone" />
       </button>
     </PopoverTrigger>
 
