@@ -202,13 +202,7 @@ async function handleSend() {
     return
   }
 
-  let textToSend = messageInput.value
-  if (activeCard.value?.extensions?.airi?.groundingEnabled) {
-    const sensorData = proactivityStore.sensorPayload
-    if (sensorData) {
-      textToSend = `[Grounding Context]\n${sensorData}\n\n---\nUser Says:\n${textToSend}`
-    }
-  }
+  const textToSend = messageInput.value
 
   const attachmentsToSend = attachments.value.map(att => ({ ...att }))
 

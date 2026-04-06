@@ -133,6 +133,8 @@ ignoredBuiltDependencies:
   - '@prisma/client'
   - better-sqlite3
 
+neverBuiltDependencies:
+  - active-win
 onlyBuiltDependencies:
   - '@discordjs/opus'
   - '@ffmpeg-installer/darwin-arm64'

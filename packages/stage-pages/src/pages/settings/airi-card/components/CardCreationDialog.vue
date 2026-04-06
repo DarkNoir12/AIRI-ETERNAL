@@ -70,7 +70,6 @@ const { stageModelSelected: defaultDisplayModelId } = storeToRefs(stageModelStor
 const { activeProvider: defaultArtistryProvider } = storeToRefs(artistryStore)
 const { availableExpressions } = storeToRefs(modelStore)
 const { animationOptions } = storeToRefs(customVrmAnimationsStore)
-const { } = storeToRefs(cardStore)
 
 // Determine if we're in edit mode
 const isEditMode = computed(() => !!props.cardId)
@@ -138,6 +137,7 @@ const heartbeatsContextWindowHistory = ref<boolean>(true)
 const heartbeatsContextSystemLoad = ref<boolean>(true)
 const heartbeatsContextUsageMetrics = ref<boolean>(true)
 const heartbeatsRespectSchedule = ref<boolean>(true)
+const groundingEnabled = ref<boolean>(false)
 
 const staticSamplePayload = `[Sensor Data]
 User Idle: 15s
@@ -542,6 +542,7 @@ async function saveCard(card: Card): Promise<boolean> {
           known: generationKnown,
           advanced: generationAdvanced,
         },
+        groundingEnabled: groundingEnabled.value,
       } as AiriExtension,
     },
   }
@@ -626,6 +627,7 @@ function initializeCard(): Card {
   heartbeatsContextSystemLoad.value = airiExt?.heartbeats?.contextOptions?.systemLoad ?? true
   heartbeatsContextUsageMetrics.value = airiExt?.heartbeats?.contextOptions?.usageMetrics ?? true
   heartbeatsRespectSchedule.value = airiExt?.heartbeats?.respectSchedule ?? true
+  groundingEnabled.value = airiExt?.groundingEnabled ?? false
 
   loadActingSpeechCapabilities(selectedSpeechProvider.value || speechProvider.value)
 
@@ -858,6 +860,7 @@ function getDefaultPlaceholder(defaultValue: string | undefined): string {
             v-model:heartbeats-context-system-load="heartbeatsContextSystemLoad"
             v-model:heartbeats-context-usage-metrics="heartbeatsContextUsageMetrics"
             v-model:heartbeats-respect-schedule="heartbeatsRespectSchedule"
+            v-model:grounding-enabled="groundingEnabled"
             :sensor-payload="sensorPayload"
             :static-sample-payload="staticSamplePayload"
           />

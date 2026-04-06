@@ -182,7 +182,26 @@ export const useProactivityStore = defineStore('proactivity', () => {
     }
   }
 
-  const { pause } = useIntervalFn(updateSensors, 10000, { immediate: false })
+  const isProactivityLoopNeeded = computed(() => {
+    const config = activeCard.value?.extensions?.airi?.heartbeats
+    const grounding = activeCard.value?.extensions?.airi?.groundingEnabled
+    return !!(config?.enabled || grounding)
+  })
+
+  const { pause, resume } = useIntervalFn(updateSensors, 10000, { immediate: false })
+
+  watch(isProactivityLoopNeeded, (needed) => {
+    if (needed) {
+      // eslint-disable-next-line no-console
+      console.log('[Proactivity] Resuming sensor polling loop.')
+      resume()
+    }
+    else {
+      // eslint-disable-next-line no-console
+      console.log('[Proactivity] Pausing sensor polling loop (idle).')
+      pause()
+    }
+  }, { immediate: true })
 
   onUnmounted(() => {
     pause()
@@ -315,7 +334,6 @@ export const useProactivityStore = defineStore('proactivity', () => {
         return
       }
 
-      let idleData = ''
       if (config?.useAsLocalGate || config?.injectIntoPrompt) {
         if (isElectron && getIdleTimeInvoke) {
           try {
@@ -334,7 +352,6 @@ export const useProactivityStore = defineStore('proactivity', () => {
 
             if (config!.injectIntoPrompt) {
               await updateSensors()
-              idleData = `\n${sensorPayload.value}`
             }
           }
           catch (err) {
@@ -351,7 +368,7 @@ export const useProactivityStore = defineStore('proactivity', () => {
       isHeartbeatEvaluating.value = true
 
       try {
-        const promptText = (config?.prompt || 'Evaluate heartbeat and situational context.') + idleData
+        const promptText = config?.prompt || 'Evaluate heartbeat and situational context.'
         // eslint-disable-next-line no-console
         console.log(`[Proactivity] >>> TRIGGERING LLM <<< Prompt:\n${promptText}`)
 
@@ -369,11 +386,29 @@ export const useProactivityStore = defineStore('proactivity', () => {
         }
 
         const contextsSnapshot = chatContext.getContextsSnapshot()
-        if (Object.keys(contextsSnapshot).length > 0) {
+        const sensorPayloadRaw = config?.injectIntoPrompt ? sensorPayload.value : ''
+
+        if (Object.keys(contextsSnapshot).length > 0 || sensorPayloadRaw) {
+          let contextContent = ''
+          if (Object.keys(contextsSnapshot).length > 0) {
+            contextContent += 'These are the contextual information retrieved or on-demand updated from other modules:\n'
+              + `${Object.entries(contextsSnapshot).map(([key, value]) => `Module ${key}: ${JSON.stringify(value)}`).join('\n')}\n`
+          }
+
+          if (sensorPayloadRaw) {
+            contextContent += `${contextContent ? '\n---\n' : ''
+            }[ENVIRONMENTAL AWARENESS]\n`
+            + `The following telemetry describes your current environmental context. `
+            + `Use it to stay grounded in the user's reality and inform your response. `
+            + `You may reference specific values (like time or active applications) if relevant `
+            + `to the conversation, but avoid a dry, technical recitation of the data.\n`
+            + `---\n`
+            + `${sensorPayloadRaw}\n`
+          }
+
           messages.push({
-            role: 'user',
-            content: 'These are the contextual information retrieved or on-demand updated from other modules, you may use them as context for chat, or reference of the next action, tool call, etc.:\n'
-              + `${Object.entries(contextsSnapshot).map(([key, value]) => `Module ${key}: ${JSON.stringify(value)}`).join('\n')}\n`,
+            role: 'system',
+            content: contextContent.trim(),
           })
         }
 
