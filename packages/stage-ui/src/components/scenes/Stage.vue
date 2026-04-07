@@ -2,10 +2,9 @@
 import type { DuckDBWasmDrizzleDatabase } from '@proj-airi/drizzle-duckdb-wasm'
 import type { Live2DLipSync, Live2DLipSyncOptions } from '@proj-airi/model-driver-lipsync'
 import type { Profile } from '@proj-airi/model-driver-lipsync/shared/wlipsync'
+import type { TextSegment, TextToken } from '@proj-airi/pipelines-audio'
 import type { SpeechProviderWithExtraOptions } from '@xsai-ext/providers/utils'
 import type { UnElevenLabsOptions } from 'unspeech'
-
-import type { TextSegment, TextToken } from '@proj-airi/pipelines-audio'
 
 import type { EmotionPayload } from '../../constants/emotions'
 
@@ -226,6 +225,9 @@ const emotionsQueue = createQueue<EmotionPayload>({
         const emotionName = ctx.data.name
         const isVrma = emotionName in animations
 
+        // NOTICE: Debug logging to trace expression dispatch
+        console.log('[Stage/Emotion] Dispatching:', { emotionName, intensity: ctx.data.intensity, isVrma, renderer: stageModelRenderer.value })
+
         if (isVrma) {
           temporaryVrma.value = emotionName
         }
@@ -240,8 +242,13 @@ const emotionsQueue = createQueue<EmotionPayload>({
           // This prevents warnings and interference for motion-only tokens.
           const isExpression = emotionName in EMOTION_VRMExpressionName_value || vrmViewerRef.value.listExpressions().includes(value)
 
+          console.log('[Stage/Emotion] Expression check:', { emotionName, value, isExpression, availableExpressions: vrmViewerRef.value.listExpressions() })
+
           if (isExpression) {
             vrmViewerRef.value.setExpression(value, ctx.data.intensity, 2000)
+          }
+          else {
+            console.warn('[Stage/Emotion] Skipping — not a known expression:', { emotionName, value })
           }
         }
         else {
