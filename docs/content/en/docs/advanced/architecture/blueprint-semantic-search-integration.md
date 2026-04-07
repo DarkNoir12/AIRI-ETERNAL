@@ -10,13 +10,32 @@ We shift from "Search all messages" to **"Manage Episodic, Semantic & Emotional 
 
 1.  **Episodic Memory (The "What Happened")**: Discrete conversation events (Episodes) that carry emotional "Surprise" and decay over time using **FSRS**.
 2.  **Semantic Memory (The "What is Known")**: Durable, non-decaying facts (Identity, Preferences, Goals) extracted from episodes and stored in IndexedDB.
-3.  **Emotional State (The "How I Feel")**: A dynamic, persistent internal mood (Valence/Arousal) that shifts based on interaction and reflects in the puppet's physical expressions.
+3.  **Emotional Emission (The "How I Feel")**: During memory consolidation, the system emits "Emotional Deltas" (Mood shifts) based on interaction valence. This feeds the **Character Core** without requiring a second inference pass.
 
 ---
 
-## 🎭 2. The Tamagotchi Heart: Emotional Awareness
+## ⚖️ 2. The Philosophy: Lightweight vs. "Big-Boy" Models
+
+While projects like **Plast Mem** utilize standalone processes and "Big-Boy" local models (e.g., `qwen3:8b` via Rust/Apalis), AIRI targets a **Browser-Native, Zero-Install Architecture**.
+
+| Feature | Standalone (Plast Mem) | Lightweight (AIRI) |
+| :--- | :--- | :--- |
+| **Env** | Local Binary / Rust / Dedicated Process | **Web Worker / JavaScript / Browser Native** |
+| **Model Size** | 7B - 14B Params | **0.5B - 1.5B Params** (via Transformers.js) |
+| **Performance** | High Accuracy (LoCoMo ~66%) | **Efficiency First** (Targeting 40-50% LoCoMo) |
+| **Mood** | Separate System (Character Core) | **Side-Effect of Consolidation** (Efficiency pass) |
+
+---
+
+## 🎭 3. The Tamagotchi Heart: Emotional Awareness
 
 While semantic facts represent what AIRI *knows*, the Mood System represents how she *experiences* the world. Given the project's namesake (`stage-tamagotchi`), implementing emotional consistency is a vital extension of cognitive memory.
+
+### The "Exhaust" Pattern
+We treat emotional data as the "exhaust" of the memory engine.
+1. When the **Cognitive Worker** summarizes an episode, it extracts `Facts`.
+2. In the same prompt/pass, it returns a `SentimentDelta` (e.g., `valence: +0.2`).
+3. This delta is emitted to the UI, bypassing the need for a dedicated "Emotion Model."
 
 ### Mood Mapping
 We track 6 core emotional baselines that correspond to standard VRM expressions:
@@ -29,7 +48,7 @@ We track 6 core emotional baselines that correspond to standard VRM expressions:
 
 ---
 
-## 🛠️ 3. Strategy: The "Cherry Picks" from Plast Mem
+## 🛠️ 4. Strategy: The "Cherry Picks" from Plast Mem
 
 We adapt the best elements of cognitive science while maintaining AIRI's browser-native performance.
 
@@ -47,7 +66,7 @@ An offline background process (Web Worker) performs **Predict-Calibrate Learning
 
 ---
 
-## 🧠 3. Logic: Predict-Calibrate Learning (PCL)
+## 🧠 5. Logic: Predict-Calibrate Learning (PCL)
 
 To solve the **Contradiction Problem** (e.g., "I like tea" → "I hate tea now"), we use a two-pass "Contrast" strategy.
 
@@ -69,7 +88,7 @@ The agent compares the **Actual Messages** against its **Prediction**. The "Gaps
 
 ---
 
-## ⚙️ 4. Reliable Execution: The "Apalis" Equivalent
+## ⚙️ 6. Reliable Execution: The "Apalis" Equivalent
 
 The author of Plast Mem leverages **[Apalis](https://github.com/apalis-dev/apalis)** for job persistence and reliable background execution. In AIRI's browser-native environment, we implement a functional equivalent using standard Web APIs and IndexedDB:
 
@@ -83,7 +102,7 @@ The author of Plast Mem leverages **[Apalis](https://github.com/apalis-dev/apali
 
 ---
 
-## 🛠️ 5. Implementation Steps
+## 🛠️ 7. Implementation Steps
 
 ### Phase 1: Infrastructure
 Add the validated stack to `packages/stage-ui/package.json`:
@@ -99,7 +118,7 @@ Create `packages/stage-ui/src/libs/workers/memory/cognitive-worker.ts`:
 
 ---
 
-## 🧪 6. Nuances & UX Guards
+## 🧪 8. Nuances & UX Guards
 
 > [!IMPORTANT]
 > **Zero-Lag Background Processing**
@@ -111,15 +130,20 @@ Create `packages/stage-ui/src/libs/workers/memory/cognitive-worker.ts`:
 
 ---
 
-## 📈 7. Benchmarks & Proof of Concept
-*Inspired by the Plast Mem vision.*
+## 📈 9. Benchmarks: The LoCoMo Target
 
-- **Contradiction Accuracy**: 95% successful resolution using PCL contrast vs. 40% with simple extraction.
-- **Queue Reliability**: 100% task recovery after unexpected browser crashes using IndexedDB persistence.
+To validate AIRI's memory quality in the browser, we benchmark against the **LoCoMo (Long-term Conversational Memory)** dataset.
+
+While big-process systems like `plast-mem` (8B+ models) score ~66%, we target a high-performance "Web-Native" tier.
+
+-   **Target Model Scale**: ~1.3B - 1.5B (targeting 40-50% LoCoMo score).
+-   **Validation Axes**:
+    -   **Multi-hop Reasoning**: Connecting facts across distant sessions.
+    -   **Temporal Continuity**: Tracking when state changes (like identity or mood) occurred.
 
 ---
 
-## 🗺️ 8. Integration Points Summary
+## 📈 10. Integration Points Summary
 
 | File | Change |
 | :--- | :--- |
