@@ -2,9 +2,10 @@
 import InteractiveArea from '../components/InteractiveArea.vue'
 import WindowTitleBar from '../components/Window/TitleBar.vue'
 
-import { useChatSpeechBridge } from '../composables/use-chat-speech-bridge'
-
-useChatSpeechBridge()
+// NOTICE: Speech hooks are registered by Stage.vue (WidgetStage) in the main window.
+// We intentionally do NOT register useChatSpeechBridge() here because both windows share
+// the same chat hooks bus. If both register, every token gets forwarded to TTS twice,
+// causing double-speech. The main window is the single speech owner.
 </script>
 
 <template>
