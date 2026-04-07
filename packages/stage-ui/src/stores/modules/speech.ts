@@ -238,7 +238,7 @@ export const useSpeechStore = defineStore('speech', () => {
    * Transforms text before sending to TTS provider
    */
   function transformTextForSpeech(text: string, providerId: string): string {
-    if (!transformerEnabled.value || providerId === 'chatterbox') {
+    if (!transformerEnabled.value || providerId === 'chatterbox' || providerId === 'omnivoice') {
       return text
     }
 

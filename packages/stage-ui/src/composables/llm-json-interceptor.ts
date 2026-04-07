@@ -18,10 +18,6 @@ export function createLlmJsonInterceptor(options: LlmJsonInterceptorOptions) {
   const GENERIC_BLOCK_START = '```'
   const BLOCK_END = '```'
 
-  // Regex to detect bare JSON array tool calls at the start of text
-  // Matches: [{"name":"...","arguments":{...}}]
-  const BARE_JSON_TOOL_CALL = /^\s*\[\s*\{[\s\S]*?"name"\s*:\s*"[^"]+"[\s\S]*?"arguments"\s*:\s*\{[\s\S]*?\}\s*\}\s*\]\s*/
-
   // Try to extract a complete bare JSON tool call from the start of text
   // Returns the raw JSON string if found, null otherwise
   function tryExtractBareJsonToolCall(text: string): string | null {

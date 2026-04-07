@@ -5,6 +5,8 @@ import type { Profile } from '@proj-airi/model-driver-lipsync/shared/wlipsync'
 import type { SpeechProviderWithExtraOptions } from '@xsai-ext/providers/utils'
 import type { UnElevenLabsOptions } from 'unspeech'
 
+import type { TextSegment, TextToken } from '@proj-airi/pipelines-audio'
+
 import type { EmotionPayload } from '../../constants/emotions'
 
 import { drizzle } from '@proj-airi/drizzle-duckdb-wasm'
@@ -455,7 +457,7 @@ function createSentenceSegmenter(tokens: ReadableStream<TextToken>, meta: { stre
           continue
 
         if (value.type === 'special') {
-          specialToken = value.value
+          specialToken = value.value ?? null
           continue
         }
 
@@ -580,60 +582,17 @@ function createSentenceSegmenter(tokens: ReadableStream<TextToken>, meta: { stre
     sequence++
     write({
       text: clean,
-      special: specialToken ?? undefined,
+      special: specialToken ?? null,
       streamId: meta.streamId,
       intentId: meta.intentId,
       segmentId: `seg-${sequence}`,
-      reason: 'sentence',
+      reason: 'flush',
+      createdAt: Date.now(),
     })
     specialToken = null
   }
 
   return stream
-}
-
-// Sanitize text before sending to TTS - final defense layer
-// Strips ALL non-speech artifacts: markdown, brackets, code, XML, control chars, etc.
-function sanitizeForTts(text: string): string {
-  return text
-    // Remove JSON tool calls like [{"name":"...","arguments":{...}}]
-    .replace(/\[\s*\{[\s\S]*?"name"\s*:\s*"[^"]+"[\s\S]*?"arguments"\s*:\s*\{[\s\S]*?\}\s*\}\s*\]/g, '')
-    // Remove all bracket-enclosed content: [sigh], [ACT:...], [laugh], etc.
-    .replace(/\[[\s\S]*?\]/g, '')
-    // Remove fenced code blocks (complete)
-    .replace(/```[\s\S]*?```/g, '')
-    // Remove partial/unclosed code fence (from ``` to end)
-    .replace(/```[\s\S]*$/g, '')
-    // Remove code fence metadata: linenums="...", title="...", hl_lines="..."
-    .replace(/\b(linenums|hl_lines|title)\s*=\s*"[^"]*"/gi, '')
-    // Remove escaped HTML tags: \\<br\\>, \\<\\/p\\>, etc.
-    .replace(/\\*<[^>]*>\\*/g, '')
-    // Remove XML/HTML tags (non-escaped)
-    .replace(/<[^>]*>/g, '')
-    // Remove markdown: **bold**, *italic*, _italic_, ~~strikethrough~~
-    .replace(/\*\*?([^*]+)\*\*?/g, '$1')
-    .replace(/_([^_]+)_/g, '$1')
-    .replace(/~~([^~]+)~~/g, '$1')
-    // Remove inline code
-    .replace(/`[^`]*`/g, '')
-    // Remove numbered list markers
-    .replace(/^\s*\d+\.\s*/gm, '')
-    // Remove bullet list markers
-    .replace(/^\s*[-*]\s*/gm, '')
-    // Remove blockquote markers
-    .replace(/^\s*>\s*/gm, '')
-    // Convert all whitespace (newlines, tabs, carriage returns) to spaces
-    .replace(/[\n\r\t]+/g, ' ')
-    // Collapse multiple spaces
-    .replace(/ {2,}/g, ' ')
-    // Remove control characters
-    .replace(/[\x00-\x08\v\f\x0E-\x1F\x7F]/g, '')
-    // Remove Unicode replacement characters
-    .replace(/\uFFFD/g, '')
-    // Remove mojibake
-    .replace(/´┐¢/g, '')
-    // Trim whitespace
-    .trim()
 }
 
 const speechPipeline = createSpeechPipeline<AudioBuffer>({
@@ -776,7 +735,7 @@ const speechPipeline = createSpeechPipeline<AudioBuffer>({
         speechOptions.responseFormat = 'wav'
       }
 
-      const res = await generateSpeech(speechOptions)
+      const res = await generateSpeech(speechOptions as Parameters<typeof generateSpeech>[0])
 
       if (signal.aborted || !res || res.byteLength === 0)
         return null

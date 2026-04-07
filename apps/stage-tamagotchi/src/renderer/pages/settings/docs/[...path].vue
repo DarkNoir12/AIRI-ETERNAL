@@ -20,7 +20,8 @@ const loading = ref(true)
 const diagnostics = ref('')
 
 const segments = computed(() => {
-  const path = route.params.path as string[] | string
+  const params = route.params as Record<string, unknown>
+  const path = params.path as string[] | string | undefined
   if (Array.isArray(path)) {
     return path.filter(Boolean)
   }
