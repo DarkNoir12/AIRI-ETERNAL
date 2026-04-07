@@ -23,7 +23,9 @@ export interface StreamOptions {
   headers?: Record<string, string>
   onStreamEvent?: (event: StreamEvent) => void | Promise<void>
   toolsCompatibility?: Record<string, boolean>
+  systemMessageCompatibility?: Record<string, boolean>
   supportsTools?: boolean
+  supportsSystemMessages?: boolean // when false, system messages are merged into first user message
   waitForTools?: boolean // when true,won't resolve on finishReason=='tool_calls';
   tools?: Tool[] | (() => Promise<Tool[] | undefined>)
   abortSignal?: AbortSignal
@@ -54,12 +56,12 @@ function sanitizeRequestOverrides(overrides?: Record<string, unknown>) {
 }
 
 // TODO: proper format for other error messages.
-export function sanitizeMessages(messages: unknown[], options?: { vision?: boolean }): Message[] {
+export function sanitizeMessages(messages: unknown[], options?: { vision?: boolean, supportsSystemMessages?: boolean }): Message[] {
   // Use JSON snapshotting to completely remove Vue reactivity and ensure cloninability.
   // This is necessary because @xsai libraries use structuredClone internally.
   const rawMessages = JSON.parse(JSON.stringify(toRaw(messages))) as any[]
 
-  return rawMessages.map((m: any) => {
+  const processed = rawMessages.map((m: any) => {
     if (m && m.role === 'error') {
       return {
         role: 'user',
@@ -93,6 +95,38 @@ export function sanitizeMessages(messages: unknown[], options?: { vision?: boole
     }
     return m as Message
   })
+
+  // NOTICE: Some models (e.g., gemma-3-12b-it via Google AI Studio) do not support
+  // system/developer messages. When supportsSystemMessages is false, merge all system
+  // messages into the first user message as a prefixed instruction block.
+  if (options?.supportsSystemMessages === false) {
+    const systemMessages = processed.filter((m: any) => m?.role === 'system')
+    const nonSystemMessages = processed.filter((m: any) => m?.role !== 'system')
+
+    if (systemMessages.length > 0 && nonSystemMessages.length > 0) {
+      const systemContent = systemMessages.map((m: any) => String(m.content ?? '')).join('\n---\n')
+      const firstUserIdx = nonSystemMessages.findIndex((m: any) => m?.role === 'user')
+      if (firstUserIdx >= 0) {
+        const firstUser = nonSystemMessages[firstUserIdx]
+        firstUser.content = `[System Instructions]\n${systemContent}\n---\n[End System Instructions]\n\n${firstUser.content ?? ''}`
+        // Return system messages removed, with first user message augmented
+        return processed.filter((m: any) => m?.role !== 'system').map((m: any) => {
+          if (m === firstUser)
+            return { ...m } as Message
+          return m as Message
+        })
+      }
+    }
+  }
+
+  return processed
+}
+
+function systemMessageCompatibilityOk(model: string, chatProvider: ChatProvider, _: Message[], options?: StreamOptions): boolean {
+  if (options?.supportsSystemMessages !== undefined)
+    return options.supportsSystemMessages
+  const key = `${chatProvider.chat(model).baseURL}-${model}`
+  return options?.systemMessageCompatibility?.[key] !== false
 }
 
 function streamOptionsToolsCompatibilityOk(model: string, chatProvider: ChatProvider, _: Message[], options?: StreamOptions): boolean {
@@ -116,9 +150,23 @@ const TOOLS_RELATED_ERROR_PATTERNS: RegExp[] = [
   /tools?\s+(is|are)\s+not\s+supported/i, // Cloudflare Workers AI
 ]
 
+// NOTICE: Patterns that indicate the model/provider does not support system/developer messages.
+// When detected, system messages are merged into the first user message on retry.
+const SYSTEM_MESSAGE_ERROR_PATTERNS: RegExp[] = [
+  /developer instruction is not enabled/i, // Google AI Studio (gemma-3-12b-it)
+  /system.*prompt.*not.*supported/i, // Generic
+  /system.*role.*not.*supported/i, // Some older providers
+  /invalid.*role.*system/i, // Strict validators
+]
+
 export function isToolRelatedError(err: unknown): boolean {
   const msg = String(err)
   return TOOLS_RELATED_ERROR_PATTERNS.some(p => p.test(msg))
+}
+
+export function isSystemMessageRelatedError(err: unknown): boolean {
+  const msg = String(err)
+  return SYSTEM_MESSAGE_ERROR_PATTERNS.some(p => p.test(msg))
 }
 
 async function streamFrom(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
@@ -126,7 +174,8 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
   const chatConfig = chatProvider.chat(model)
   const baseUrl = chatConfig.baseURL || ''
 
-  const sanitized = sanitizeMessages(messages as unknown[], { vision: options?.vision })
+  const supportsSystemMessages = systemMessageCompatibilityOk(model, chatProvider, messages, options)
+  const sanitized = sanitizeMessages(messages as unknown[], { vision: options?.vision, supportsSystemMessages })
   const requestOverrides = sanitizeRequestOverrides(options?.requestOverrides)
   const resolveTools = async () => {
     const tools = typeof options?.tools === 'function'
@@ -224,7 +273,8 @@ async function generateFrom(model: string, chatProvider: ChatProvider, messages:
   const headers = options?.headers
   const chatConfig = chatProvider.chat(model)
   const baseUrl = chatConfig.baseURL || ''
-  const sanitized = sanitizeMessages(messages as unknown[], { vision: options?.vision })
+  const supportsSystemMessages = systemMessageCompatibilityOk(model, chatProvider, messages, options)
+  const sanitized = sanitizeMessages(messages as unknown[], { vision: options?.vision, supportsSystemMessages })
   const requestOverrides = sanitizeRequestOverrides(options?.requestOverrides)
 
   const resolveTools = async () => {
@@ -331,23 +381,30 @@ export async function attemptForToolsCompatibilityDiscovery(model: string, chatP
 
 export const useLLM = defineStore('llm', () => {
   const toolsCompatibility = useLocalStorage<Record<string, boolean>>('settings/llm/tools-compatibility-v3', {})
+  const systemMessageCompatibility = useLocalStorage<Record<string, boolean>>('settings/llm/system-message-compatibility-v1', {})
 
   async function stream(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
     const key = `${chatProvider.chat(model).baseURL}-${model}`
     try {
-      await streamFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value })
+      await streamFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value, systemMessageCompatibility: systemMessageCompatibility.value })
     }
     catch (err) {
       if (isToolRelatedError(err)) {
         console.warn(`[llm] Auto-disabling tools for "${key}" due to tool-related error`)
         toolsCompatibility.value[key] = false
       }
+      if (isSystemMessageRelatedError(err)) {
+        console.warn(`[llm] Auto-disabling system messages for "${key}" due to system message error — retrying without system role`)
+        systemMessageCompatibility.value[key] = false
+        // Retry with system messages merged into user messages
+        return streamFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value, systemMessageCompatibility: systemMessageCompatibility.value, supportsSystemMessages: false })
+      }
       throw err
     }
   }
 
   function generate(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
-    return generateFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value })
+    return generateFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value, systemMessageCompatibility: systemMessageCompatibility.value })
   }
 
   async function discoverToolsCompatibility(model: string, chatProvider: ChatProvider, _: Message[], options?: Omit<StreamOptions, 'supportsTools'>) {
