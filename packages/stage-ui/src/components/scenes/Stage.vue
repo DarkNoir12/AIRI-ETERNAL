@@ -939,7 +939,7 @@ chatHookCleanups.push(onTokenSpecial(async (special) => {
           const value = (EMOTION_VRMExpressionName_value as any)[emotion.name] ?? emotion.name
           const isExpression = emotion.name in EMOTION_VRMExpressionName_value || vrmViewerRef.value.listExpressions().includes(value)
           if (isExpression) {
-            vrmViewerRef.value.setExpression(value, emotion.intensity, 2000)
+            vrmViewerRef.value.setExpression(value, emotion.intensity, 3500)
           }
         }
       }

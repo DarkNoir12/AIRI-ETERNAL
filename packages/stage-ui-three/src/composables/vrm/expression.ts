@@ -134,8 +134,9 @@ export function useVRMEmote(vrm: VRMCore) {
       if (targetName) {
         emotionStates.set(emotionName, {
           expression: [{ name: targetName, value: intensity }],
-          blendDuration: 0.05, // NOTICE: Near-instant blend for ACT-driven expressions
-          // so facial expressions sync with TTS instead of lagging behind.
+          blendDuration: 0.15, // NOTICE: 150ms blend — smooth enough to avoid snapping,
+          // fast enough to sync with voice. Too fast (0.05s) feels robotic;
+          // too slow (0.3s+) causes expressions to lag behind speech.
         })
       }
       else {
