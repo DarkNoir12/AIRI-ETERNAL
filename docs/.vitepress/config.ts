@@ -155,6 +155,16 @@ export default defineConfig({
                   { text: 'Configuration Guide', link: withBase('/en/docs/manual/config/') },
                 ],
               },
+              {
+                text: 'Architecture & Design',
+                items: [
+                  { text: 'Interaction Pipelines', link: withBase('/en/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
+                  { text: 'ComfyUI Native Engine', link: withBase('/en/docs/contributing/architecture/arch-comfyui-native-api-engine') },
+                  { text: 'Gateway Security', link: withBase('/en/docs/contributing/architecture/arch-gateway-security-hardening') },
+                  { text: 'Memory System', link: withBase('/en/docs/contributing/architecture/arch-memory-system-overview') },
+                  { text: 'Live2D Optimization', link: withBase('/en/docs/contributing/architecture/arch-live2d-wasm-optimization') },
+                ],
+              },
             ],
           },
           {
@@ -168,16 +178,6 @@ export default defineConfig({
                   { text: 'Desktop App', link: withBase('/en/docs/contributing/tamagotchi') },
                   { text: 'Web UI', link: withBase('/en/docs/contributing/webui') },
                   { text: 'Documentation Site', link: withBase('/en/docs/contributing/docs') },
-                ],
-              },
-              {
-                text: 'Architecture & Design',
-                items: [
-                  { text: 'Interaction Pipelines', link: withBase('/en/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
-                  { text: 'ComfyUI Native Engine', link: withBase('/en/docs/contributing/architecture/arch-comfyui-native-api-engine') },
-                  { text: 'Gateway Security', link: withBase('/en/docs/contributing/architecture/arch-gateway-security-hardening') },
-                  { text: 'Memory System', link: withBase('/en/docs/contributing/architecture/arch-memory-system-overview') },
-                  { text: 'Live2D Optimization', link: withBase('/en/docs/contributing/architecture/arch-live2d-wasm-optimization') },
                 ],
               },
               {
@@ -305,6 +305,16 @@ export default defineConfig({
                   { text: '配置指南', link: withBase('/zh-Hans/docs/manual/config/') },
                 ],
               },
+              {
+                text: '架构与设计',
+                items: [
+                  { text: '交互流水线', link: withBase('/zh-Hans/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
+                  { text: 'ComfyUI 原生引擎', link: withBase('/zh-Hans/docs/contributing/architecture/arch-comfyui-native-api-engine') },
+                  { text: '网关安全性', link: withBase('/zh-Hans/docs/contributing/architecture/arch-gateway-security-hardening') },
+                  { text: '内存系统', link: withBase('/zh-Hans/docs/contributing/architecture/arch-memory-system-overview') },
+                  { text: 'Live2D 优化', link: withBase('/zh-Hans/docs/contributing/architecture/arch-live2d-wasm-optimization') },
+                ],
+              },
             ],
           },
           {
@@ -318,16 +328,6 @@ export default defineConfig({
                   { text: '桌面端', link: withBase('/zh-Hans/docs/contributing/tamagotchi') },
                   { text: '网页端', link: withBase('/zh-Hans/docs/contributing/webui') },
                   { text: '文档站', link: withBase('/zh-Hans/docs/contributing/docs') },
-                ],
-              },
-              {
-                text: '架构与设计',
-                items: [
-                  { text: '交互流水线', link: withBase('/zh-Hans/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
-                  { text: 'ComfyUI 原生引擎', link: withBase('/zh-Hans/docs/contributing/architecture/arch-comfyui-native-api-engine') },
-                  { text: '网关安全性', link: withBase('/zh-Hans/docs/contributing/architecture/arch-gateway-security-hardening') },
-                  { text: '内存系统', link: withBase('/zh-Hans/docs/contributing/architecture/arch-memory-system-overview') },
-                  { text: 'Live2D 优化', link: withBase('/zh-Hans/docs/contributing/architecture/arch-live2d-wasm-optimization') },
                 ],
               },
               {
@@ -455,6 +455,16 @@ export default defineConfig({
                   { text: '設定ガイド', link: withBase('/ja/docs/manual/config/') },
                 ],
               },
+              {
+                text: 'アーキテクチャとデザイン',
+                items: [
+                  { text: 'インタラクションパイプライン', link: withBase('/ja/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
+                  { text: 'ComfyUI ネイティブエンジン', link: withBase('/ja/docs/contributing/architecture/arch-comfyui-native-api-engine') },
+                  { text: 'ゲートウェイのセキュリティ', link: withBase('/ja/docs/contributing/architecture/arch-gateway-security-hardening') },
+                  { text: 'メモリシステム', link: withBase('/ja/docs/contributing/architecture/arch-memory-system-overview') },
+                  { text: 'Live2D の最適化', link: withBase('/ja/docs/contributing/architecture/arch-live2d-wasm-optimization') },
+                ],
+              },
             ],
           },
           {
@@ -468,16 +478,6 @@ export default defineConfig({
                   { text: 'デスクトップアプリ', link: withBase('/ja/docs/contributing/tamagotchi') },
                   { text: 'Web UI', link: withBase('/ja/docs/contributing/webui') },
                   { text: 'ドキュメントサイト', link: withBase('/ja/docs/contributing/docs') },
-                ],
-              },
-              {
-                text: 'アーキテクチャとデザイン',
-                items: [
-                  { text: 'インタラクションパイプライン', link: withBase('/ja/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
-                  { text: 'ComfyUI ネイティブエンジン', link: withBase('/ja/docs/contributing/architecture/arch-comfyui-native-api-engine') },
-                  { text: 'ゲートウェイのセキュリティ', link: withBase('/ja/docs/contributing/architecture/arch-gateway-security-hardening') },
-                  { text: 'メモリシステム', link: withBase('/ja/docs/contributing/architecture/arch-memory-system-overview') },
-                  { text: 'Live2D の最適化', link: withBase('/ja/docs/contributing/architecture/arch-live2d-wasm-optimization') },
                 ],
               },
               {

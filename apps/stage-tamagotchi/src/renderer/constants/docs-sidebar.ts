@@ -8,7 +8,6 @@ export interface SidebarItem {
 export const DOCS_SECTIONS = [
   { id: 'overview', titleKey: 'settings.pages.docs.sections.overview', icon: 'i-lucide:rocket', defaultPath: 'overview/' },
   { id: 'manual', titleKey: 'settings.pages.docs.sections.manual', icon: 'i-lucide:book-open', defaultPath: 'manual/tamagotchi/' },
-  { id: 'advanced', titleKey: 'settings.pages.docs.sections.advanced', icon: 'i-lucide:cpu', defaultPath: 'advanced/' },
   { id: 'chronicles', titleKey: 'settings.pages.docs.sections.chronicles', icon: 'i-lucide:calendar-days', defaultPath: 'chronicles/integration-checklist' },
 ]
 
@@ -27,7 +26,7 @@ export const DOCS_SIDEBAR: Record<string, SidebarItem[]> = {
   ],
   manual: [
     {
-      text: 'Manual',
+      text: 'User Guides',
       items: [
         {
           text: 'Quick Start',
@@ -47,12 +46,10 @@ export const DOCS_SIDEBAR: Record<string, SidebarItem[]> = {
         },
       ],
     },
-  ],
-  advanced: [
     {
       text: 'Deep Architecture',
       items: [
-        { text: 'Advanced Home', link: 'advanced/' },
+        { text: 'Architecture Overview', link: 'advanced/' },
         {
           text: 'Pipelines & Workflows',
           items: [
