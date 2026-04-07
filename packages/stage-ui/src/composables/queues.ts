@@ -27,7 +27,7 @@ export function useSpecialTokenQueue(emotionsQueue: UseQueueReturn<EmotionPayloa
   function extractEmotions(payload: any): EmotionPayload[] {
     const results: EmotionPayload[] = []
 
-    // 1. Emotion object or string
+    // 1. Standard format: { emotion: { name, intensity }, motion: "..." }
     if (payload?.emotion && typeof payload.emotion === 'object' && !Array.isArray(payload.emotion)) {
       if (typeof payload.emotion.name === 'string') {
         const normalized = normalizeEmotionName(payload.emotion.name)
@@ -44,7 +44,33 @@ export function useSpecialTokenQueue(emotionsQueue: UseQueueReturn<EmotionPayloa
       }
     }
 
-    // 2. Motion string
+    // 2. LLM dynamic-key format: { "happy": { name: "happy", intensity: 1 }, motion: "agent007" }
+    // The emotion name IS the JSON key (e.g., "happy", "sad", "angry")
+    if (results.length === 0) {
+      for (const key of Object.keys(payload)) {
+        if (key === 'motion' || key === 'emotion')
+          continue
+        const val = payload[key]
+        if (typeof val === 'object' && val?.name) {
+          const normalized = normalizeEmotionName(val.name)
+          if (normalized) {
+            const intensity = normalizeIntensity(val.intensity)
+            results.push({ name: normalized, intensity })
+          }
+          break
+        }
+        // Simple string value: { "happy": 1 } means intensity
+        if (typeof val === 'number') {
+          const normalized = normalizeEmotionName(key)
+          if (normalized) {
+            results.push({ name: normalized, intensity: normalizeIntensity(val) })
+          }
+          break
+        }
+      }
+    }
+
+    // 3. Motion string (VRMA animation cue — only add if not already an emotion)
     if (typeof payload?.motion === 'string') {
       const normalized = normalizeEmotionName(payload.motion)
       if (normalized && !results.some(r => r.name === normalized)) {
@@ -63,35 +89,19 @@ export function useSpecialTokenQueue(emotionsQueue: UseQueueReturn<EmotionPayloa
     const payloadText = match[1].trim()
     let emotions: EmotionPayload[] = []
 
-    // Attempt 1: Strict JSON parse
+    // Attempt 1: Strict JSON parse — expects standard {"emotion":{...},"motion":"..."}
     try {
       const payload = JSON.parse(payloadText)
       emotions = extractEmotions(payload)
     }
     catch {
-      // Attempt 2: Try wrapping in braces if missing
-      if (!payloadText.startsWith('{')) {
-        try {
-          const wrapped = JSON.parse(`{${payloadText}}`)
-          emotions = extractEmotions(wrapped)
-        }
-        catch { /* continue to fallback */ }
+      // Attempt 2: Wrap in braces — handles "happy":{...},"motion":"agent007" → {"happy":{...},"motion":"agent007"}
+      // extractEmotions now handles dynamic emotion keys (e.g., "happy" as the JSON key)
+      try {
+        const wrapped = JSON.parse(`{${payloadText}}`)
+        emotions = extractEmotions(wrapped)
       }
-    }
-
-    // Attempt 3: Regex fallback for raw key-value pairs
-    if (emotions.length === 0) {
-      const emotionMatch = /"?(?:emotion|motion)"?\s*:\s*(?:\{?[\s\S]*?"name"\s*:\s*)?"?([^"}\s,]+)"??/gi
-      let m
-      while ((m = emotionMatch.exec(payloadText)) !== null) {
-        const name = m[1]
-        const normalized = normalizeEmotionName(name)
-        if (normalized && !emotions.some(e => e.name === normalized)) {
-          const intensityMatch = /"?intensity"?\s*:\s*([\d.]+)/i.exec(payloadText)
-          const intensity = intensityMatch ? normalizeIntensity(Number.parseFloat(intensityMatch[1])) : 1
-          emotions.push({ name: normalized, intensity })
-        }
-      }
+      catch { /* ignore */ }
     }
 
     return { ok: emotions.length > 0, emotions }
