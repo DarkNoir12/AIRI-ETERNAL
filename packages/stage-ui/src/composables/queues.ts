@@ -81,29 +81,47 @@ function extractEmotionsFromPayload(payload: any): EmotionPayload[] {
  * Handles both standard {"emotion":{...},"motion":"..."} and
  * dynamic-key {"happy":{...},"motion":"..."} formats.
  */
-export function parseActEmotion(content: string): { ok: boolean, emotions: EmotionPayload[] } {
+export function parseActEmotion(content: string): { ok: boolean, emotions: EmotionPayload[], motions: EmotionPayload[] } {
   const match = /<\|ACT\s*(?::\s*)?([\s\S]*?)(?:\|>|>)/i.exec(content)
   if (!match)
-    return { ok: false, emotions: [] }
+    return { ok: false, emotions: [], motions: [] }
 
   const payloadText = match[1].trim()
   let emotions: EmotionPayload[] = []
+  let motions: EmotionPayload[] = []
 
   // Attempt 1: Strict JSON parse
   try {
     const payload = JSON.parse(payloadText)
-    emotions = extractEmotionsFromPayload(payload)
+    const results = extractEmotionsFromPayload(payload)
+    // Separate facial expressions from VRMA animations
+    for (const r of results) {
+      if (payload.motion === r.name) {
+        motions.push(r)
+      }
+      else {
+        emotions.push(r)
+      }
+    }
   }
   catch {
     // Attempt 2: Wrap in braces — handles "happy":{...},"motion":"agent007"
     try {
       const wrapped = JSON.parse(`{${payloadText}}`)
-      emotions = extractEmotionsFromPayload(wrapped)
+      const results = extractEmotionsFromPayload(wrapped)
+      for (const r of results) {
+        if (wrapped.motion === r.name) {
+          motions.push(r)
+        }
+        else {
+          emotions.push(r)
+        }
+      }
     }
     catch { /* ignore */ }
   }
 
-  return { ok: emotions.length > 0, emotions }
+  return { ok: emotions.length > 0, emotions, motions }
 }
 
 export function useSpecialTokenQueue(emotionsQueue: UseQueueReturn<EmotionPayload>) {

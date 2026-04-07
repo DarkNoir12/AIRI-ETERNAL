@@ -922,13 +922,27 @@ chatHookCleanups.push(onTokenLiteral(async (literal) => {
 }))
 
 chatHookCleanups.push(onTokenSpecial(async (special) => {
-  // NOTICE: Dispatch emotion IMMEDIATELY so facial expressions sync with TTS.
-  // Previously the ACT token went through the entire speech pipeline queue first,
-  // causing expressions to lag behind the voice by 300-500ms.
+  // NOTICE: Dispatch emotion DIRECTLY to the VRM, bypassing all queues.
+  // The emotionsQueue has a 2000ms reset timer that causes expressions to
+  // overlap and cancel each other when multiple ACT tokens arrive in quick
+  // succession. Direct dispatch ensures each expression is applied immediately.
   const actParsed = parseActEmotion(special)
   if (actParsed.ok) {
     for (const emotion of actParsed.emotions) {
-      emotionsQueue.enqueue(emotion)
+      if (stageModelRenderer.value === 'vrm' && vrmViewerRef.value) {
+        // Check if it's a VRMA animation (motion) or a facial expression
+        const isVrma = emotion.name in animations
+        if (isVrma) {
+          temporaryVrma.value = emotion.name
+        }
+        else {
+          const value = (EMOTION_VRMExpressionName_value as any)[emotion.name] ?? emotion.name
+          const isExpression = emotion.name in EMOTION_VRMExpressionName_value || vrmViewerRef.value.listExpressions().includes(value)
+          if (isExpression) {
+            vrmViewerRef.value.setExpression(value, emotion.intensity, 2000)
+          }
+        }
+      }
     }
   }
 
