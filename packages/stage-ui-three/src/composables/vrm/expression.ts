@@ -134,7 +134,8 @@ export function useVRMEmote(vrm: VRMCore) {
       if (targetName) {
         emotionStates.set(emotionName, {
           expression: [{ name: targetName, value: intensity }],
-          blendDuration: 0.3,
+          blendDuration: 0.05, // NOTICE: Near-instant blend for ACT-driven expressions
+          // so facial expressions sync with TTS instead of lagging behind.
         })
       }
       else {

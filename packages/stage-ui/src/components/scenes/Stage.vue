@@ -26,7 +26,7 @@ import { generateSpeech } from '@xsai/generate-speech'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { useSpecialTokenQueue } from '../../composables/queues'
+import { parseActEmotion, useSpecialTokenQueue } from '../../composables/queues'
 import { categorizeResponse } from '../../composables/response-categoriser'
 import { llmInferenceEndToken } from '../../constants'
 import { EMOTION_EmotionMotionName_value, EMOTION_VRMExpressionName_value, EmotionThinkMotionName } from '../../constants/emotions'
@@ -922,11 +922,21 @@ chatHookCleanups.push(onTokenLiteral(async (literal) => {
 }))
 
 chatHookCleanups.push(onTokenSpecial(async (special) => {
+  // NOTICE: Dispatch emotion IMMEDIATELY so facial expressions sync with TTS.
+  // Previously the ACT token went through the entire speech pipeline queue first,
+  // causing expressions to lag behind the voice by 300-500ms.
+  const actParsed = parseActEmotion(special)
+  if (actParsed.ok) {
+    for (const emotion of actParsed.emotions) {
+      emotionsQueue.enqueue(emotion)
+    }
+  }
+
+  // Also forward to speech pipeline for any provider-side speech tags
   const intent = ensureSpeechIntent()
   if (!intent)
     return
   console.log('[TTS Debug] onTokenSpecial received:', JSON.stringify(special))
-  // console.debug('Stage received special token:', special)
   console.log('[Stage] onTokenSpecial -> forwarding', { intentId: intent.intentId, special })
   intent.writeSpecial(special)
 }))
