@@ -6,10 +6,10 @@ import { z } from 'zod'
 
 const textJournalParams = z.object({
   action: z.enum(['create', 'search']).describe('Choose one: create or search.'),
-  title: z.string().optional().describe('Short human-readable label for the journal entry when creating.'),
-  content: z.string().optional().describe('The journal entry text to append for the active character when creating.'),
-  query: z.string().optional().describe('Keyword query to search within the active character journal entries.'),
-  limit: z.number().int().min(1).max(10).optional().describe('Maximum number of search results to return.'),
+  title: z.string().describe('Short human-readable label for the journal entry when creating. Use empty string if not needed.'),
+  content: z.string().describe('The journal entry text to append for the active character when creating. Use empty string if not needed.'),
+  query: z.string().describe('Keyword query to search within the active character journal entries. Use empty string if not needed.'),
+  limit: z.number().int().min(1).max(10).describe('Maximum number of search results to return. Use 3 if not specified.'),
 }).strict()
 
 async function executeCreateTextJournalEntry(params: { title?: string, content?: string }) {

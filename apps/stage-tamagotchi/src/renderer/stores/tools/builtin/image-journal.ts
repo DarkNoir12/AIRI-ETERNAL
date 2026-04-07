@@ -39,10 +39,10 @@ const addWidget = defineInvoke(context, widgetsAdd)
 
 const imageJournalParams = z.object({
   action: z.enum(['create', 'apply']).describe('Choose "create" to generate a new image, or "apply" to use an existing one.'),
-  prompt: z.string().optional().describe('Description for the image (required for "create").'),
-  title: z.string().optional().describe('Label for the entry (optional).'),
-  query: z.string().optional().describe('Search term for existing images (required for "apply").'),
-  mode: z.enum(['inline', 'widget', 'bg']).optional().default('inline').describe('Display mode: "inline" (in chat), "widget" (overlay), or "bg" (environment).'),
+  prompt: z.string().describe('Description for the image to generate. Use empty string if not needed.'),
+  title: z.string().describe('Label for the entry. Use empty string if not needed.'),
+  query: z.string().describe('Search term for existing images. Use empty string if not needed.'),
+  mode: z.enum(['inline', 'widget', 'bg']).describe('Display mode: "inline" (in chat), "widget" (overlay), or "bg" (environment). Default to "inline".'),
 })
 
 async function executeCreateImageJournalEntry(params: { prompt?: string, title?: string, mode?: 'inline' | 'widget' | 'bg' }) {
