@@ -843,7 +843,15 @@ export const useAiriCardStore = defineStore('airi-card', () => {
         displayModelId: stageModelStore.stageModelSelected,
       }
     }),
-    systemPrompt: computed(() => buildSystemPrompt(activeCard.value)),
+    systemPrompt: computed(() => {
+      // NOTICE: Read availableExpressions to make this computed reactive to VRM model changes.
+      // When a new VRM loads, availableExpressions updates and this re-computes with the
+      // correct expression list injected into the LLM prompt.
+      const modelStore = useModelStore()
+      const _exprs = modelStore.availableExpressions
+      void _exprs
+      return buildSystemPrompt(activeCard.value)
+    }),
   }
 })
 
@@ -859,8 +867,27 @@ export function buildSystemPrompt(card: AiriCard | undefined) {
 
   const acting = card.extensions?.airi?.acting
   if (acting) {
+    // NOTICE: Dynamically inject the actual VRM's available expressions into the ACT prompt
+    // so the LLM knows exactly which expression names the loaded model supports.
+    // This replaces the static "Available Expressions" list with real-time discovery.
+    let modelExpressionPrompt = acting.modelExpressionPrompt
+    try {
+      const modelStore = useModelStore()
+      if (modelStore.availableExpressions?.length > 0) {
+        const exprList = modelStore.availableExpressions.join(', ')
+        // Replace the "Available Expressions" section with the real list
+        modelExpressionPrompt = modelExpressionPrompt.replace(
+          /Use these EXACT names from your capability set:\n[\s\S]*?(?=\n###|\n##|$)/,
+          `Use these EXACT names (discovered from your loaded VRM model):\n- ${exprList}`,
+        )
+      }
+    }
+    catch {
+      // useModelStore may not be available in all contexts; fall back to static prompt
+    }
+
     components.push(
-      acting.modelExpressionPrompt,
+      modelExpressionPrompt,
       acting.speechExpressionPrompt,
       acting.speechMannerismPrompt,
     )
