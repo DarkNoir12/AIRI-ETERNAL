@@ -1,7 +1,7 @@
 # AIRI-ETERNAL — Fork Context
 
 > **This is the instructional context for `DarkNoir12/AIRI-ETERNAL`, a fork of `dasilva333/airi` (itself a fork of `moeru-ai/airi`).**
-> Last updated: 2026-04-07 22:47
+> Last updated: 2026-04-08 00:48
 
 ---
 
@@ -100,6 +100,10 @@ From `dasilva333/airi` (33 commits, merged 2026-04-07):
 4. **Rate limit UX** — added `retryWithBackoff()` with exponential backoff (1.5s → 3s → 6s) and user-friendly error messages instead of raw JSON dumps.
 5. **System/developer message 400** — added `systemMessageCompatibility` auto-detection. Models like `gemma-3-12b-it` that don't support system role get system messages merged into first user message automatically.
 6. **Stray files cleaned up** — `upstream_providers.ts` (corrupted), `sync-report-2026-04-07_10-32.md`, `tmp_server_runtime.ts`, timestamped config files all removed.
+7. **VRM expression timing** — ACT tokens now dispatch emotions directly to VRM, bypassing the speech pipeline queue (was causing 2-4 second delay). Blend time set to 0.15s, reset timer at 3500ms for smooth transitions.
+8. **Expression/motion separation** — `parseActEmotion` returns `{ emotions, motions }` separately. Facial expressions go to VRM expression system, VRMA animations go to animation system.
+9. **Dynamic expression injection** — VRM's actual expressions are discovered at load time and injected into the LLM ACT prompt automatically, so the LLM always knows the correct expression names.
+10. **Character card fixed** — `eternal-ai.json` ACT prompt updated with correct expression list, separated expressions from VRMA animations, and proper ACT token format.
 
 ### ⚠️ Pre-existing upstream issues (not our bug)
 1. **`stage-web` typecheck error** — `apps/stage-web/src/pages/devtools/model-driver-mediapipe.vue:251` — `@pixiv/three-vrm` version mismatch (`3.5.0` vs `3.5.1`). Doesn't affect tamagotchi.
