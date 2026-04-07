@@ -20,6 +20,7 @@ import GeminiControls from './gemini-controls.vue'
 import IndicatorMicVolume from './indicator-mic-volume.vue'
 
 import {
+  electronCaptionToggleVisibility,
   electronOpenChat,
   electronOpenSettings,
   electronStartDraggingWindow,
@@ -67,6 +68,7 @@ const openChat = useElectronEventaInvoke(electronOpenChat)
 const isLinux = ref(false)
 const hideWindow = useElectronEventaInvoke(electronWindowHide)
 const setAlwaysOnTop = useElectronEventaInvoke(electronWindowSetAlwaysOnTop)
+const toggleCaptionVisibility = useElectronEventaInvoke(electronCaptionToggleVisibility)
 
 const expanded = ref(false)
 const geminiExpanded = ref(false)
@@ -577,7 +579,7 @@ function triggerWardrobeItem(id: string) {
               <ControlButtonTooltip>
                 <ControlButton
                   :button-style="adjustStyleClasses.button"
-                  @click="settingsStore.showCaptions = !settingsStore.showCaptions"
+                  @click="toggleCaptionVisibility()"
                 >
                   <div
                     i-ph:power-bold

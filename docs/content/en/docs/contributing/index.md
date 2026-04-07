@@ -143,15 +143,6 @@ pnpm install
 cargo fetch
 ```
 
-::: tip
-
-We would recommend to install [@antfu/ni](https://github.com/antfu-collective/ni) to make your script simpler.
-
-```shell
-corepack enable
-npm i -g @antfu/ni
-```
-
 Once installed, you can
 
 - use `ni` for `pnpm install`, `npm install` and `yarn install`.
@@ -159,6 +150,14 @@ Once installed, you can
 
 You don't need to care about the package manager, `ni` will help you choose the right one.
 :::
+
+## Startup Options
+
+After installation, you can launch AIRI using one of the following methods:
+
+- **`start_airi.bat`**: Normal experience (launches the desktop app with all standard assets).
+- **`start_airi_hiperf.bat`**: Force a specific port to recover settings or models if needed.
+- **`start_airi.bat`**: One-click startup without downloading large assets (useful for slow connections).
 
 ## Choose the application you want to develop on
 

@@ -1,48 +1,56 @@
 ---
 title: Configuration Guide
-description: How to use Project AIRI
+description: Detailed instructions for setting up and managing AIRI.
 ---
 
-## Settings
+# Configuration Guide
 
-You can open settings in the system tray for further customization, for example,
-changing the theme color of AIRI, or switching to another model, either
-Live2D (2D) or VRM (3D, like Grok Companion).
+Welcome to the AIRI Configuration Guide. This manual provides a deep dive into every aspect of the application's behavior, from your character's personality to global system settings.
+
+## Getting Started
+
+To customize your companion, open the **Settings** menu from the system tray (desktop version) or the side navigation (web version).
+
+<br />
 
 <video autoplay loop muted>
  <source src="/assets/tutorial-basic-open-settings.mp4" type="video/mp4">
 </video>
 
-There are so many options in the settings, try experiment and discover what
-you would like to try.
+## Configuration Categories
 
-### Changing Model
+Select a category below to learn more:
 
-It's possible to swap the default model out for other Live2D (2D) and VRM (3D, again,
-similar 3D model like Grok Companion as long as you have it),
+<div flex="~ gap-6 wrap" mt-8>
+  <a href="./settings-overview" flex="~ col 1" min-w-64 p-6 rounded-2xl border="1 $border-color" hover:bg="$bg-secondary-color" transition-all no-underline>
+    <div text-2xl mb-2 i-lucide:rocket />
+    <h3 m-0 mb-2>Settings Overview</h3>
+    <p m-0 text-sm opacity-70>High-level map of the AIRI configuration system.</p>
+  </a>
 
-Models setting located under [Settings] -> [Models].
+  <a href="./character-card" flex="~ col 1" min-w-64 p-6 rounded-2xl border="1 $border-color" hover:bg="$bg-secondary-color" transition-all no-underline>
+    <div text-2xl mb-2 i-lucide:user />
+    <h3 m-0 mb-2>Character & Card</h3>
+    <p m-0 text-sm opacity-70>Configure personality, behavior, and visual representation.</p>
+  </a>
 
-::: tip Importing models from VTuber Studio?
-The library we used to render the Live2D model is having difficulties to read the ZIP
-file bundled from a VTuber Studio model because of the unknown files used by VTuber Studio
-but not Live2D engine known files.
+  <a href="./modules" flex="~ col 1" min-w-64 p-6 rounded-2xl border="1 $border-color" hover:bg="$bg-secondary-color" transition-all no-underline>
+    <div text-2xl mb-2 i-lucide:cpu />
+    <h3 m-0 mb-2>Intelligence & Modules</h3>
+    <p m-0 text-sm opacity-70>Manage LLM providers, speech, hearing, and integrations.</p>
+  </a>
 
-So when importing, before compressing the VTuber Studio model into a ZIP file, make sure
-to exclude the following files:
+  <a href="./system-data" flex="~ col 1" min-w-64 p-6 rounded-2xl border="1 $border-color" hover:bg="$bg-secondary-color" transition-all no-underline>
+    <div text-2xl mb-2 i-lucide:settings />
+    <h3 m-0 mb-2>System & Data</h3>
+    <p m-0 text-sm opacity-70>Managing global app settings, memory, and data lifecycle.</p>
+  </a>
+</div>
 
-- `items_pinned_to_model.json`
-:::
+---
 
-<br />
+### Tips for Customization
 
-::: warning Bugs inside
-Currently the functionality of the reloading the scene of models is not working as intended.
-You will have to restart AIRI after loaded the model.
-:::
-
-<br />
-
-<video autoplay loop muted>
- <source src="/assets/tutorial-settings-change-model.mp4" type="video/mp4">
-</video>
+- **Start Small**: Use the default AIRI preset cards to get a feel for the interaction before creating your own from scratch.
+- **Provider Performance**: If you notice slow responses, try different LLM providers or adjust the context window in the Short-Term Memory settings.
+- **Proactivity**: Fine-tune the proactivity settings to ensure the character feels alive without becoming overwhelming.

@@ -61,4 +61,15 @@ notice:
     preparing: Preparing…
     read-more: Read more
     preview-title: What is it?
+  gemini-onboarding:
+    title: Gemini Quantum Leap
+    intro: Welcome to the next generation of AI interaction. Your character is now powered by Google Gemini, enabling deep multimodal understanding.
+    vision-title: True Vision
+    vision-description: I can finally see your screen and world. Use the Camera icon to trigger a capture or show me things through your lens.
+    voice-title: Advanced Voice
+    voice-description: High-fidelity, low-latency voice interactions with emotional nuance. I can hear your tone and respond accordingly.
+    memory-title: Contextual Memory
+    memory-description: I remember our current session with extreme precision, allowing us to build deeper conversations over time.
+    confirm: Begin Session
+    dont-show-again: Don’t show again
   estimated-cost: 'Estimated cost: {cost}'

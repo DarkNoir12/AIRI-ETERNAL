@@ -273,6 +273,14 @@ pages:
   memory:
     description: Where memories got stored, and organized
     title: Memory
+  docs:
+    title: Documentation
+    description: Learn how to use AIRI and its features
+    sections:
+      overview: Overview
+      manual: Manual
+      advanced: Advanced
+      chronicles: Chronicles
   data:
     title: Data
     description: Manage stored AIRI data, exports, and resets

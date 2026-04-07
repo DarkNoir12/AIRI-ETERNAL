@@ -186,6 +186,14 @@ pages:
   memory:
     description: 存放记忆的地方，以及策略
     title: 记忆体
+  docs:
+    title: 文档
+    description: 了解如何使用 AIRI 及其功能
+    sections:
+      overview: 概览
+      manual: 手册
+      advanced: 高级 / 开发
+      chronicles: 编年史
   data:
     title: Data
     description: 管理存储 AIRI 数据、导出和重置

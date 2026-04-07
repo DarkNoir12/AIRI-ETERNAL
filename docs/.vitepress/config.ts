@@ -171,6 +171,16 @@ export default defineConfig({
                 ],
               },
               {
+                text: 'Architecture & Design',
+                items: [
+                  { text: 'Interaction Pipelines', link: withBase('/en/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
+                  { text: 'ComfyUI Native Engine', link: withBase('/en/docs/contributing/architecture/arch-comfyui-native-api-engine') },
+                  { text: 'Gateway Security', link: withBase('/en/docs/contributing/architecture/arch-gateway-security-hardening') },
+                  { text: 'Memory System', link: withBase('/en/docs/contributing/architecture/arch-memory-system-overview') },
+                  { text: 'Live2D Optimization', link: withBase('/en/docs/contributing/architecture/arch-live2d-wasm-optimization') },
+                ],
+              },
+              {
                 text: 'Games & Social Platforms',
                 items: [
                   { text: 'Minecraft', link: withBase('/en/docs/contributing/services/minecraft') },
@@ -193,8 +203,26 @@ export default defineConfig({
             text: 'Chronicles',
             icon: 'lucide:calendar-days',
             items: [
-              { text: 'Initial Publish v0.1.0', link: withBase('/en/docs/chronicles/version-v0.1.0/') },
-              { text: 'Before Story v0.0.1', link: withBase('/en/docs/chronicles/version-v0.0.1/') },
+              {
+                text: 'Maintainer Status',
+                items: [
+                  { text: 'Integration Checklist', link: withBase('/en/docs/chronicles/integration-checklist') },
+                ],
+              },
+              {
+                text: 'Project Evolution',
+                items: [
+                  { text: 'Project Roadmap', link: withBase('/en/docs/chronicles/roadmap') },
+                  { text: 'Feature Report', link: withBase('/en/docs/chronicles/feature-report') },
+                ],
+              },
+              {
+                text: 'Version History',
+                items: [
+                  { text: 'Initial Publish v0.1.0', link: withBase('/en/docs/chronicles/version-v0.1.0/') },
+                  { text: 'Before Story v0.0.1', link: withBase('/en/docs/chronicles/version-v0.0.1/') },
+                ],
+              },
             ],
           },
           {
@@ -293,6 +321,16 @@ export default defineConfig({
                 ],
               },
               {
+                text: '架构与设计',
+                items: [
+                  { text: '交互流水线', link: withBase('/zh-Hans/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
+                  { text: 'ComfyUI 原生引擎', link: withBase('/zh-Hans/docs/contributing/architecture/arch-comfyui-native-api-engine') },
+                  { text: '网关安全性', link: withBase('/zh-Hans/docs/contributing/architecture/arch-gateway-security-hardening') },
+                  { text: '内存系统', link: withBase('/zh-Hans/docs/contributing/architecture/arch-memory-system-overview') },
+                  { text: 'Live2D 优化', link: withBase('/zh-Hans/docs/contributing/architecture/arch-live2d-wasm-optimization') },
+                ],
+              },
+              {
                 text: '游戏与社交平台',
                 items: [
                   { text: 'Minecraft', link: withBase('/zh-Hans/docs/contributing/services/minecraft') },
@@ -315,8 +353,26 @@ export default defineConfig({
             text: '编年史',
             icon: 'lucide:calendar-days',
             items: [
-              { text: '首次公开 v0.1.0', link: withBase('/zh-Hans/docs/chronicles/version-v0.1.0/') },
-              { text: '先前的故事 v0.0.1', link: withBase('/zh-Hans/docs/chronicles/version-v0.0.1/') },
+              {
+                text: '集成状态',
+                items: [
+                  { text: '集成清单', link: withBase('/zh-Hans/docs/chronicles/integration-checklist') },
+                ],
+              },
+              {
+                text: '项目演进',
+                items: [
+                  { text: '项目路线图', link: withBase('/zh-Hans/docs/chronicles/roadmap') },
+                  { text: '功能报告', link: withBase('/zh-Hans/docs/chronicles/feature-report') },
+                ],
+              },
+              {
+                text: '版本历史',
+                items: [
+                  { text: '首次公开 v0.1.0', link: withBase('/zh-Hans/docs/chronicles/version-v0.1.0/') },
+                  { text: '先前的故事 v0.0.1', link: withBase('/zh-Hans/docs/chronicles/version-v0.0.1/') },
+                ],
+              },
             ],
           },
           {
@@ -415,6 +471,16 @@ export default defineConfig({
                 ],
               },
               {
+                text: 'アーキテクチャとデザイン',
+                items: [
+                  { text: 'インタラクションパイプライン', link: withBase('/ja/docs/contributing/architecture/arch-chat-stt-proactivity-pipelines') },
+                  { text: 'ComfyUI ネイティブエンジン', link: withBase('/ja/docs/contributing/architecture/arch-comfyui-native-api-engine') },
+                  { text: 'ゲートウェイのセキュリティ', link: withBase('/ja/docs/contributing/architecture/arch-gateway-security-hardening') },
+                  { text: 'メモリシステム', link: withBase('/ja/docs/contributing/architecture/arch-memory-system-overview') },
+                  { text: 'Live2D の最適化', link: withBase('/ja/docs/contributing/architecture/arch-live2d-wasm-optimization') },
+                ],
+              },
+              {
                 text: 'ゲーム＆ソーシャルプラットフォーム',
                 items: [
                   { text: 'Minecraft', link: withBase('/ja/docs/contributing/services/minecraft') },
@@ -437,8 +503,26 @@ export default defineConfig({
             text: '年表',
             icon: 'lucide:calendar-days',
             items: [
-              { text: '初公開 v0.1.0', link: withBase('/ja/docs/chronicles/version-v0.1.0/') },
-              { text: '前日譚 v0.0.1', link: withBase('/ja/docs/chronicles/version-v0.0.1/') },
+              {
+                text: '統合ステータス',
+                items: [
+                  { text: '統合チェックリスト', link: withBase('/ja/docs/chronicles/integration-checklist') },
+                ],
+              },
+              {
+                text: 'プロジェクトの進化',
+                items: [
+                  { text: 'プロジェクトロードマップ', link: withBase('/ja/docs/chronicles/roadmap') },
+                  { text: '機能レポート', link: withBase('/ja/docs/chronicles/feature-report') },
+                ],
+              },
+              {
+                text: 'バージョン履歴',
+                items: [
+                  { text: '初公開 v0.1.0', link: withBase('/ja/docs/chronicles/version-v0.1.0/') },
+                  { text: '前日譚 v0.0.1', link: withBase('/ja/docs/chronicles/version-v0.0.1/') },
+                ],
+              },
             ],
           },
           {

@@ -185,6 +185,14 @@ pages:
   memory:
     description: 記憶が保存され、整理される場所
     title: 記憶
+  docs:
+    title: ドキュメント
+    description: AIRIの使い方と機能を学ぶ
+    sections:
+      overview: 概要
+      manual: マニュアル
+      advanced: 高度な設定 / 開発
+      chronicles: 年表
   data:
     title: データ
     description: AIRIデータの保存、エクスポート、およびリセットの管理
