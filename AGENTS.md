@@ -52,7 +52,7 @@ Concise but detailed reference for contributors working across the `moeru-ai/air
 - `packages/i18n`: All translations.
 - Server channel: `packages/server-runtime`, `packages/server-sdk`, `packages/server-shared` (power `services/` and `plugins/`).
 - Legacy desktop: `crates/` (old Tauri; Electron is current).
-- Pages: `packages/stage-pages` (shared bases); `apps/stage-web/src/pages` and `apps/stage-tamagotchi/src/renderer/pages` for app-specific pages; devtools live in each app’s `.../pages/devtools`.
+- Pages: `packages/stage-pages` (shared bases); `apps/stage-web/src/pages` and `apps/stage-tamagotchi/src/renderer/pages` for app-specific pages; devtools live in each app's `.../pages/devtools`.
 - Router configs: `apps/stage-web/vite.config.ts`, `apps/stage-tamagotchi/electron.vite.config.ts`.
 - Devtools/layouts: `apps/stage-tamagotchi/src/renderer/layouts/settings.vue`, `apps/stage-web/src/layouts/settings.vue`.
 - IPC/Eventa contracts/examples: `apps/stage-tamagotchi/src/shared`, `apps/stage-tamagotchi/src/main/services/electron`.
@@ -66,22 +66,37 @@ Concise but detailed reference for contributors working across the `moeru-ai/air
 
 > Use pnpm workspace filters to scope tasks. Examples below are generic; replace the filter with the target workspace name (e.g. `@proj-airi/stage-tamagotchi`, `@proj-airi/stage-web`, `@proj-airi/stage-ui`, etc.).
 
+- **Dev Servers**
+  - `pnpm dev:tamagotchi` — Electron desktop dev
+  - `pnpm dev:web` — Web app dev
+  - `pnpm dev:apps` — All apps in parallel
+  - `pnpm dev:packages` — All packages in parallel
+  - `pnpm dev:ui` — Histoire storybook dev
 - **Typecheck**
   - `pnpm -F <package.json name> typecheck`
   - Example: `pnpm -F @proj-airi/stage-tamagotchi typecheck` (runs `tsc` + `vue-tsc`).
+  - Root: `pnpm typecheck` — all packages + apps + docs in parallel
 - **Unit tests (Vitest)**
   - Targeted: `pnpm exec vitest run <path/to/file>`
     e.g. `pnpm exec vitest run apps/stage-tamagotchi/src/renderer/stores/tools/builtin/widgets.test.ts`
   - Workspace: `pnpm -F <package.json name> exec vitest run`
     e.g. `pnpm -F @proj-airi/stage-tamagotchi exec vitest run`
   - Root `pnpm test:run`: runs all tests across registered projects. If no tests are found, check `vitest.config.ts` include patterns.
-  - Root `vitest.config.ts` includes `apps/stage-tamagotchi` and other projects; each app/package can have its own `vitest.config`.
+  - Root `vitest.config.ts` includes: `apps/server`, `apps/stage-tamagotchi`, `packages/stage-ui`, `packages/plugin-sdk`, `packages/cap-vite`, `packages/vite-plugin-warpdrive`, `packages/audio-pipelines-transcribe`, `packages/server-runtime`.
 - **Lint**
   - `pnpm lint` and `pnpm lint:fix`
   - Formatting is handled via ESLint; `pnpm lint:fix` applies formatting.
+  - Uses `moeru-lint` wrapper (custom config at `@moeru/eslint-config`).
+  - Pre-commit: `simple-git-hooks` → `nano-staged` → `moeru-lint --fix`.
 - **Build**
   - `pnpm -F <package.json name> build`
   - Example: `pnpm -F @proj-airi/stage-tamagotchi build` (typecheck + electron-vite build).
+  - `pnpm build:packages` — Turbo-run build for all packages (required before app builds).
+  - `pnpm build:tamagotchi` — Electron app build.
+  - `pnpm build:web` — Web app build.
+- **Other**
+  - `pnpm up` — Update deps (`taze`), prune, dedupe.
+  - `pnpm knip` — Find unused files/exports.
 
 ## Development Practices
 
@@ -120,9 +135,22 @@ Concise but detailed reference for contributors working across the `moeru-ai/air
 - If multiple names are returned from Context7 without a clear distinction, ask the user to choose or confirm the desired one.
 - If docs conflict with typecheck results, inspect the dependency source under `node_modules` to diagnose root cause and fix types/bugs.
 
+## Provider System (Speech/Chat/Transcription/Vision)
+
+- All providers are defined in `packages/stage-ui/src/stores/providers.ts` via `providerDefinitions`.
+- Each provider has: `id`, `category`, `tasks`, `nameKey`/`descriptionKey` (i18n), `icon`, `defaultOptions`, `createProvider`, `capabilities` (listModels, listVoices), `validators`.
+- Speech provider settings pages live in `packages/stage-pages/src/pages/settings/providers/speech/<provider-id>.vue`.
+- The `speech.ts` module (`packages/stage-ui/src/stores/modules/speech.ts`) handles voice loading. It skips validation for providers with built-in defaults (`fish-speech`, `omnivoice`) — add new local providers with default voices to this bypass list.
+- When adding a new speech provider:
+  1. Define it in `providers.ts` with all metadata.
+  2. Create `<provider-id>.vue` settings page in `packages/stage-pages/src/pages/settings/providers/speech/`.
+  3. Add i18n keys in all locale files under `packages/i18n/src/locales/*/settings.yaml`.
+  4. If it has default voices/models, add its id to the validation bypass in `speech.ts:101`.
+
 ## i18n
 
 - Add/modify translations in `packages/i18n`; avoid scattering i18n across apps/packages.
+- Provider name/description keys follow pattern: `settings.pages.providers.provider.<provider-id>.title` and `.description`.
 
 ## CSS/UNO
 
@@ -151,3 +179,17 @@ Concise but detailed reference for contributors working across the `moeru-ai/air
 - Maintain structured `README.md` documentation for each `packages/` and `apps/` entry, covering what it does, how to use it, when to use it, and when not to use it.
 - Always run `pnpm typecheck` and `pnpm lint:fix` after finishing a task.
 - Use Conventional Commits for commit messages (e.g., `feat: add runner reconnect backoff`).
+
+## pnpm Workspace & Overrides
+
+- `pnpm-workspace.yaml` uses `catalogMode: prefer` for centralized dependency versions.
+- Overrides replace common packages with `@nolyfill` security-hardened alternatives (e.g., `axios` → `feaxios`, `is-core-module` → `@nolyfill/is-core-module`).
+- Patches exist for `mineflayer`, `pixi-live2d-display`, and `srvx`.
+- `ignoredBuiltDependencies`: `@prisma/client`, `better-sqlite3`.
+- `onlyBuiltDependencies`: explicit allowlist for native builds (electron, esbuild, sharp, etc.).
+
+## CI Notes
+
+- CI runs on push/PR to `main`: lint, typecheck, build test, provenance check.
+- i18n PRs (`moeru-ai:i18n/*`) skip typecheck and build-test jobs.
+- Lint job also runs SwiftLint for `stage-pocket`.

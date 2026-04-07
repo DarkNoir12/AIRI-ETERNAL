@@ -12,7 +12,7 @@ import { getImportUrlBundles } from '@proj-airi/drizzle-duckdb-wasm/bundles/impo
 import { useElectronWindowResizeStateEvent } from '@proj-airi/electron-vueuse'
 import { createLive2DLipSync } from '@proj-airi/model-driver-lipsync'
 import { wlipsyncProfile } from '@proj-airi/model-driver-lipsync/shared/wlipsync'
-import { createPlaybackManager, createSpeechPipeline } from '@proj-airi/pipelines-audio'
+import { createPlaybackManager, createPushStream, createSpeechPipeline } from '@proj-airi/pipelines-audio'
 import { Live2DScene, useLive2d } from '@proj-airi/stage-ui-live2d'
 import { ThreeScene, useCustomVrmAnimationsStore, useModelStore } from '@proj-airi/stage-ui-three'
 import { animations } from '@proj-airi/stage-ui-three/assets/vrm'
@@ -456,7 +456,215 @@ const playbackManager = createPlaybackManager<AudioBuffer>({
   ownerOverflowPolicy: 'steal-oldest',
 })
 
+// Streaming sentence-boundary TTS segmenter
+// Emits text immediately when sentence boundaries are detected (. ! ? ... \n\n —)
+// Falls back to word-boundary split if buffer exceeds 150 chars without a boundary
+// Never splits mid-word. Sanitizes rigorously before emitting.
+function createSentenceSegmenter(tokens: ReadableStream<TextToken>, meta: { streamId: string, intentId: string }) {
+  const { stream, write, close } = createPushStream<TextSegment>()
+  let buffer = ''
+  let sequence = 0
+  let specialToken: string | null = null
+  let inCodeFence = false
+
+  // Simple sentence boundary: . ! ? followed by whitespace or end of text
+  // Also matches ellipsis (...), double newline (\n\n), em dash (—)
+  const SENTENCE_BOUNDARY = /[.!?]\s+|\.{3}|\n\n|—+/g
+
+  void (async () => {
+    const reader = tokens.getReader()
+    try {
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done)
+          break
+        if (!value)
+          continue
+
+        if (value.type === 'special') {
+          specialToken = value.value
+          continue
+        }
+
+        const tokenText = value.value ?? ''
+        if (!tokenText)
+          continue
+        buffer += tokenText
+
+        // Track code fence state by counting ``` occurrences
+        const backtickCount = (buffer.match(/```/g) || []).length
+
+        if (inCodeFence) {
+          // We're inside a code fence — wait for it to close
+          if (backtickCount % 2 === 0) {
+            // Fence just closed — clear everything up to and including the closing ```
+            inCodeFence = false
+            const lastFenceIndex = buffer.lastIndexOf('```')
+            buffer = buffer.slice(lastFenceIndex + 3)
+          }
+          else {
+            // Still inside fence — skip processing, keep accumulating
+            continue
+          }
+        }
+        else {
+          // Not in a code fence — check if one just opened
+          if (backtickCount % 2 !== 0) {
+            // A code fence just opened — process text before it, then skip the rest
+            inCodeFence = true
+            const firstFenceIndex = buffer.indexOf('```')
+            if (firstFenceIndex > 0) {
+              // There's text before the fence — process it
+              const beforeFence = buffer.slice(0, firstFenceIndex)
+              processAndEmit(beforeFence)
+            }
+            // Keep the fence marker + code content in buffer for when it closes
+            buffer = buffer.slice(firstFenceIndex)
+            continue
+          }
+        }
+
+        // Normal processing — check for sentence boundaries
+        processAndEmit(buffer)
+      }
+
+      // Flush any remaining buffered text (only if not in code fence)
+      if (!inCodeFence && buffer.trim()) {
+        emitCleanSentence(buffer.trim())
+      }
+    }
+    finally {
+      reader.releaseLock()
+      close()
+    }
+  })()
+
+  function processAndEmit(text: string) {
+    SENTENCE_BOUNDARY.lastIndex = 0
+    const match = SENTENCE_BOUNDARY.exec(text)
+    if (match) {
+      const sentenceEnd = match.index + match[0].length
+      const sentence = text.slice(0, sentenceEnd)
+      emitCleanSentence(sentence)
+      buffer = text.slice(sentenceEnd)
+    }
+
+    // Safety valve: if buffer exceeds 150 chars without a boundary,
+    // split at the last word boundary (space) to prevent mid-word splits
+    if (buffer.length > 150) {
+      const lastSpace = buffer.lastIndexOf(' ', 150)
+      if (lastSpace > 20) {
+        const forced = buffer.slice(0, lastSpace)
+        emitCleanSentence(forced)
+        buffer = buffer.slice(lastSpace + 1)
+      }
+    }
+  }
+
+  function emitCleanSentence(text: string) {
+    // Rigorous sanitization — only allow speech-safe characters
+    const clean = text
+      // Remove all bracket-enclosed content: [sigh], [ACT:...], [laugh], etc.
+      .replace(/\[[\s\S]*?\]/g, '')
+      // Remove fenced code blocks (complete)
+      .replace(/```[\s\S]*?```/g, '')
+      // Remove partial/unclosed code fence (from ``` to end)
+      .replace(/```[\s\S]*$/g, '')
+      // Remove code fence metadata: linenums="...", title="...", hl_lines="..."
+      .replace(/\b(linenums|hl_lines|title)\s*=\s*"[^"]*"/gi, '')
+      // Remove escaped HTML tags: \\<br\\>, \\<\\/p\\>, etc.
+      .replace(/\\*<[^>]*>\\*/g, '')
+      // Remove XML/HTML tags (non-escaped)
+      .replace(/<[^>]*>/g, '')
+      // Remove markdown: *italic*, _italic_, **bold**, ~~strikethrough~~
+      .replace(/\*\*?([^*]+)\*\*?/g, '$1')
+      .replace(/_([^_]+)_/g, '$1')
+      .replace(/~~([^~]+)~~/g, '$1')
+      // Remove inline code
+      .replace(/`[^`]*`/g, '')
+      // Remove numbered list markers at start (1. 2. 3. etc.)
+      .replace(/^\s*\d+\.\s*/gm, '')
+      // Remove bullet list markers
+      .replace(/^\s*[-*]\s*/gm, '')
+      // Remove blockquote markers
+      .replace(/^\s*>\s*/gm, '')
+      // Convert all whitespace to spaces
+      .replace(/[\n\r\t]+/g, ' ')
+      // Collapse multiple spaces
+      .replace(/ {2,}/g, ' ')
+      // Remove control characters
+      .replace(/[\x00-\x08\v\f\x0E-\x1F\x7F]/g, '')
+      // Remove Unicode replacement characters
+      .replace(/\uFFFD/g, '')
+      // Remove mojibake
+      .replace(/´┐¢/g, '')
+      .trim()
+
+    // Skip empty or too-short text
+    if (!clean || clean.length < 2)
+      return
+
+    sequence++
+    write({
+      text: clean,
+      special: specialToken ?? undefined,
+      streamId: meta.streamId,
+      intentId: meta.intentId,
+      segmentId: `seg-${sequence}`,
+      reason: 'sentence',
+    })
+    specialToken = null
+  }
+
+  return stream
+}
+
+// Sanitize text before sending to TTS - final defense layer
+// Strips ALL non-speech artifacts: markdown, brackets, code, XML, control chars, etc.
+function sanitizeForTts(text: string): string {
+  return text
+    // Remove JSON tool calls like [{"name":"...","arguments":{...}}]
+    .replace(/\[\s*\{[\s\S]*?"name"\s*:\s*"[^"]+"[\s\S]*?"arguments"\s*:\s*\{[\s\S]*?\}\s*\}\s*\]/g, '')
+    // Remove all bracket-enclosed content: [sigh], [ACT:...], [laugh], etc.
+    .replace(/\[[\s\S]*?\]/g, '')
+    // Remove fenced code blocks (complete)
+    .replace(/```[\s\S]*?```/g, '')
+    // Remove partial/unclosed code fence (from ``` to end)
+    .replace(/```[\s\S]*$/g, '')
+    // Remove code fence metadata: linenums="...", title="...", hl_lines="..."
+    .replace(/\b(linenums|hl_lines|title)\s*=\s*"[^"]*"/gi, '')
+    // Remove escaped HTML tags: \\<br\\>, \\<\\/p\\>, etc.
+    .replace(/\\*<[^>]*>\\*/g, '')
+    // Remove XML/HTML tags (non-escaped)
+    .replace(/<[^>]*>/g, '')
+    // Remove markdown: **bold**, *italic*, _italic_, ~~strikethrough~~
+    .replace(/\*\*?([^*]+)\*\*?/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/~~([^~]+)~~/g, '$1')
+    // Remove inline code
+    .replace(/`[^`]*`/g, '')
+    // Remove numbered list markers
+    .replace(/^\s*\d+\.\s*/gm, '')
+    // Remove bullet list markers
+    .replace(/^\s*[-*]\s*/gm, '')
+    // Remove blockquote markers
+    .replace(/^\s*>\s*/gm, '')
+    // Convert all whitespace (newlines, tabs, carriage returns) to spaces
+    .replace(/[\n\r\t]+/g, ' ')
+    // Collapse multiple spaces
+    .replace(/ {2,}/g, ' ')
+    // Remove control characters
+    .replace(/[\x00-\x08\v\f\x0E-\x1F\x7F]/g, '')
+    // Remove Unicode replacement characters
+    .replace(/\uFFFD/g, '')
+    // Remove mojibake
+    .replace(/´┐¢/g, '')
+    // Trim whitespace
+    .trim()
+}
+
 const speechPipeline = createSpeechPipeline<AudioBuffer>({
+  segmenter: createSentenceSegmenter,
   tts: async (request, signal) => {
     if (signal.aborted)
       return null
@@ -515,19 +723,91 @@ const speechPipeline = createSpeechPipeline<AudioBuffer>({
       console.info('[Speech Pipeline] Resolved OpenAI Compatible Stats', { model, voice: voice?.id })
     }
 
+    if (activeSpeechProvider.value === 'chatterbox') {
+      model = model || providerConfig?.model as string || 'chatterbox-turbo'
+
+      if (!voice) {
+        if (providerConfig?.voice) {
+          voice = {
+            id: providerConfig.voice as string,
+            name: providerConfig.voice as string,
+            description: providerConfig.voice as string,
+            previewURL: '',
+            languages: [{ code: 'en', title: 'English' }],
+            provider: activeSpeechProvider.value,
+            gender: 'neutral',
+          }
+        }
+      }
+
+      console.info('[Speech Pipeline] Resolved Chatterbox Stats', { model, voice: voice?.id })
+    }
+
+    if (activeSpeechProvider.value === 'omnivoice') {
+      model = model || providerConfig?.model as string || 'omnivoice'
+
+      if (!voice) {
+        if (providerConfig?.voice) {
+          voice = {
+            id: providerConfig.voice as string,
+            name: providerConfig.voice as string,
+            description: providerConfig.voice as string,
+            previewURL: '',
+            languages: [{ code: 'en', title: 'English' }],
+            provider: activeSpeechProvider.value,
+            gender: 'neutral',
+          }
+        }
+        else {
+          voice = {
+            id: 'default',
+            name: 'Default Voice',
+            description: 'OmniVoice default voice',
+            previewURL: '',
+            languages: [{ code: 'en', title: 'English' }],
+            provider: activeSpeechProvider.value,
+            gender: 'neutral',
+          }
+        }
+      }
+
+      console.info('[Speech Pipeline] Resolved OmniVoice Stats', { model, voice: voice?.id })
+    }
+
     if (!model || !voice)
       return null
 
-    const input = ssmlEnabled.value
+    const input = ssmlEnabled.value && speechStore.supportsSSML
       ? speechStore.generateSSML(request.text, voice, { ...providerConfig, pitch: pitch.value })
-      : request.text
+      : sanitizeForTts(request.text)
+
+    // Guard against empty or whitespace-only input after sanitization
+    if (!input || !input.trim()) {
+      console.log('[TTS Debug] Skipping empty/whitespace-only input')
+      return null
+    }
+
+    // DEBUG: Log the full API request payload
+    console.log('[TTS Debug] Full API payload to Chatterbox:', JSON.stringify({
+      model,
+      voice: voice.id,
+      responseFormat: 'wav',
+      input,
+      inputPreview: input.slice(0, 200),
+    }, null, 2))
 
     try {
-      const res = await generateSpeech({
+      const speechOptions: Record<string, unknown> = {
         ...provider.speech(model, providerConfig),
         input,
         voice: voice.id,
-      })
+      }
+
+      if (activeSpeechProvider.value === 'chatterbox') {
+        speechOptions.responseFormat = 'wav'
+      }
+
+      const res = await generateSpeech(speechOptions)
 
       if (signal.aborted || !res || res.byteLength === 0)
         return null
@@ -684,6 +964,7 @@ chatHookCleanups.push(onTokenLiteral(async (literal) => {
   if (!intent)
     return
   currentChatIntentReceivedLiteral.value = true
+  console.log('[TTS Debug] onTokenLiteral received:', JSON.stringify(literal))
   console.log('[Stage] onTokenLiteral -> forwarding to speech', {
     intentId: intent.intentId,
     length: literal.length,
@@ -696,6 +977,7 @@ chatHookCleanups.push(onTokenSpecial(async (special) => {
   const intent = ensureSpeechIntent()
   if (!intent)
     return
+  console.log('[TTS Debug] onTokenSpecial received:', JSON.stringify(special))
   // console.debug('Stage received special token:', special)
   console.log('[Stage] onTokenSpecial -> forwarding', { intentId: intent.intentId, special })
   intent.writeSpecial(special)

@@ -6,6 +6,8 @@ export interface LlmJsonInterceptorOptions {
 /**
  * Intercepts fenced JSON-like blocks from streamed LLM output while passing
  * normal text through immediately.
+ * Also detects bare JSON array tool calls like [{"name":"...","arguments":{...}}]
+ * that the LLM may output without markdown code fences.
  */
 export function createLlmJsonInterceptor(options: LlmJsonInterceptorOptions) {
   let buffer = ''
@@ -16,12 +18,165 @@ export function createLlmJsonInterceptor(options: LlmJsonInterceptorOptions) {
   const GENERIC_BLOCK_START = '```'
   const BLOCK_END = '```'
 
+  // Regex to detect bare JSON array tool calls at the start of text
+  // Matches: [{"name":"...","arguments":{...}}]
+  const BARE_JSON_TOOL_CALL = /^\s*\[\s*\{[\s\S]*?"name"\s*:\s*"[^"]+"[\s\S]*?"arguments"\s*:\s*\{[\s\S]*?\}\s*\}\s*\]\s*/
+
+  // Try to extract a complete bare JSON tool call from the start of text
+  // Returns the raw JSON string if found, null otherwise
+  function tryExtractBareJsonToolCall(text: string): string | null {
+    // Quick check: does it start with a JSON tool call pattern?
+    if (!/^\s*\[\s*\{/.test(text))
+      return null
+
+    // Try to find the matching closing bracket
+    let depth = 0
+    let inString = false
+    let escapeNext = false
+    let endIdx = -1
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i]
+
+      if (escapeNext) {
+        escapeNext = false
+        continue
+      }
+
+      if (char === '\\' && inString) {
+        escapeNext = true
+        continue
+      }
+
+      if (char === '"' && !escapeNext) {
+        inString = !inString
+        continue
+      }
+
+      if (inString)
+        continue
+
+      if (char === '[' || char === '{')
+        depth++
+      if (char === ']' || char === '}')
+        depth--
+
+      if (depth === 0 && char === ']') {
+        endIdx = i
+        break
+      }
+    }
+
+    if (endIdx === -1)
+      return null
+
+    const candidate = text.slice(0, endIdx + 1).trim()
+
+    // Validate it's actually valid JSON
+    try {
+      const parsed = JSON.parse(candidate)
+      if (Array.isArray(parsed) && parsed.length > 0
+        && typeof parsed[0] === 'object'
+        && 'name' in parsed[0]
+        && 'arguments' in parsed[0]) {
+        return candidate
+      }
+    }
+    catch {
+      return null
+    }
+
+    return null
+  }
+
+  // Try to extract a complete [ACT:{...}] action marker from the start of text
+  // Returns the raw string if found, null otherwise
+  function tryExtractActMarker(text: string): string | null {
+    if (!text.startsWith('[ACT:'))
+      return null
+
+    // Find the matching closing bracket
+    let depth = 0
+    let inString = false
+    let escapeNext = false
+    let endIdx = -1
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i]
+
+      if (escapeNext) {
+        escapeNext = false
+        continue
+      }
+
+      if (char === '\\' && inString) {
+        escapeNext = true
+        continue
+      }
+
+      if (char === '"' && !escapeNext) {
+        inString = !inString
+        continue
+      }
+
+      if (inString)
+        continue
+
+      if (char === '{')
+        depth++
+      if (char === '}')
+        depth--
+
+      if (char === ']' && depth === 0) {
+        endIdx = i
+        break
+      }
+    }
+
+    if (endIdx === -1)
+      return null
+
+    return text.slice(0, endIdx + 1).trim()
+  }
+
   return {
     async consume(chunk: string) {
       buffer += chunk
 
       while (buffer.length > 0) {
         if (!inBlock) {
+          // First, check for bare JSON array tool calls
+          const bareJson = tryExtractBareJsonToolCall(buffer)
+          if (bareJson) {
+            try {
+              const parsed = JSON.parse(bareJson)
+              await options.onJson(parsed, bareJson)
+            }
+            catch {
+              // If parsing fails, pass through as text
+              await options.onText(bareJson)
+            }
+            buffer = buffer.slice(bareJson.length)
+            continue
+          }
+
+          // Check for [ACT:{...}] action markers
+          const actMarker = tryExtractActMarker(buffer)
+          if (actMarker) {
+            try {
+              // Extract the JSON inside [ACT:...]
+              const jsonContent = actMarker.slice(5, -1) // Remove "[ACT:" and "]"
+              const parsed = JSON.parse(jsonContent)
+              await options.onJson(parsed, actMarker)
+            }
+            catch {
+              // If parsing fails, just skip the marker entirely (don't send to TTS)
+              // Don't call onText for action markers
+            }
+            buffer = buffer.slice(actMarker.length)
+            continue
+          }
+
           const jsonIdx = buffer.indexOf(JSON_BLOCK_START)
           const genericIdx = buffer.indexOf(GENERIC_BLOCK_START)
 
@@ -99,7 +254,34 @@ export function createLlmJsonInterceptor(options: LlmJsonInterceptorOptions) {
 
     async end() {
       if (buffer) {
-        await options.onText(buffer)
+        // Check for incomplete bare JSON tool calls at end
+        const bareJson = tryExtractBareJsonToolCall(buffer)
+        if (bareJson) {
+          try {
+            const parsed = JSON.parse(bareJson)
+            await options.onJson(parsed, bareJson)
+          }
+          catch {
+            await options.onText(bareJson)
+          }
+          buffer = buffer.slice(bareJson.length)
+        }
+        // Check for ACT markers at end
+        const actMarker = tryExtractActMarker(buffer)
+        if (actMarker) {
+          try {
+            const jsonContent = actMarker.slice(5, -1)
+            const parsed = JSON.parse(jsonContent)
+            await options.onJson(parsed, actMarker)
+          }
+          catch {
+            // Skip ACT markers that can't be parsed
+          }
+          buffer = buffer.slice(actMarker.length)
+        }
+        if (buffer) {
+          await options.onText(buffer)
+        }
         buffer = ''
       }
       inBlock = false

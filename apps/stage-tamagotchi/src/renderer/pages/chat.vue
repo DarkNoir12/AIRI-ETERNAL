@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import InteractiveArea from '../components/InteractiveArea.vue'
 import WindowTitleBar from '../components/Window/TitleBar.vue'
+
+import { useChatSpeechBridge } from '../composables/use-chat-speech-bridge'
+
+useChatSpeechBridge()
 </script>
 
 <template>

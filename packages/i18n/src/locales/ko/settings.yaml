@@ -831,6 +831,9 @@ pages:
         description: Advanced Voice Engine - Supports tags, profiles, presets, and
           high-performance playback
         title: Chatterbox
+      omnivoice:
+        description: 600개 이상 언어, 음성 복제, 음성 디자인, 40배 실시간 속도
+        title: OmniVoice
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
         title: OpenRouter

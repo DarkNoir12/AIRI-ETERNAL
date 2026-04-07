@@ -71,7 +71,7 @@ import { toast } from 'vue-sonner'
 
 import { appLocalAudioTranscription } from '../libs/providers/providers/transcription/app-local-audio-transcription'
 import { getKokoroWorker } from '../workers/kokoro'
-import { getDefaultKokoroModel, KOKORO_MODELS, kokoroModelsToModelInfo } from '../workers/kokoro/constants'
+import { getDefaultKokoroModel, KOKORO_MODELS } from '../workers/kokoro/constants'
 import { createAliyunNLSProvider as createAliyunNlsStreamProvider } from './providers/aliyun/stream-transcription'
 import { models as elevenLabsModels } from './providers/elevenlabs/list-models'
 import { createNativeElevenLabsProvider } from './providers/elevenlabs/native'
@@ -527,7 +527,7 @@ export const useProvidersStore = defineStore('providers', () => {
             return []
 
           try {
-            const response = await fetch(`${apiBaseUrl}voices`, {
+            const response = await fetch(`${apiBaseUrl}audio/voices`, {
               headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
             })
             if (!response.ok)
@@ -535,67 +535,53 @@ export const useProvidersStore = defineStore('providers', () => {
 
             const data = await response.json()
             const voices = Array.isArray(data?.voices) ? data.voices : []
-            return voices.map((voice: any) => ({
-              id: voice.voice_id || voice.id || voice.name,
-              name: voice.name || voice.voice_id || voice.id,
-              provider: 'chatterbox',
-              description: voice.type === 'virtual' ? 'Preset voice' : 'Native voice',
-              previewURL: voice.preview_url || voice.preview_audio_url,
-              languages: [{ code: 'en', title: 'English' }],
-              gender: voice.gender || voice.labels?.gender,
-            }) satisfies VoiceInfo)
+            return voices.map((voice: any) => {
+              const voiceName = typeof voice === 'string' ? voice : (voice.voice_id || voice.id || voice.name)
+              const voiceType = typeof voice === 'object' ? (voice.type || 'predefined') : 'predefined'
+              const displayName = typeof voice === 'string' ? voice.replace('.wav', '') : (voice.name || voice.voice_id || voice.id)
+              return {
+                id: voiceName,
+                name: displayName,
+                provider: 'chatterbox',
+                description: voiceType === 'clone' ? 'Cloned voice' : 'Predefined voice',
+                previewURL: typeof voice === 'object' ? (voice.preview_url || voice.preview_audio_url) : undefined,
+                languages: [{ code: 'en', title: 'English' }],
+                gender: typeof voice === 'object' ? (voice.gender || voice.labels?.gender) : undefined,
+              } satisfies VoiceInfo
+            })
           }
           catch (error) {
             logWarn('Failed to fetch Chatterbox voices:', error)
             return []
           }
         },
-        listModels: async (config: Record<string, unknown>) => {
-          const apiKey = typeof config.apiKey === 'string' ? config.apiKey.trim() : ''
-          const apiBaseUrl = toV1SpeechBaseUrl(config.baseUrl)
-          if (!apiBaseUrl) {
-            return [{
-              id: 'chatterbox',
-              name: 'Chatterbox',
+        listModels: async (_config: Record<string, unknown>) => {
+          return [
+            {
+              id: 'chatterbox-turbo',
+              name: 'Chatterbox Turbo',
               provider: 'chatterbox',
-              description: 'Chatterbox speech generation',
+              description: 'Fastest inference, 350M parameters, supports expression tags',
               contextLength: 0,
               deprecated: false,
-            }]
-          }
-
-          try {
-            const response = await fetch(`${apiBaseUrl}models`, {
-              headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
-            })
-            if (!response.ok)
-              throw new Error(`HTTP ${response.status}`)
-
-            const data = await response.json()
-            const models = Array.isArray(data?.data) ? data.data : []
-            if (models.length > 0) {
-              return models.map((model: any) => ({
-                id: model.id,
-                name: model.name || model.display_name || model.id,
-                provider: 'chatterbox',
-                description: model.description || 'Chatterbox speech generation',
-                contextLength: model.context_length || 0,
-                deprecated: false,
-              }) satisfies ModelInfo)
-            }
-          }
-          catch (error) {
-            logWarn('Failed to fetch Chatterbox models:', error)
-          }
-
-          return [{
-            id: 'chatterbox',
-            name: 'Chatterbox',
-            provider: 'chatterbox',
-            description: 'Chatterbox speech generation',
-            contextLength: 0,
-            deprecated: false,
-          }]
+            },
+            {
+              id: 'chatterbox',
+              name: 'Chatterbox Original',
+              provider: 'chatterbox',
+              description: 'Original model, highest quality',
+              contextLength: 0,
+              deprecated: false,
+            },
+            {
+              id: 'chatterbox-multilingual',
+              name: 'Chatterbox Multilingual',
+              provider: 'chatterbox',
+              description: 'Supports multiple languages',
+              contextLength: 0,
+              deprecated: false,
+            },
+          ]
         },
         getSpeechCapabilities: async (config: Record<string, unknown>) => {
           const apiKey = typeof config.apiKey === 'string' ? config.apiKey.trim() : ''
@@ -652,9 +638,22 @@ export const useProvidersStore = defineStore('providers', () => {
           }
 
           try {
-            const response = await fetch(`${rootBaseUrl}chatterbox/capabilities`, {
+            let response = await fetch(`${rootBaseUrl}chatterbox/capabilities`, {
               headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
             })
+
+            if (!response.ok) {
+              response = await fetch(`${rootBaseUrl}v1/audio/voices`, {
+                headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+              })
+            }
+
+            if (!response.ok) {
+              response = await fetch(`${rootBaseUrl}api/ui/initial-data`, {
+                headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+              })
+            }
+
             if (!response.ok) {
               throw new Error(`HTTP ${response.status}`)
             }
@@ -2573,6 +2572,361 @@ export const useProvidersStore = defineStore('providers', () => {
         },
       },
     },
+    'fish-speech': {
+      id: 'fish-speech',
+      category: 'speech',
+      pricing: 'free',
+      deployment: 'local',
+      tasks: ['text-to-speech'],
+      name: 'Fish Speech',
+      nameKey: 'settings.pages.providers.provider.fish-speech.title',
+      description: 'SOTA Open-Source TTS - 80+ languages, emotional tags, voice cloning',
+      descriptionKey: 'settings.pages.providers.provider.fish-speech.description',
+      icon: 'i-solar:fish-bold-duotone',
+      defaultOptions: () => ({
+        baseUrl: 'http://127.0.0.1:8080',
+        voice: 'default',
+        temperature: 0.8,
+        topP: 0.8,
+        repetitionPenalty: 1.1,
+        chunkLength: 200,
+      }),
+      createProvider: async (config) => {
+        return {
+          speech: (_model: string, _extraOptions?: any) => {
+            return {
+              baseURL: 'http://fish-speech.invalid/v1/',
+              model: 'fish-speech-1.5',
+              async fetch(_url: string | URL | Request, options?: RequestInit) {
+                const rootBaseUrl = toProviderRootBaseUrl(config.baseUrl) || 'http://127.0.0.1:8080/'
+                console.log('[Fish Speech 1.5] fetch() called, rootBaseUrl:', rootBaseUrl)
+
+                let body: { input?: string, text?: string } = {}
+                try {
+                  body = JSON.parse(options?.body as string)
+                }
+                catch {
+                  body = {}
+                }
+
+                const text = body.input || body.text || ''
+                const voiceId = typeof config.voice === 'string' ? config.voice : undefined
+
+                const chunkLength = typeof config.chunkLength === 'number' ? Math.round(config.chunkLength) : 200
+                const temperature = typeof config.temperature === 'number' ? config.temperature : 0.7
+                const topP = typeof config.topP === 'number' ? config.topP : 0.7
+                const repetitionPenalty = typeof config.repetitionPenalty === 'number' ? config.repetitionPenalty : 1.2
+
+                // v1.5.1 API format: uses references array + reference_id
+                const fishPayload: Record<string, unknown> = {
+                  text,
+                  format: 'wav',
+                  chunk_length: chunkLength,
+                  top_p: topP,
+                  repetition_penalty: repetitionPenalty,
+                  temperature,
+                  max_new_tokens: 1024,
+                  references: [],
+                  reference_id: null,
+                  seed: 42,
+                }
+
+                if (voiceId && voiceId !== 'default') {
+                  fishPayload.reference_id = voiceId
+                }
+
+                // Add reference audio for voice cloning (Jen_Frankie_spoiled.wav)
+                // This provides consistent voice characteristics
+                if (voiceId === 'jen_frankie') {
+                  try {
+                    const audioResponse = await fetch('http://127.0.0.1:8081/jen_frankie_spoiled.wav')
+                    if (audioResponse.ok) {
+                      const audioBuffer = await audioResponse.arrayBuffer()
+                      const base64Audio = btoa(
+                        new Uint8Array(audioBuffer).reduce((data, byte) => data + String.fromCharCode(byte), ''),
+                      )
+                      fishPayload.references = [{
+                        audio: base64Audio,
+                        text: 'Excuse me, I don\'t understand why me and my friends have to wait in line and pay full price, do you even realise how many TikTok followers do we have?!',
+                      }]
+                    }
+                  }
+                  catch {
+                    // Reference audio not available, fall back to default
+                  }
+                }
+
+                try {
+                  const response = await fetch(`${rootBaseUrl}v1/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(fishPayload),
+                    signal: options?.signal,
+                  })
+
+                  if (!response.ok) {
+                    const errorText = await response.text().catch(() => '')
+                    throw new Error(`Fish Speech TTS failed: ${response.status} ${errorText}`)
+                  }
+
+                  console.log('[Fish Speech 1.5] Response status:', response.status, 'content-type:', response.headers.get('content-type'), 'size:', response.headers.get('content-length'))
+
+                  return response
+                }
+                catch (error) {
+                  console.error('[Fish Speech 1.5] Fetch error:', error)
+                  throw error
+                }
+              },
+            }
+          },
+        } as SpeechProviderWithExtraOptions<string, any>
+      },
+      capabilities: {
+        listVoices: async (_config: Record<string, unknown>) => {
+          return [
+            {
+              id: 'default',
+              name: 'Default Voice',
+              provider: 'fish-speech',
+              description: 'Fish Speech 1.5 default voice (random)',
+              languages: [{ code: 'en', title: 'English' }, { code: 'zh', title: 'Chinese' }, { code: 'ja', title: 'Japanese' }],
+            },
+            {
+              id: 'jen_frankie',
+              name: 'Jen Frankie (Spoiled)',
+              provider: 'fish-speech',
+              description: 'Custom cloned voice from reference audio',
+              languages: [{ code: 'en', title: 'English' }],
+            },
+          ]
+        },
+        listModels: async (_config: Record<string, unknown>) => {
+          return [
+            {
+              id: 'fish-speech-1.5',
+              name: 'Fish Speech 1.5',
+              provider: 'fish-speech',
+              description: '~1.5B params, 80+ languages, fast inference',
+              contextLength: 0,
+              deprecated: false,
+            },
+          ]
+        },
+      },
+      validators: {
+        validateProviderConfig: async (config: Record<string, unknown>) => {
+          const errors: Error[] = []
+          const rootBaseUrl = toProviderRootBaseUrl(config.baseUrl) || 'http://127.0.0.1:8080/'
+
+          if (!rootBaseUrl) {
+            errors.push(new Error('Base URL is required'))
+          }
+          else if (!isUrl(rootBaseUrl)) {
+            errors.push(new Error('Base URL is invalid. It must be an absolute URL.'))
+          }
+
+          if (errors.length > 0) {
+            return {
+              errors,
+              reason: errors.map(error => error.message).join(', '),
+              valid: false,
+            }
+          }
+
+          try {
+            const response = await fetch(`${rootBaseUrl}v1/health`)
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`)
+            }
+            const data = await response.json()
+            if (data?.status !== 'ok') {
+              throw new Error('Server returned unhealthy status')
+            }
+          }
+          catch (error) {
+            const connectivityError = new Error(`Health check failed: ${(error as Error).message}`)
+            return {
+              errors: [connectivityError],
+              reason: connectivityError.message,
+              valid: false,
+            }
+          }
+
+          return {
+            errors: [],
+            reason: '',
+            valid: true,
+          }
+        },
+      },
+    },
+    'omnivoice': {
+      id: 'omnivoice',
+      category: 'speech',
+      pricing: 'free',
+      deployment: 'local',
+      tasks: ['text-to-speech'],
+      name: 'OmniVoice',
+      nameKey: 'settings.pages.providers.provider.omnivoice.title',
+      description: '600+ languages, voice cloning, voice design, 40x real-time speed',
+      descriptionKey: 'settings.pages.providers.provider.omnivoice.description',
+      icon: 'i-solar:world-bold-duotone',
+      defaultOptions: () => ({
+        baseUrl: 'http://127.0.0.1:8082',
+        voice: 'default',
+        referenceAudio: '',
+        seed: 42,
+        speed: 1.0,
+        numStep: 32,
+      }),
+      createProvider: async (config) => {
+        return {
+          speech: (_model: string, _extraOptions?: any) => {
+            return {
+              baseURL: 'http://omnivoice.invalid/v1/',
+              model: 'omnivoice',
+              async fetch(_url: string | URL | Request, options?: RequestInit) {
+                const rootBaseUrl = toProviderRootBaseUrl(config.baseUrl) || 'http://127.0.0.1:8082/'
+                console.log('[OmniVoice] fetch() called, rootBaseUrl:', rootBaseUrl)
+
+                let body: { input?: string, text?: string, voice?: string } = {}
+                try {
+                  body = JSON.parse(options?.body as string)
+                }
+                catch {
+                  body = {}
+                }
+
+                const text = body.input || body.text || ''
+                const voice = body.voice || (typeof config.voice === 'string' ? config.voice : 'default')
+                const seed = typeof config.seed === 'number' ? config.seed : 42
+                const speed = typeof config.speed === 'number' ? config.speed : 1.0
+                const numStep = typeof config.numStep === 'number' ? Math.round(config.numStep) : 32
+                const referenceAudio = typeof config.referenceAudio === 'string' ? config.referenceAudio.trim() : ''
+
+                const payload: Record<string, unknown> = {
+                  text,
+                  format: 'wav',
+                  seed,
+                  speed,
+                  num_step: numStep,
+                }
+
+                // Add reference audio for voice cloning
+                const REF_AUDIO_PATH = 'C:\\AI_WORKSPACE\\chatterbox\\reference_audio\\Jen_Frankie_spoiled.wav'
+                const REF_TEXT = 'Excuse me, I don\'t understand why me and my friends have to wait in line and pay full price, do you even realise how many TikTok followers do we have?!'
+
+                if (voice === 'jen_frankie' || referenceAudio) {
+                  payload.ref_audio = referenceAudio || REF_AUDIO_PATH
+                  payload.ref_text = REF_TEXT
+                }
+
+                try {
+                  const response = await fetch(`${rootBaseUrl}v1/tts`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: options?.signal,
+                  })
+
+                  if (!response.ok) {
+                    const errorText = await response.text().catch(() => '')
+                    throw new Error(`OmniVoice TTS failed: ${response.status} ${errorText}`)
+                  }
+
+                  console.log('[OmniVoice] Response status:', response.status, 'content-type:', response.headers.get('content-type'))
+
+                  return response
+                }
+                catch (error) {
+                  console.error('[OmniVoice] Fetch error:', error)
+                  throw error
+                }
+              },
+            }
+          },
+        } as SpeechProviderWithExtraOptions<string, any>
+      },
+      capabilities: {
+        listVoices: async () => {
+          return [
+            {
+              id: 'default',
+              name: 'Default Voice',
+              provider: 'omnivoice',
+              description: 'OmniVoice default voice',
+              languages: [{ code: 'en', title: 'English' }, { code: 'zh', title: 'Chinese' }],
+            },
+            {
+              id: 'jen_frankie',
+              name: 'Jen Frankie (Spoiled)',
+              provider: 'omnivoice',
+              description: 'Custom cloned voice from reference audio',
+              languages: [{ code: 'en', title: 'English' }],
+            },
+          ]
+        },
+        listModels: async () => {
+          return [
+            {
+              id: 'omnivoice',
+              name: 'OmniVoice',
+              provider: 'omnivoice',
+              description: 'Diffusion TTS, 600+ languages, voice cloning',
+              contextLength: 0,
+              deprecated: false,
+            },
+          ]
+        },
+      },
+      validators: {
+        validateProviderConfig: async (config: Record<string, unknown>) => {
+          const errors: Error[] = []
+          const rootBaseUrl = toProviderRootBaseUrl(config.baseUrl) || 'http://127.0.0.1:8082/'
+
+          if (!rootBaseUrl) {
+            errors.push(new Error('Base URL is required'))
+          }
+          else if (!isUrl(rootBaseUrl)) {
+            errors.push(new Error('Base URL is invalid. It must be an absolute URL.'))
+          }
+
+          if (errors.length > 0) {
+            return {
+              errors,
+              reason: errors.map(error => error.message).join(', '),
+              valid: false,
+            }
+          }
+
+          try {
+            const response = await fetch(`${rootBaseUrl}v1/health`)
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`)
+            }
+            const data = await response.json()
+            if (data?.status !== 'ok') {
+              throw new Error('Server returned unhealthy status')
+            }
+          }
+          catch (error) {
+            const connectivityError = new Error(`Health check failed: ${(error as Error).message}`)
+            return {
+              errors: [connectivityError],
+              reason: connectivityError.message,
+              valid: false,
+            }
+          }
+
+          return {
+            errors: [],
+            reason: '',
+            valid: true,
+          }
+        },
+      },
+    },
     'kokoro-local': {
       id: 'kokoro-local',
       category: 'speech',
@@ -2638,11 +2992,6 @@ export const useProvidersStore = defineStore('providers', () => {
       },
 
       capabilities: {
-        listModels: async (_config: Record<string, unknown>) => {
-          const hasWebGPU = typeof navigator !== 'undefined' && !!navigator.gpu
-          return kokoroModelsToModelInfo(hasWebGPU, t)
-        },
-
         loadModel: async (config: Record<string, unknown>, _hooks?: { onProgress?: (progress: ProgressInfo) => Promise<void> | void }) => {
           const modelId = config.model as string
 

@@ -122,5 +122,34 @@ plugins/development
 plugins-local
 plugins-development
 
+# Secrets — NEVER commit real credentials
+.env
+.env.*
+!.env.example
+
+# Personal/temp files
+session-*.md
+tmp_*.txt
+temp_*.txt
+extract.js
+macos_compatibility_problems.md
+*.patch
+
+# IDE & personal tool config
+.cursor/
+.vscode/
+.zed/
+.gemini/
+
+# Build artifacts
+dist/
+node_modules/
+
+# OmniVoice (local server)
+servers/omnivoice/python_embedded/
+servers/omnivoice/omnivoice/
+servers/omnivoice/uv.lock
+servers/omnivoice/.git/
+
 apps/stage-pocket/ios/buildServer.json
 .ghfs/

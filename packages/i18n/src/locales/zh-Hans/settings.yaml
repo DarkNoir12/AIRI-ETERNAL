@@ -852,6 +852,9 @@ pages:
         description: Advanced Voice Engine - Supports tags, profiles, presets, and
           high-performance playback
         title: Chatterbox
+      omnivoice:
+        description: 600+ 语言、声音克隆、声音设计、40 倍实时速度
+        title: OmniVoice
       openrouter-audio-speech:
         description: Unified Speech Gateway - Access partner TTS models through OpenRouter
         title: OpenRouter

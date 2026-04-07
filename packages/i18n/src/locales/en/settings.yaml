@@ -999,6 +999,9 @@ pages:
         description: Advanced Voice Engine - Supports tags, profiles, presets, and
           high-performance playback
         title: Chatterbox
+      omnivoice:
+        description: 600+ languages, voice cloning, voice design, 40x real-time speed
+        title: OmniVoice
       nvidia:
         description: NIM Optimized - High-performance inference on NVIDIA GPU infrastructure
         title: NVIDIA NIM

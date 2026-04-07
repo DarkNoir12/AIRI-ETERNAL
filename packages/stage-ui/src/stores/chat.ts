@@ -422,6 +422,7 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
           // Catch hallucinated markers
           const literalMarkerMatch = text.match(/\[call_tool:[\w-]+,[^\]]+\]/)
             || text.match(/<\|([\w-]+):[^|]+\|>/)
+            || text.match(/\[ACT:[\s\S]*?\]/)
             || text.match(/<tool_call>.*?<\/tool_call>/s)
             || text.match(/<\|[\w-]+:.*?<\/tool_call>/s)
 

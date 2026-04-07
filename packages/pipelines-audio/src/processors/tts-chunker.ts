@@ -9,9 +9,9 @@ import { createPushStream } from '../stream'
 export const TTS_FLUSH_INSTRUCTION = '\u200B'
 export const TTS_SPECIAL_TOKEN = '\u2063'
 
-const keptPunctuations = new Set('?？!！')
-const hardPunctuations = new Set('.。?？!！…⋯～~\n\t\r')
-const softPunctuations = new Set(',，、–—:：;；《》「」')
+const keptPunctuations = new Set('?？!！,，')
+const hardPunctuations = new Set('.。?？!！…⋯～~\n\t\r,，')
+const softPunctuations = new Set('、–—:：;；《》「」')
 
 export interface TtsInputChunk {
   text: string
@@ -124,18 +124,6 @@ export async function* chunkTtsInput(
 
       const words = [...segmenter.segment(buffer)].filter(w => w.isWordLike)
 
-      if (chunkWordsCount > minimumWords && chunkWordsCount + words.length > maximumWords) {
-        const text = kept ? chunk.trim() + value : chunk.trim()
-        yield {
-          text,
-          words: chunkWordsCount,
-          reason: 'limit',
-        }
-        yieldCount++
-        chunk = ''
-        chunkWordsCount = 0
-      }
-
       chunk += buffer + value
       chunkWordsCount += words.length
       buffer = ''
@@ -151,12 +139,12 @@ export async function* chunkTtsInput(
         chunk = ''
         chunkWordsCount = 0
       }
-      else if (flush || hard || chunkWordsCount > maximumWords || yieldCount < boost) {
+      else if (flush || hard) {
         const text = chunk.trim()
         yield {
           text,
           words: chunkWordsCount,
-          reason: flush ? 'flush' : hard ? 'hard' : chunkWordsCount > maximumWords ? 'limit' : 'boost',
+          reason: flush ? 'flush' : 'hard',
         }
         yieldCount++
         chunk = ''
@@ -219,9 +207,19 @@ export async function chunkEmitter(
       if (chunk.reason === 'special') {
         const specialToken = pendingSpecials.shift()
         // console.debug("special yield:", specialToken)
+        console.log('[TTS Chunker] Yielding special chunk:', JSON.stringify({
+          text: sanitizeChunk(chunk.text),
+          reason: chunk.reason,
+          special: specialToken,
+        }))
         await handler({ chunk: sanitizeChunk(chunk.text), special: specialToken ?? null, reason: chunk.reason })
       }
       else {
+        console.log('[TTS Chunker] Yielding text chunk:', JSON.stringify({
+          text: sanitizeChunk(chunk.text),
+          reason: chunk.reason,
+          words: chunk.words,
+        }))
         await handler({ chunk: sanitizeChunk(chunk.text), special: null, reason: chunk.reason })
       }
     }

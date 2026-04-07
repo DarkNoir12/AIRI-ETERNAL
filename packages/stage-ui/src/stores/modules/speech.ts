@@ -97,7 +97,8 @@ export const useSpeechStore = defineStore('speech', () => {
       const metadata = providersStore.getProviderMetadata(provider)
 
       // Only attempt to fetch voices if the provider is actually configured
-      if (metadata.validators?.validateProviderConfig) {
+      // Fish Speech and OmniVoice always have built-in defaults, so skip validation
+      if (!['fish-speech', 'omnivoice'].includes(provider) && metadata.validators?.validateProviderConfig) {
         const validation = await metadata.validators.validateProviderConfig(config)
         if (!validation.valid) {
           console.warn(`[Speech] Skipping voice fetch for unconfigured provider: ${provider}`)
@@ -295,7 +296,7 @@ export const useSpeechStore = defineStore('speech', () => {
     let hasVoice = !!activeSpeechVoiceId.value
 
     // For OpenAI Compatible providers, check provider config as fallback
-    if (activeSpeechProvider.value === 'openai-compatible-audio-speech') {
+    if (activeSpeechProvider.value === 'openai-compatible-audio-speech' || activeSpeechProvider.value === 'chatterbox' || activeSpeechProvider.value === 'fish-speech' || activeSpeechProvider.value === 'omnivoice') {
       const providerConfig = providersStore.getProviderConfig(activeSpeechProvider.value)
       hasModel ||= !!providerConfig?.model
       hasVoice ||= !!providerConfig?.voice
