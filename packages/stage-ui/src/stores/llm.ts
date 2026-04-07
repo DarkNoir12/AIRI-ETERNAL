@@ -124,6 +124,7 @@ export function isToolRelatedError(err: unknown): boolean {
 async function streamFrom(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
   const headers = options?.headers
   const chatConfig = chatProvider.chat(model)
+  const baseUrl = chatConfig.baseURL || ''
 
   const sanitized = sanitizeMessages(messages as unknown[], { vision: options?.vision })
   const requestOverrides = sanitizeRequestOverrides(options?.requestOverrides)
@@ -192,7 +193,7 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
         temperature: options?.temperature,
         top_p: options?.top_p,
         max_tokens: options?.max_tokens,
-        ...(options?.contextWidth ? { num_ctx: options.contextWidth } : {}),
+        ...(options?.contextWidth && String(baseUrl).includes('localhost:11434') ? { num_ctx: options.contextWidth } : {}),
         // TODO: we need Automatic tools discovery
         tools,
         onEvent,
@@ -222,6 +223,7 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
 async function generateFrom(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
   const headers = options?.headers
   const chatConfig = chatProvider.chat(model)
+  const baseUrl = chatConfig.baseURL || ''
   const sanitized = sanitizeMessages(messages as unknown[], { vision: options?.vision })
   const requestOverrides = sanitizeRequestOverrides(options?.requestOverrides)
 
@@ -256,7 +258,7 @@ async function generateFrom(model: string, chatProvider: ChatProvider, messages:
     temperature: options?.temperature,
     top_p: options?.top_p,
     max_tokens: options?.max_tokens,
-    ...(options?.contextWidth ? { num_ctx: options.contextWidth } : {}),
+    ...(options?.contextWidth && String(baseUrl).includes('localhost:11434') ? { num_ctx: options.contextWidth } : {}),
     tools,
   })
 }
