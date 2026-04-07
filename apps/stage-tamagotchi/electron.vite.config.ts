@@ -25,8 +25,7 @@ export default defineConfig({
       // NOTICE: Any package added to 'include' below MUST be listed in 'dependencies'
       // (not 'devDependencies') in package.json to be available in production builds.
       externalizeDeps: {
-        include: [
-          'electron-click-drag-plugin',
+        exclude: [
           '@proj-airi/electron-screen-capture',
           '@proj-airi/electron-eventa',
           '@proj-airi/electron-vueuse',

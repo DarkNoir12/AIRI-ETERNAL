@@ -61,6 +61,8 @@ export interface ProviderMetadata {
     getSpeechCapabilities?: (config: Record<string, unknown>) => Promise<SpeechCapabilitiesInfo | null>
     loadModel?: (config: Record<string, unknown>, hooks?: { onProgress?: (progress: ProgressInfo) => Promise<void> | void }) => Promise<void>
     chatPingCheckAvailable?: boolean
+    supportsSSML?: boolean
+    supportsPitch?: boolean
   }
   validators: {
     chatPingCheckAvailable?: boolean
@@ -118,6 +120,8 @@ export interface SpeechCapabilitiesInfo {
   supportsMannerisms?: boolean
   expressionTags?: SpeechExpressionTagInfo[]
   mannerisms?: SpeechMannerismInfo[]
+  supportsSSML?: boolean
+  supportsPitch?: boolean
 }
 
 export interface ProviderRuntimeState {

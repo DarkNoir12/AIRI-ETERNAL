@@ -21,60 +21,64 @@ function createWindowsPoller(nativeId: string, callback: BoundsCallback): { stop
   let stopped = false
   let timer: NodeJS.Timeout | null = null
 
-  // PowerShell script that loads Win32 API once and returns window rect
-  const psScript = `
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public class DockWinAPI {
-  [DllImport("user32.dll")]
-  public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
-  [DllImport("user32.dll")]
-  public static extern bool IsWindow(IntPtr hWnd);
-  [StructLayout(LayoutKind.Sequential)]
-  public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
-}
-"@
-$h = [IntPtr]${nativeId}
-if ([DockWinAPI]::IsWindow($h)) {
-  $r = New-Object DockWinAPI+RECT
-  if ([DockWinAPI]::GetWindowRect($h, [ref]$r)) {
-    Write-Output "$($r.Left),$($r.Top),$($r.Right - $r.Left),$($r.Bottom - $r.Top)"
-  } else { Write-Output "ERR" }
-} else { Write-Output "GONE" }
-`.trim()
+  // Native FFI Hook for Windows User32 via Koffi
+  let win32: any = null
+  try {
+    const koffi = require('koffi')
+    const user32 = koffi.load('user32.dll')
+
+    koffi.struct('RECT', {
+      left: 'int32',
+      top: 'int32',
+      right: 'int32',
+      bottom: 'int32',
+    })
+
+    win32 = {
+      GetWindowRect: user32.func('GetWindowRect', 'bool', ['void *', 'RECT *']),
+      IsWindow: user32.func('IsWindow', 'bool', ['void *']),
+    }
+  }
+  catch (err) {
+    console.error('[WindowBounds] Failed to load Koffi for native bounds:', err)
+  }
 
   function poll() {
     if (stopped)
       return
 
-    execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', psScript], { timeout: 3000 }, (err: ExecFileException | null, stdout: string) => {
-      if (stopped)
-        return
+    if (!win32) {
+      callback(null)
+      timer = setTimeout(poll, 1000)
+      return
+    }
 
-      if (err) {
-        callback(null)
-        timer = setTimeout(poll, 500)
-        return
-      }
+    try {
+      const hwnd = BigInt(nativeId)
 
-      const line = stdout.trim()
-      if (line === 'GONE' || line === 'ERR') {
-        callback(null)
-        timer = setTimeout(poll, 500)
-        return
-      }
-
-      const parts = line.split(',').map(Number)
-      if (parts.length === 4 && parts.every((n: number) => Number.isFinite(n))) {
-        callback({ x: parts[0], y: parts[1], width: parts[2], height: parts[3] })
+      if (win32.IsWindow(hwnd)) {
+        const rect: any = {}
+        if (win32.GetWindowRect(hwnd, rect)) {
+          callback({
+            x: rect.left,
+            y: rect.top,
+            width: rect.right - rect.left,
+            height: rect.bottom - rect.top,
+          })
+        }
+        else {
+          callback(null)
+        }
       }
       else {
         callback(null)
       }
+    }
+    catch (err) {
+      callback(null)
+    }
 
-      timer = setTimeout(poll, 200)
-    })
+    timer = setTimeout(poll, 200)
   }
 
   poll()

@@ -6,6 +6,7 @@ import messages from '@proj-airi/i18n/locales'
 
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { Format, LogLevel, setGlobalFormat, setGlobalLogLevel, useLogg } from '@guiiai/logg'
+import { defineInvokeHandler } from '@moeru/eventa'
 import { createContext } from '@moeru/eventa/adapters/electron/main'
 import { initScreenCaptureForMain } from '@proj-airi/electron-screen-capture/main'
 import { app, ipcMain, session } from 'electron'
@@ -13,6 +14,7 @@ import { createLoggLogger, injeca, lifecycle } from 'injeca'
 import { isLinux } from 'std-env'
 
 import icon from '../../resources/icon.png?asset'
+import { electronCaptionToggleVisibility } from '../shared/eventa'
 
 import { openDebugger, setupDebugger } from './app/debugger'
 import { createGlobalAppConfig } from './configs/global'
@@ -27,7 +29,7 @@ import { setupPluginHost } from './services/airi/plugins'
 import { createMicToggleService } from './services/airi/shortcuts/mic-toggle'
 import { setupAutoUpdater } from './services/electron/auto-updater'
 import { createVisionService } from './services/electron/vision'
-import { setupSensorsService } from './services/sensors'
+import { createSensorsService } from './services/sensors'
 import { cleanupMicToggleShortcut } from './services/shortcuts/mic-toggle'
 import { setupTray } from './tray'
 import { setupAboutWindowReusable } from './windows/about'
@@ -192,16 +194,13 @@ app.whenReady().then(async () => {
   })
 
   const captionWindow = injeca.provide('windows:caption', {
-    dependsOn: { mainWindow, serverChannel, i18n },
+    dependsOn: { mainWindow, serverChannel, i18n, appConfig },
     build: async ({ dependsOn }) => setupCaptionWindowManager(dependsOn),
   })
 
   const tray = injeca.provide('app:tray', {
     dependsOn: { mainWindow, settingsWindow, captionWindow, widgetsWindow: widgetsManager, serverChannel, beatSyncBgWindow: beatSync, aboutWindow, i18n, appConfig },
     build: async ({ dependsOn }) => {
-      // Start global OS sensor hooks
-      setupSensorsService()
-
       const configHelper = dependsOn.appConfig
       return setupTray({
         ...dependsOn,
@@ -212,7 +211,7 @@ app.whenReady().then(async () => {
   })
 
   injeca.invoke({
-    dependsOn: { mainWindow, tray, serverChannel, pluginHost, mcpStdioManager, onboardingWindow: onboardingWindowManager, appConfig, i18n },
+    dependsOn: { mainWindow, tray, serverChannel, pluginHost, mcpStdioManager, onboardingWindow: onboardingWindowManager, appConfig, i18n, captionWindow },
     callback: (deps) => {
       const context = createContext(ipcMain).context
       createServerChannelService({ serverChannel: deps.serverChannel })
@@ -220,10 +219,31 @@ app.whenReady().then(async () => {
       createI18nService({ context, window: deps.mainWindow, i18n: deps.i18n })
       createMicToggleService({ context, window: deps.mainWindow })
       createVisionService({ context })
+      const sensorsServicePromise = createSensorsService({ context })
+      defineInvokeHandler(context, electronCaptionToggleVisibility, async () => {
+        console.log('[@proj-airi/stage-tamagotchi] Caption visibility toggle triggered via Control Island')
+        await deps.captionWindow.toggleVisibility()
+      })
+
+      const restoreCaption = () => {
+        // Auto-restore caption window if enabled in config
+        if (deps.appConfig.get()?.windows?.find((w: any) => w.tag === 'caption')?.enabled) {
+          deps.captionWindow.toggleVisibility()
+        }
+      }
+
+      if (deps.mainWindow.isVisible()) {
+        restoreCaption()
+      }
+      else {
+        deps.mainWindow.once('ready-to-show', restoreCaption)
+      }
 
       import('./libs/bootkit/lifecycle').then((m) => {
-        m.onAppBeforeQuit(() => {
+        m.onAppBeforeQuit(async () => {
           console.log('[@proj-airi/stage-tamagotchi] App is quitting, flushing all configs...')
+          const sensorsService = await sensorsServicePromise
+          sensorsService.stop()
           flushAllConfigs()
         })
       })

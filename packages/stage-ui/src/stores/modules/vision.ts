@@ -7,6 +7,7 @@ import { computed, ref, watch } from 'vue'
 import { useChatOrchestratorStore } from '../chat'
 import { useProvidersStore } from '../providers'
 import { useAiriCardStore } from './airi-card'
+import { useLiveSessionStore } from './live-session'
 
 export const useVisionStore = defineStore('vision', () => {
   const providersStore = useProvidersStore()
@@ -42,7 +43,19 @@ export const useVisionStore = defineStore('vision', () => {
 
   // Heartbeat Logic
   const heartbeat = async (options?: { force?: boolean }) => {
-    console.log('[Vision Store] Heartbeat checking...', { isWitnessEnabled: isWitnessEnabled.value, force: !!options?.force })
+    const liveSessionStore = useLiveSessionStore()
+    console.log('[Vision Store] Heartbeat checking...', {
+      isActive: liveSessionStore.isActive,
+      isWitnessEnabled: isWitnessEnabled.value,
+      force: !!options?.force,
+    })
+
+    // Master Gate Check: if the session is not active, we never capture.
+    if (!liveSessionStore.isActive) {
+      console.log('[Vision Store] Heartbeat aborted: Master Gate (Live API) is OFF.')
+      return
+    }
+
     if (!isWitnessEnabled.value && !options?.force)
       return
 

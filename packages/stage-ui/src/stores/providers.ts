@@ -245,6 +245,8 @@ export const useProvidersStore = defineStore('providers', () => {
       creator: createOpenAI,
       validation: ['health'],
       capabilities: {
+        supportsSSML: false,
+        supportsPitch: false,
         // NOTE: OpenAI does not provide an API endpoint to retrieve available voices.
         // Voices are hardcoded here - this is a provider limitation, not an application limitation.
         // Voice compatibility per https://platform.openai.com/docs/api-reference/audio/createSpeech:
@@ -419,6 +421,8 @@ export const useProvidersStore = defineStore('providers', () => {
       deployment: 'cloud',
       tasks: ['text-to-speech'],
       capabilities: {
+        supportsSSML: false,
+        supportsPitch: false,
         listVoices: async (config: Record<string, unknown>) => {
           const apiKey = typeof config.apiKey === 'string' ? config.apiKey.trim() : ''
           let baseUrl = typeof config.baseUrl === 'string' ? config.baseUrl.trim() : ''
@@ -746,6 +750,8 @@ export const useProvidersStore = defineStore('providers', () => {
         } as SpeechProviderWithExtraOptions<string, any>
       },
       capabilities: {
+        supportsSSML: true,
+        supportsPitch: false,
         listModels: async () => {
           return [
             { id: 'neural', name: 'Neural', provider: 'aws-polly-tts', tasks: ['text-to-speech', 'tts'], deployment: 'cloud' },
@@ -1160,6 +1166,8 @@ export const useProvidersStore = defineStore('providers', () => {
         return createNativeElevenLabsProvider(apiKey, baseUrl, voiceSettings) as SpeechProviderWithExtraOptions<string, UnElevenLabsOptions>
       },
       capabilities: {
+        supportsSSML: true,
+        supportsPitch: true,
         listModels: async () => {
           return elevenLabsModels.map((model) => {
             return {
@@ -1246,6 +1254,8 @@ export const useProvidersStore = defineStore('providers', () => {
         return provider
       },
       capabilities: {
+        supportsSSML: false,
+        supportsPitch: false,
         listModels: async () => {
           return [
             {
@@ -1381,6 +1391,8 @@ export const useProvidersStore = defineStore('providers', () => {
         return createUnMicrosoft(apiKey, baseUrl) as SpeechProviderWithExtraOptions<string, UnMicrosoftOptions>
       },
       capabilities: {
+        supportsSSML: true,
+        supportsPitch: true,
         listModels: async () => {
           return [
             {

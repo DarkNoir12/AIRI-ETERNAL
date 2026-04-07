@@ -87,6 +87,12 @@ const settingsGroups = computed(() => [
         to: '/settings/system',
       },
       {
+        title: t('settings.pages.docs.title'),
+        description: t('settings.pages.docs.description'),
+        icon: 'i-solar:book-open-bold-duotone',
+        to: '/settings/docs',
+      },
+      {
         title: t('settings.pages.data.title'),
         description: t('settings.pages.data.description'),
         icon: 'i-solar:database-bold-duotone',

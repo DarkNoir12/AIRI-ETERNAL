@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { HackerPanel, ModelSettings } from '@proj-airi/stage-ui/components/scenarios/settings/model-settings'
+import { useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { Vibrant } from 'node-vibrant/browser'
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
+const cardStore = useAiriCardStore()
 const modelSettingsRef = ref<InstanceType<typeof ModelSettings>>()
 
 const palette = ref<string[]>([])
@@ -28,6 +30,16 @@ async function extractColorsFromModel() {
     URL.revokeObjectURL(frameUrl)
   }
 }
+
+onMounted(() => {
+  cardStore.isModelSyncPrevented = true
+})
+
+onBeforeUnmount(async () => {
+  cardStore.isModelSyncPrevented = false
+  // Restore character's original model state on exit
+  await cardStore.syncCardState(cardStore.activeCard, true)
+})
 </script>
 
 <template>

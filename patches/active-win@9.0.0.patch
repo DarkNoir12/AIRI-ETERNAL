@@ -1,0 +1,21 @@
+diff --git a/lib/windows.js b/lib/windows.js
+index b040c7401b79c90017cfbeecdf3d1a792e281ed3..5734bb23b257ed5eded753c1d8937bffe2216816 100644
+--- a/lib/windows.js
++++ b/lib/windows.js
+@@ -10,10 +10,15 @@ const require = createRequire(import.meta.url);
+ 
+ const bindingPath = preGyp.find(path.resolve(path.join(__dirname, '../package.json')));
+ 
+-const addon = (fs.existsSync(bindingPath)) ? require(bindingPath) : {
++let addon = {
+ 	getActiveWindow() {},
+ 	getOpenWindows() {},
+ };
++try {
++	if (fs.existsSync(bindingPath)) {
++		addon = require(bindingPath);
++	}
++} catch (err) {}
+ 
+ export async function activeWindow() {
+ 	return addon.getActiveWindow();

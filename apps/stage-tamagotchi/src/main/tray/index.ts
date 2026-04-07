@@ -95,9 +95,15 @@ export function setupTray(params: {
     trayImage.setTemplateImage(isMacOS)
 
     const appTray = new Tray(trayImage)
-    onAppBeforeQuit(() => appTray.destroy())
+    onAppBeforeQuit(() => {
+      rebuildContextMenu.cancel()
+      appTray.destroy()
+    })
 
     const rebuildContextMenu = debounce((): void => {
+      if (!appTray || appTray.isDestroyed())
+        return
+
       const { x: areaX, y: areaY, width: areaWidth, height: areaHeight } = screen.getPrimaryDisplay().workArea
       const { width: windowWidth, height: windowHeight } = params.mainWindow.getBounds()
 
@@ -251,8 +257,18 @@ export function setupTray(params: {
           label: params.i18n.t(params.captionWindow.isVisible()
             ? 'tamagotchi.electron.tray.menu.labels.label.close_caption'
             : 'tamagotchi.electron.tray.menu.labels.label.open_caption'),
-          click: () => {
-            void params.captionWindow.toggleVisibility().then(() => rebuildContextMenu())
+          click: async () => {
+            await params.captionWindow.toggleVisibility()
+            const config = params.getConfig() ?? { windows: [] }
+            if (!config.windows)
+              config.windows = []
+            let index = config.windows.findIndex((w: any) => w.tag === 'caption')
+            if (index === -1) {
+              index = config.windows.push({ title: 'Caption', tag: 'caption' }) - 1
+            }
+            config.windows[index].enabled = params.captionWindow.isVisible()
+            params.updateConfig(config)
+            rebuildContextMenu()
           },
         },
         {
@@ -261,6 +277,37 @@ export function setupTray(params: {
           submenu: Menu.buildFromTemplate([
             { type: 'checkbox', label: params.i18n.t('tamagotchi.electron.tray.menu.labels.label.follow_window'), checked: params.captionWindow.getIsFollowingWindow(), click: async menuItem => await params.captionWindow.setFollowWindow(Boolean(menuItem.checked)) },
             { label: params.i18n.t('tamagotchi.electron.tray.menu.labels.label.reset_position'), click: async () => await params.captionWindow.resetToSide() },
+            { type: 'separator' },
+            {
+              type: 'checkbox',
+              label: params.i18n.t('tamagotchi.electron.tray.menu.labels.label.dock_bottom'),
+              checked: config.windows?.find((w: any) => w.tag === 'caption')?.dock === 'bottom',
+              click: (item) => {
+                const config = params.getConfig() ?? { windows: [] }
+                let index = config.windows.findIndex((w: any) => w.tag === 'caption')
+                if (index === -1)
+                  index = config.windows.push({ title: 'Caption', tag: 'caption' }) - 1
+                config.windows[index].dock = item.checked ? 'bottom' : undefined
+                params.updateConfig(config)
+                params.captionWindow.triggerMove()
+                rebuildContextMenu()
+              },
+            },
+            {
+              type: 'checkbox',
+              label: params.i18n.t('tamagotchi.electron.tray.menu.labels.label.dock_top'),
+              checked: config.windows?.find((w: any) => w.tag === 'caption')?.dock === 'top',
+              click: (item) => {
+                const config = params.getConfig() ?? { windows: [] }
+                let index = config.windows.findIndex((w: any) => w.tag === 'caption')
+                if (index === -1)
+                  index = config.windows.push({ title: 'Caption', tag: 'caption' }) - 1
+                config.windows[index].dock = item.checked ? 'top' : undefined
+                params.updateConfig(config)
+                params.captionWindow.triggerMove()
+                rebuildContextMenu()
+              },
+            },
           ]),
         },
         { type: 'separator' },

@@ -553,22 +553,35 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
       })
 
       const contextsSnapshot = chatContext.getContextsSnapshot()
-      if (Object.keys(contextsSnapshot).length > 0) {
+      const groundingEnabled = activeCard.value?.extensions?.airi?.groundingEnabled
+      const sensorPayload = groundingEnabled ? proactivityStore.sensorPayload : ''
+
+      if (Object.keys(contextsSnapshot).length > 0 || sensorPayload) {
         const system = newMessages.slice(0, 1)
         const afterSystem = newMessages.slice(1, newMessages.length)
+
+        let contextContent = ''
+        if (Object.keys(contextsSnapshot).length > 0) {
+          contextContent += 'These are the contextual information retrieved or on-demand updated from other modules:\n'
+            + `${Object.entries(contextsSnapshot).map(([key, value]) => `Module ${key}: ${JSON.stringify(value)}`).join('\n')}\n`
+        }
+
+        if (sensorPayload) {
+          contextContent += `${contextContent ? '\n---\n' : ''
+          }[ENVIRONMENTAL AWARENESS]\n`
+          + `The following telemetry describes your current environmental context. `
+          + `Use it to stay grounded in the user's reality and inform your response. `
+          + `You may reference specific values (like time or active applications) if relevant `
+          + `to the conversation, but avoid a dry, technical recitation of the data.\n`
+          + `---\n`
+          + `${sensorPayload}\n`
+        }
 
         newMessages = [
           ...system,
           {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: ''
-                  + 'These are the contextual information retrieved or on-demand updated from other modules, you may use them as context for chat, or reference of the next action, tool call, etc.:\n'
-                  + `${Object.entries(contextsSnapshot).map(([key, value]) => `Module ${key}: ${JSON.stringify(value)}`).join('\n')}\n`,
-              },
-            ],
+            role: 'system',
+            content: contextContent.trim(),
           },
           ...afterSystem,
         ]

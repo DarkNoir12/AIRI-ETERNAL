@@ -7,7 +7,6 @@ import { useLiveSessionStore } from '@proj-airi/stage-ui/stores/modules/live-ses
 import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
-import { useTheme } from '@proj-airi/ui'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -21,6 +20,7 @@ import GeminiControls from './gemini-controls.vue'
 import IndicatorMicVolume from './indicator-mic-volume.vue'
 
 import {
+  electronCaptionToggleVisibility,
   electronOpenChat,
   electronOpenSettings,
   electronStartDraggingWindow,
@@ -31,7 +31,6 @@ import {
 const emit = defineEmits<{
   (e: 'take-photo'): void
 }>()
-const { isDark, toggleDark } = useTheme()
 const { t } = useI18n()
 
 const providersStore = useProvidersStore()
@@ -69,13 +68,14 @@ const openChat = useElectronEventaInvoke(electronOpenChat)
 const isLinux = ref(false)
 const hideWindow = useElectronEventaInvoke(electronWindowHide)
 const setAlwaysOnTop = useElectronEventaInvoke(electronWindowSetAlwaysOnTop)
+const toggleCaptionVisibility = useElectronEventaInvoke(electronCaptionToggleVisibility)
 
 const expanded = ref(false)
 const geminiExpanded = ref(false)
 const islandRef = ref<HTMLElement>()
 
 // === Sub-menu state ===
-const view = ref<'main' | 'emotions' | 'wardrobe' | 'profiles'>('main')
+const view = ref<'main' | 'emotions' | 'wardrobe' | 'profiles' | 'captions'>('main')
 
 // Expose whether hearing dialog is open so parent can disable click-through
 const hearingDialogOpen = ref(false)
@@ -90,9 +90,11 @@ defineExpose({
 })
 
 watch(expanded, (isExp) => {
-  if (!isExp) {
-    view.value = 'main' // Reset sub-menu when collapsing
+  if (isExp) {
     geminiExpanded.value = false
+  }
+  else {
+    view.value = 'main' // Reset sub-menu when collapsing
   }
 })
 
@@ -116,22 +118,7 @@ function handleOpenChat() {
   return openChat()
 }
 
-function handleViewGallery() {
-  if (activeCardId.value) {
-    openSettings({ route: `/settings/airi-card?cardId=${activeCardId.value}&tab=gallery` })
-    expanded.value = false
-  }
-}
-
-function handleManageProfiles() {
-  openSettings({ route: '/settings/airi-card' })
-  expanded.value = false
-}
-
-function handleTakePhoto() {
-  emit('take-photo')
-  expanded.value = false
-}
+// === Capture Handles (Future) ===
 
 // Grouped classes for icon / border / padding and combined style class
 const adjustStyleClasses = computed(() => {
@@ -184,6 +171,9 @@ function handleGeminiToggle() {
     return
   }
   geminiExpanded.value = !geminiExpanded.value
+  if (geminiExpanded.value) {
+    expanded.value = false
+  }
 }
 
 /**
@@ -431,14 +421,14 @@ function triggerWardrobeItem(id: string) {
               </ControlButtonTooltip>
 
               <ControlButtonTooltip>
-                <ControlButton :button-style="adjustStyleClasses.button" @click="toggleDark(); expanded = false">
+                <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'captions'">
                   <Transition name="fade" mode="out-in">
-                    <div v-if="isDark" i-solar:moon-outline :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
-                    <div v-else i-solar:sun-2-outline :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
+                    <div v-if="settingsStore.showCaptions" i-ph:closed-captioning-duotone :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
+                    <div v-else i-ph:closed-captioning-duotone :class="adjustStyleClasses.icon" text="neutral-600 dark:neutral-400 opacity-50" />
                   </Transition>
                 </ControlButton>
                 <template #tooltip>
-                  {{ isDark ? t('tamagotchi.stage.controls-island.switch-to-light-mode') : t('tamagotchi.stage.controls-island.switch-to-dark-mode') }}
+                  {{ settingsStore.showCaptions ? 'Hide Captions' : 'Show Captions' }}
                 </template>
               </ControlButtonTooltip>
 
@@ -583,77 +573,136 @@ function triggerWardrobeItem(id: string) {
               </div>
             </div>
 
-            <!-- Profiles Sub-menu -->
-            <div v-else-if="view === 'profiles'" key="profiles" flex flex-col gap-2>
-              <!-- Profile List (Scrollbox) -->
-              <div class="scrollbar-hide max-h-[144px] overflow-y-auto">
-                <div flex flex-col gap-1 pb-1>
-                  <button
-                    v-for="[id, card] in cardStore.cards"
-                    :key="id"
-                    class="cursor-pointer border-2 rounded-xl border-solid px-3 py-1.5 text-left text-xs backdrop-blur-md transition-all duration-300 transition-ease-out"
+            <!-- Captions Sub-menu -->
+            <div v-else-if="view === 'captions'" key="captions" grid grid-cols-3 gap-2>
+              <!-- Row 1: Power & Visuals -->
+              <ControlButtonTooltip>
+                <ControlButton
+                  :button-style="adjustStyleClasses.button"
+                  @click="toggleCaptionVisibility()"
+                >
+                  <div
+                    i-ph:power-bold
                     :class="[
-                      id === activeCardId
-                        ? 'bg-sky-500/20 border-sky-400/50 text-sky-600 dark:text-sky-300'
-                        : 'bg-neutral-50/80 dark:bg-neutral-800/70 border-neutral-200/60 dark:border-neutral-800/10 hover:bg-neutral-200/50 dark:hover:bg-neutral-700/50',
+                      adjustStyleClasses.icon,
+                      settingsStore.showCaptions ? 'text-green-500 opacity-100' : 'text-neutral-500 opacity-40',
                     ]"
-                    @click="cardStore.activateCard(id)"
-                  >
-                    <div flex items-center gap-2>
-                      <div v-if="id === activeCardId" i-solar:check-circle-bold class="size-3" />
-                      <span truncate>{{ card.name }}</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
+                  />
+                </ControlButton>
+                <template #tooltip>
+                  {{ settingsStore.showCaptions ? 'Power: ON' : 'Power: OFF' }}
+                </template>
+              </ControlButtonTooltip>
 
-              <!-- Fixed Utility Row -->
-              <div grid grid-cols-4 gap-2 border-t border-neutral-200 border-solid pt-2 dark:border-neutral-800>
-                <ControlButtonTooltip>
-                  <ControlButton
-                    :button-style="adjustStyleClasses.button"
-                    @click="handleTakePhoto"
-                  >
-                    <div i-solar:camera-outline :class="adjustStyleClasses.icon" text="amber-500" />
-                  </ControlButton>
-                  <template #tooltip>
-                    Photo Mode
-                  </template>
-                </ControlButtonTooltip>
+              <ControlButtonTooltip>
+                <ControlButton
+                  :button-style="adjustStyleClasses.button"
+                  @click="settingsStore.captionFontSize = (settingsStore.captionFontSize >= 150 ? 80 : settingsStore.captionFontSize + (settingsStore.captionFontSize === 125 ? 25 : 20))"
+                >
+                  <div i-ph:text-t-bold :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
+                </ControlButton>
+                <template #tooltip>
+                  Font Size: {{ settingsStore.captionFontSize }}%
+                </template>
+              </ControlButtonTooltip>
 
-                <ControlButtonTooltip>
-                  <ControlButton
-                    :button-style="adjustStyleClasses.button"
-                    @click="handleViewGallery"
-                  >
-                    <div i-solar:gallery-linear :class="adjustStyleClasses.icon" text="sky-600 dark:sky-400" />
-                  </ControlButton>
-                  <template #tooltip>
-                    View Gallery
-                  </template>
-                </ControlButtonTooltip>
+              <ControlButtonTooltip>
+                <ControlButton
+                  :button-style="adjustStyleClasses.button"
+                  @click="settingsStore.captionOpacity = (settingsStore.captionOpacity === 80 ? 0 : (settingsStore.captionOpacity === 0 ? 20 : (settingsStore.captionOpacity === 20 ? 50 : 80)))"
+                >
+                  <div i-solar:layers-minimalistic-outline :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
+                </ControlButton>
+                <template #tooltip>
+                  Background: {{ settingsStore.captionOpacity }}%
+                </template>
+              </ControlButtonTooltip>
 
-                <ControlButtonTooltip>
-                  <ControlButton
-                    :button-style="adjustStyleClasses.button"
-                    @click="handleManageProfiles"
-                  >
-                    <div i-solar:settings-outline :class="adjustStyleClasses.icon" text="purple-600 dark:purple-400" />
-                  </ControlButton>
-                  <template #tooltip>
-                    Manage Profiles
-                  </template>
-                </ControlButtonTooltip>
+              <!-- Row 2: Spatial & Reset -->
+              <ControlButtonTooltip>
+                <ControlButton
+                  :button-style="adjustStyleClasses.button"
+                  @click="settingsStore.captionDocking = (settingsStore.captionDocking === 'bottom' ? 'top' : 'bottom')"
+                >
+                  <div
+                    :class="[
+                      adjustStyleClasses.icon,
+                      settingsStore.captionDocking === 'top' ? 'i-solar:align-top-line-duotone' : 'i-solar:align-bottom-line-duotone',
+                    ]"
+                    text="purple-600 dark:purple-400"
+                  />
+                </ControlButton>
+                <template #tooltip>
+                  Docking: {{ settingsStore.captionDocking }}
+                </template>
+              </ControlButtonTooltip>
 
-                <ControlButtonTooltip>
-                  <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'main'">
-                    <div i-solar:arrow-left-outline :class="adjustStyleClasses.icon" text="neutral-500" />
-                  </ControlButton>
-                  <template #tooltip>
-                    Back
-                  </template>
-                </ControlButtonTooltip>
-              </div>
+              <ControlButtonTooltip>
+                <ControlButton
+                  :button-style="adjustStyleClasses.button"
+                  @click="settingsStore.captionFollowStage = !settingsStore.captionFollowStage"
+                >
+                  <div
+                    i-solar:magnet-bold-duotone
+                    :class="[
+                      adjustStyleClasses.icon,
+                      settingsStore.captionFollowStage ? 'text-purple-600 dark:text-purple-400 opacity-100' : 'text-neutral-500 opacity-40',
+                    ]"
+                  />
+                </ControlButton>
+                <template #tooltip>
+                  {{ settingsStore.captionFollowStage ? 'Following Stage' : 'Follow Position' }}
+                </template>
+              </ControlButtonTooltip>
+
+              <ControlButtonTooltip>
+                <ControlButton
+                  :button-style="adjustStyleClasses.button"
+                  @click="settingsStore.triggerCaptionReset"
+                >
+                  <div i-solar:restart-square-outline :class="adjustStyleClasses.icon" text="neutral-600 dark:text-neutral-300" />
+                </ControlButton>
+                <template #tooltip>
+                  Reset Position
+                </template>
+              </ControlButtonTooltip>
+
+              <!-- Row 3: Logic & Back -->
+              <ControlButtonTooltip>
+                <ControlButton
+                  :button-style="adjustStyleClasses.button"
+                  @click="settingsStore.captionLayoutMode = (settingsStore.captionLayoutMode === 'single' ? 'multi' : 'single')"
+                >
+                  <div
+                    i-solar:widget-2-outline
+                    :class="[
+                      adjustStyleClasses.icon,
+                      settingsStore.captionLayoutMode === 'multi' ? 'text-amber-500 opacity-100' : 'text-neutral-500 opacity-40',
+                    ]"
+                  />
+                </ControlButton>
+                <template #tooltip>
+                  Mode: {{ settingsStore.captionLayoutMode === 'single' ? 'Single Turn' : 'Multi-Turn' }}
+                </template>
+              </ControlButtonTooltip>
+
+              <ControlButtonTooltip>
+                <ControlButton :button-style="adjustStyleClasses.button" disabled opacity-20>
+                  <div i-solar:filters-outline :class="adjustStyleClasses.icon" />
+                </ControlButton>
+                <template #tooltip>
+                  Future: Effects
+                </template>
+              </ControlButtonTooltip>
+
+              <ControlButtonTooltip>
+                <ControlButton :button-style="adjustStyleClasses.button" @click="view = 'main'">
+                  <div i-solar:arrow-left-outline :class="adjustStyleClasses.icon" text="neutral-500" />
+                </ControlButton>
+                <template #tooltip>
+                  Back
+                </template>
+              </ControlButtonTooltip>
             </div>
           </Transition>
         </div>

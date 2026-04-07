@@ -22,6 +22,8 @@ Transitioning the Discord integration from a disconnected "second process" bot i
 | `/history` | Dumps the last 5 messages from the current conversation. | Planned |
 | `/status` | Connection report (Character sync, Provider health). | Planned |
 | `/live` | Experimental Gemini Live audio bridging. | Planned |
+| `/character` | Switches the active AIRI card/profile directly from Discord. | Planned |
+| `/emotion` | Manually triggers character expressions/animations on the desktop avatar. | Planned |
 
 ---
 
@@ -32,10 +34,26 @@ The Discord service will mirror the **Active Character** on the screen.
 - `/status` will report the current AI profile.
 - All outbound messages will be prefixed with the Character's name (e.g., `Lain: {content}`) for multi-user clarity.
 
+### Artistry & Inline Media
+- **Inline Artistry**: Generated images (widgets/backgrounds) from the Artistry pipeline will be returned as native Discord attachments for a seamless experience.
+- **Multimodal Image Journal**: The Image Journal acts as the central repository for generated images, backgrounds, and real-time Stage captures (Selfies). It serves as the primary bridge between the character's internal "Artistry" state and the messaging platforms.
+- **Selfie Master Spec**: A specialized schema property `selfie: true` within the Image Journal extension.
+    - **Trigger**: When the bot encounters an `imageJournal` request with `selfie: true` (either via AI decision or manual Slash command), it invokes the **same camera control function** available in the Desktop **Control Island**.
+    - **Execution**: Triggers `visionStore.heartbeat({ force: true })` in the Renderer process.
+    - **Routing**: The resulting stage screenshot is captured, processed as an entry in the Background Store (`type: 'selfie'`), and immediately routed to the Discord channel as a high-quality attachment.
+
 ### Context Integration
 Discord interactions will feed into the central **Prompt Builder**.
 - All users in a channel share a single "Episode" unless otherwise configured.
 - Memory sync ensures Discord logs appear in the central system audit history.
+- **Proactive Messaging**: Implementation of heuristics to route heartbeats/proactive turns to the last active channel used by the user.
+
+### Master Integration Hooks
+The unified service layer exposes deep hooks into existing AIRI store logic:
+- **Proactivity Hook**: Monitors `proactivityStore` for heartbeat pulses, allowing character-initiated turns to be routed as native Discord messages.
+- **Artistry Hook**: Intercepts `artistryStore` generation results (Widgets/Backgrounds/Remixes). When a character "creates" media, it is automatically uploaded as a Discord attachment.
+- **State Sync Hook**: Mirrors `airiCardStore` (Name/Avatar/Bio) directly to the Discord Bot's identity via `@moeru/eventa` and `discord.js`.
+- **Camera Hook**: Integrates the **Control Island's** capture logic into the messaging flow via the **Image Journal**.
 
 ### Live Mode Bridge
 Instead of a standard `Text -> STT -> LLM -> TTS -> Text` loop:
@@ -44,6 +62,7 @@ Instead of a standard `Text -> STT -> LLM -> TTS -> Text` loop:
 3. Raw audio return from API.
 4. Direct pipe to Discord VC audio sender.
 5. **No text is involved in this cycle.**
+6. **Interruption & Barge-in**: Researching technical feasibility for natural, overlapping dialogue in the Discord VC context.
 
 ---
 

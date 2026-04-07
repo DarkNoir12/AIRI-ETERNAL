@@ -1,16 +1,15 @@
+import type { createContext } from '@moeru/eventa/adapters/electron/main'
 import type { ActiveWindowEntry, WindowInfo } from '@proj-airi/stage-shared'
 
 import os from 'node:os'
 
-import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 
-import activeWin from 'active-win'
 import loudness from 'loudness'
 import si from 'systeminformation'
 
 import { useLogg } from '@guiiai/logg'
 import { defineInvokeHandler } from '@moeru/eventa'
-import { createContext } from '@moeru/eventa/adapters/electron/main'
 import {
   sensorsGetActiveWindow,
   sensorsGetActiveWindowHistory,
@@ -18,21 +17,48 @@ import {
   sensorsGetLocalTime,
   sensorsGetSystemLoad,
   sensorsGetVolumeLevel,
+  sensorsSetTrackingEnabled,
 } from '@proj-airi/stage-shared'
-import { ipcMain, powerMonitor } from 'electron'
+import { powerMonitor } from 'electron'
+
+const require = createRequire(import.meta.url)
+const activeWindow = require('active-win')
 
 const log = useLogg('main/sensors').useGlobalConfig()
 
-export function setupSensorsService() {
-  const { context } = createContext(ipcMain)
+export async function createSensorsService(params: { context: ReturnType<typeof createContext>['context'] }) {
+  const { context } = params
   const activeWindowHistory: ActiveWindowEntry[] = []
 
   let lastActiveWinErrorTime = 0
   const ERROR_LOG_INTERVAL = 60000 // Only log once per minute
 
+  // Initialize Win32 FFI bridge via Koffi once at startup
+  let win32Bridge: any = null
+  if (process.platform === 'win32') {
+    try {
+      const koffi = require('koffi')
+      const user32 = koffi.load('user32.dll')
+      const kernel32 = koffi.load('kernel32.dll')
+
+      win32Bridge = {
+        GetForegroundWindow: user32.func('GetForegroundWindow', 'void *', []),
+        GetWindowTextW: user32.func('GetWindowTextW', 'int', ['void *', 'char16_t *', 'int']),
+        GetWindowThreadProcessId: user32.func('GetWindowThreadProcessId', 'uint32', ['void *', 'uint32 *']),
+        OpenProcess: kernel32.func('OpenProcess', 'void *', ['uint32', 'bool', 'uint32']),
+        QueryFullProcessImageNameW: kernel32.func('QueryFullProcessImageNameW', 'bool', ['void *', 'uint32', 'char16_t *', 'uint32 *']),
+        CloseHandle: kernel32.func('CloseHandle', 'bool', ['void *']),
+      }
+      log.debug('Win32 FFI bridge initialized via Koffi.')
+    }
+    catch (err) {
+      log.withError(err).warn('Failed to initialize Koffi Win32 bridge. Native fallbacks will be unavailable.')
+    }
+  }
+
   async function getActiveWindowInfo(): Promise<WindowInfo | null> {
     try {
-      const result = await activeWin()
+      const result = await activeWindow()
       if (result) {
         return {
           title: result.title || 'Unknown',
@@ -43,26 +69,65 @@ export function setupSensorsService() {
     catch (err) {
       const now = Date.now()
       if (now - lastActiveWinErrorTime > ERROR_LOG_INTERVAL) {
-        log.withError(err).debug('Native active-win failed; using system fallbacks.')
+        // eslint-disable-next-line no-console
+        console.log('[getActiveWindowInfo] active-win failed, using Koffi fallback.')
         lastActiveWinErrorTime = now
       }
 
-      // Fallback for Windows: Use PowerShell to get the window with the largest CPU usage among windowed processes
-      // as a heuristic for the 'active' window. This avoids native dlopen/Add-Type issues.
-      if (process.platform === 'win32') {
+      // High-performance Koffi fallback for Windows
+      if (win32Bridge) {
         try {
-          const psCommand = '(Get-Process | Where-Object { $_.MainWindowTitle -ne "" } | Sort-Object CPU -Descending | Select-Object -First 1) | Select-Object MainWindowTitle, ProcessName | ConvertTo-Json'
-          const { stdout } = spawnSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', psCommand], { encoding: 'utf8', windowsHide: true })
-          if (stdout) {
-            const parsed = JSON.parse(stdout)
-            return {
-              title: parsed.MainWindowTitle || 'Unknown',
-              processName: parsed.ProcessName || 'Unknown',
+          const { GetForegroundWindow, GetWindowTextW, GetWindowThreadProcessId, OpenProcess, QueryFullProcessImageNameW, CloseHandle } = win32Bridge
+          const hwnd = GetForegroundWindow()
+
+          if (!hwnd) {
+            process.stdout.write('[getActiveWindowInfo] No foreground window found.\n')
+            return null
+          }
+
+          // Get Title
+          const titleBuffer = Buffer.alloc(1024)
+          const titleLen = GetWindowTextW(hwnd, titleBuffer, 512)
+          const title = titleBuffer.toString('utf16le', 0, titleLen * 2).replace(/\0/g, '').trim() || 'Untitled'
+          process.stdout.write(`[getActiveWindowInfo] detected title: ${title}\n`)
+
+          // Get Process Name
+          let processName = 'Unknown'
+          const pidBuffer = [0]
+          GetWindowThreadProcessId(hwnd, pidBuffer)
+          const pid = pidBuffer[0]
+
+          const PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+          const PROCESS_QUERY_INFORMATION = 0x0400
+          const PROCESS_VM_READ = 0x0010
+
+          let hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+          if (!hProcess) {
+            // Fallback for some processes that require full query rights
+            hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid)
+          }
+
+          if (hProcess) {
+            const pathBuffer = Buffer.alloc(1024)
+            const sizeBuffer = [512]
+            if (QueryFullProcessImageNameW(hProcess, 0, pathBuffer, sizeBuffer)) {
+              const fullPath = pathBuffer.toString('utf16le', 0, sizeBuffer[0] * 2).replace(/\0/g, '').trim()
+              processName = fullPath.split(/[\\/]/).pop()?.replace(/\.[^/.]+$/, '') || 'Unknown'
             }
+            CloseHandle(hProcess)
+          }
+          // Only log if we finally found something or if it's still unknown after fallback
+          if (processName !== 'Unknown') {
+            process.stdout.write(`[getActiveWindowInfo] detected processName: ${processName}\n`)
+          }
+
+          return {
+            title,
+            processName,
           }
         }
-        catch (psErr) {
-          // Ignore PS fallback errors to avoid spam
+        catch (nativeErr) {
+          process.stdout.write(`[getActiveWindowInfo] Koffi fallback execution failed: ${String(nativeErr)}\n`)
         }
       }
     }
@@ -70,31 +135,57 @@ export function setupSensorsService() {
     return null
   }
 
-  /*
-  setInterval(async () => {
-    const current = await getActiveWindowInfo()
-    if (!current)
+  const MAX_HISTORY = 50
+  let pollInterval: NodeJS.Timeout | null = null
+
+  function startTracking() {
+    if (pollInterval)
       return
 
-    const now = Date.now()
-    const lastEntry = activeWindowHistory.at(-1)
-    if (lastEntry && lastEntry.window.title === current.title && lastEntry.window.processName === current.processName) {
-      lastEntry.endTime = now
-      lastEntry.durationMs = lastEntry.endTime - lastEntry.startTime
-    }
-    else {
-      activeWindowHistory.push({
-        window: current,
-        startTime: now,
-        endTime: now,
-        durationMs: 0,
-      })
+    log.debug('Starting active window tracking background loop.')
+    pollInterval = setInterval(async () => {
+      const current = await getActiveWindowInfo()
+      if (!current)
+        return
 
-      if (activeWindowHistory.length > MAX_HISTORY)
-        activeWindowHistory.shift()
+      const now = Date.now()
+      const lastEntry = activeWindowHistory.at(-1)
+      if (lastEntry && lastEntry.window.title === current.title && lastEntry.window.processName === current.processName) {
+        lastEntry.endTime = now
+        lastEntry.durationMs = lastEntry.endTime - lastEntry.startTime
+      }
+      else {
+        activeWindowHistory.push({
+          window: current,
+          startTime: now,
+          endTime: now,
+          durationMs: 0,
+        })
+
+        if (activeWindowHistory.length > MAX_HISTORY)
+          activeWindowHistory.shift()
+      }
+    }, 10000)
+  }
+
+  function stopTracking() {
+    if (pollInterval) {
+      log.debug('Stopping active window tracking background loop.')
+      clearInterval(pollInterval)
+      pollInterval = null
     }
-  }, 10000)
-*/
+  }
+
+  defineInvokeHandler(
+    context,
+    sensorsSetTrackingEnabled,
+    async (payload) => {
+      if (payload.enabled)
+        startTracking()
+      else
+        stopTracking()
+    },
+  )
 
   defineInvokeHandler(
     context,
@@ -150,17 +241,15 @@ export function setupSensorsService() {
     try {
       const load = await si.currentLoad()
       const val = load.currentLoad / 100
-      cpuLoads = [val, val, val] // si doesn't provide 1/5/15 load avg directly in a cross-platform way as easily as this, but currentLoad is more meaningful for real-time sensors.
+      cpuLoads = [val, val, val]
     }
     catch (err) {
       log.withError(err).warn('Failed to get CPU load via systeminformation')
-      // Fallback to os.loadavg if si fails
       cpuLoads = os.loadavg() as [number, number, number]
     }
 
     try {
       const graphics = await si.graphics()
-      // Take the max utilization across all GPUs
       gpuLoad = Math.max(0, ...graphics.controllers.map((c: any) => (c.utilizationGpu || 0) as number))
     }
     catch (err) {
@@ -189,5 +278,8 @@ export function setupSensorsService() {
     },
   )
 
-  return context
+  return {
+    context,
+    stop: () => stopTracking(),
+  }
 }

@@ -10,6 +10,13 @@ const { activeProvider } = storeToRefs(artistryStore)
 
 const availableProviders = [
   {
+    id: 'none',
+    name: 'None',
+    description: 'Bypass and disable the image generation module globally.',
+    icon: 'i-solar:forbidden-circle-bold-duotone',
+    configRoute: '/settings/modules/artistry',
+  },
+  {
     id: 'comfyui',
     name: 'ComfyUI (Local)',
     description: 'Use a local ComfyUI instance via WSL for image generation.',

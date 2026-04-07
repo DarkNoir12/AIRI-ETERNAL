@@ -70,7 +70,6 @@ const { stageModelSelected: defaultDisplayModelId } = storeToRefs(stageModelStor
 const { activeProvider: defaultArtistryProvider } = storeToRefs(artistryStore)
 const { availableExpressions } = storeToRefs(modelStore)
 const { animationOptions } = storeToRefs(customVrmAnimationsStore)
-const { activeCardId } = storeToRefs(cardStore)
 
 // Determine if we're in edit mode
 const isEditMode = computed(() => !!props.cardId)
@@ -138,6 +137,7 @@ const heartbeatsContextWindowHistory = ref<boolean>(true)
 const heartbeatsContextSystemLoad = ref<boolean>(true)
 const heartbeatsContextUsageMetrics = ref<boolean>(true)
 const heartbeatsRespectSchedule = ref<boolean>(true)
+const groundingEnabled = ref<boolean>(false)
 
 const staticSamplePayload = `[Sensor Data]
 User Idle: 15s
@@ -165,6 +165,7 @@ const consciousnessProviderOptions = computed(() => {
 
 const artistryProviderOptions = computed(() => {
   return [
+    { value: 'none', label: 'None (Disabled)' },
     { value: 'replicate', label: 'Replicate' },
     { value: 'comfyui', label: 'ComfyUI' },
   ]
@@ -541,6 +542,7 @@ async function saveCard(card: Card): Promise<boolean> {
           known: generationKnown,
           advanced: generationAdvanced,
         },
+        groundingEnabled: groundingEnabled.value,
       } as AiriExtension,
     },
   }
@@ -589,7 +591,7 @@ function initializeCard(): Card {
   selectedSpeechModel.value = airiExt?.modules?.speech?.model || defaultSpeechModel.value
   selectedSpeechVoiceId.value = airiExt?.modules?.speech?.voice_id || defaultSpeechVoiceId.value
   selectedDisplayModelId.value = airiExt?.modules?.displayModelId || defaultDisplayModelId.value
-  const activeBg = airiExt?.modules?.activeBackgroundId || airiExt?.modules?.preferredBackgroundId
+  const activeBg = airiExt?.modules?.activeBackgroundId || (airiExt?.modules as any)?.preferredBackgroundId
   selectedActiveBackgroundId.value = !activeBg ? 'none' : activeBg
   selectedArtistryProvider.value = airiExt?.artistry?.provider || defaultArtistryProvider.value
   selectedArtistryModel.value = airiExt?.artistry?.model || ''
@@ -625,6 +627,7 @@ function initializeCard(): Card {
   heartbeatsContextSystemLoad.value = airiExt?.heartbeats?.contextOptions?.systemLoad ?? true
   heartbeatsContextUsageMetrics.value = airiExt?.heartbeats?.contextOptions?.usageMetrics ?? true
   heartbeatsRespectSchedule.value = airiExt?.heartbeats?.respectSchedule ?? true
+  groundingEnabled.value = airiExt?.groundingEnabled ?? false
 
   loadActingSpeechCapabilities(selectedSpeechProvider.value || speechProvider.value)
 
@@ -857,6 +860,7 @@ function getDefaultPlaceholder(defaultValue: string | undefined): string {
             v-model:heartbeats-context-system-load="heartbeatsContextSystemLoad"
             v-model:heartbeats-context-usage-metrics="heartbeatsContextUsageMetrics"
             v-model:heartbeats-respect-schedule="heartbeatsRespectSchedule"
+            v-model:grounding-enabled="groundingEnabled"
             :sensor-payload="sensorPayload"
             :static-sample-payload="staticSamplePayload"
           />

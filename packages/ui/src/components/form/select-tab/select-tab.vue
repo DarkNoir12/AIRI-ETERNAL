@@ -14,10 +14,12 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   readonly?: boolean
   size?: 'sm' | 'md'
+  compact?: boolean
 }>(), {
   disabled: false,
   readonly: false,
   size: 'md',
+  compact: false,
 })
 
 const modelValue = defineModel<string | number>({ required: true })
@@ -28,8 +30,8 @@ const isDisabled = computed(() => props.disabled || props.readonly)
 
 const sizeClasses = computed(() =>
   props.size === 'sm'
-    ? ['py-2', 'px-3', 'text-xs', 'rounded-md']
-    : ['py-2.5', 'px-3.5', 'text-sm', 'rounded-md'],
+    ? ['py-2', props.compact ? 'px-1.5' : 'px-3', 'text-[11px]', 'rounded-md']
+    : ['py-2.5', props.compact ? 'px-2' : 'px-3.5', 'text-sm', 'rounded-md'],
 )
 
 const rootStyle = computed(() => ({

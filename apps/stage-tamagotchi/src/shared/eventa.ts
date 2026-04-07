@@ -37,6 +37,7 @@ export const pluginProtocolListProviders = defineInvokeEventa<Array<{ name: stri
 
 export const captionIsFollowingWindowChanged = defineEventa<boolean>('eventa:event:electron:windows:caption-overlay:is-following-window-changed')
 export const captionGetIsFollowingWindow = defineInvokeEventa<boolean>('eventa:invoke:electron:windows:caption-overlay:get-is-following-window')
+export const electronCaptionToggleVisibility = defineInvokeEventa<void>('eventa:invoke:electron:windows:caption:toggle-visibility')
 
 export type RequestWindowActionDefault = 'confirm' | 'cancel' | 'close'
 export interface RequestWindowPayload {

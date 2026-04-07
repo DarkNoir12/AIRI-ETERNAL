@@ -11,6 +11,8 @@ export const globalAppConfigSchema = object({
     y: optional(number()),
     width: optional(number()),
     height: optional(number()),
+    enabled: optional(boolean()),
+    dock: optional(string()),
     locked: optional(boolean()),
     snapshot: optional(object({
       x: number(),

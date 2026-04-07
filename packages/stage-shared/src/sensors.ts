@@ -23,3 +23,4 @@ export const sensorsGetLocalTime = defineInvokeEventa<string>('eventa:invoke:ele
 export const sensorsGetSystemLoad = defineInvokeEventa<SystemLoadAverages>('eventa:invoke:electron:sensors:get-system-load')
 export const sensorsGetActiveWindowHistory = defineInvokeEventa<ActiveWindowEntry[]>('eventa:invoke:electron:sensors:get-active-window-history')
 export const sensorsGetVolumeLevel = defineInvokeEventa<number>('eventa:invoke:electron:sensors:get-volume-level')
+export const sensorsSetTrackingEnabled = defineInvokeEventa<void, { enabled: boolean }>('eventa:invoke:electron:sensors:set-tracking-enabled')

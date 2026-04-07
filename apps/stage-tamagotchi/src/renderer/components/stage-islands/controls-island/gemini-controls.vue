@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { useElectronEventaInvoke } from '@proj-airi/electron-vueuse'
 import { useLiveSessionStore } from '@proj-airi/stage-ui/stores/modules/live-session'
 import { useVisionStore } from '@proj-airi/stage-ui/stores/modules/vision'
 import { useProactivityStore } from '@proj-airi/stage-ui/stores/proactivity'
+import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { useSettings } from '@proj-airi/stage-ui/stores/settings'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 
+import { noticeWindowEventa } from '../../../../shared/eventa'
+import { useControlsIslandStore } from '../../../stores/controls-island'
 import ControlButtonTooltip from './control-button-tooltip.vue'
 import ControlButton from './control-button.vue'
 
@@ -32,7 +35,34 @@ const { isWitnessEnabled, status: visionStatus } = storeToRefs(visionStore)
 
 const { controlsIslandIconSize } = storeToRefs(settingsStore)
 const { heartbeatIntervalMinutes, isRespectScheduleEnabled } = storeToRefs(proactivityStore)
-const router = useRouter()
+
+const providersStore = useProvidersStore()
+const controlsIslandStore = useControlsIslandStore()
+
+const hasGeminiKey = computed(() => {
+  const creds = providersStore.getProviderConfig('google-generative-ai')
+  return !!(typeof creds?.apiKey === 'string' && creds.apiKey.trim())
+})
+
+// === Onboarding Trigger ===
+const requestNotice = useElectronEventaInvoke(noticeWindowEventa.openWindow)
+const NOTICE_WINDOW_ID = 'gemini-onboarding'
+
+onMounted(async () => {
+  // Only trigger if we have a key and haven't shown it yet
+  if (hasGeminiKey.value && !controlsIslandStore.dontShowGeminiOnboarding) {
+    try {
+      await requestNotice({
+        id: NOTICE_WINDOW_ID,
+        route: '/notice/gemini',
+        type: 'gemini-onboarding',
+      })
+    }
+    catch (error) {
+      console.error('Failed to open Gemini onboarding notice:', error)
+    }
+  }
+})
 
 // Grouped classes for icon / border / padding and combined style class
 const adjustStyleClasses = computed(() => {
@@ -67,26 +97,34 @@ const formattedCost = computed(() => {
 
 // === Functional Handlers ===
 function handleLiveToggle() {
-  const wasActive = isLiveActive.value
-
-  // Toggle both for a unified "Live API" experience
+  // Master Toggle: strictly manages the Live Session state.
+  // Proactivity and Vision captures will now independently respect isActive.
   liveSessionStore.toggle()
-
-  // Also sync vision witness to the live state for a true "On/Off" experience
-  if (!wasActive && !isWitnessEnabled.value) {
-    visionStore.toggleWitness()
-  }
-  else if (wasActive && isWitnessEnabled.value) {
-    visionStore.toggleWitness()
-  }
+  emit('close')
 }
+
+function handleVisionToggle() {
+  visionStore.toggleWitness()
+  // We keep it open if toggling vision so user can see the state change
+}
+
 function handleCaptureNow() {
   visionStore.heartbeat({ force: true })
   emit('close')
 }
 
-function handleOpenSettings() {
-  router.push('/settings')
+function handleToggleOutputMode() {
+  liveSessionStore.toggleOutputMode()
+  emit('close')
+}
+
+function handleToggleRespectSchedule() {
+  proactivityStore.toggleRespectSchedule()
+  emit('close')
+}
+
+function handleToggleGrounding() {
+  isGroundingEnabled.value = !isGroundingEnabled.value
   emit('close')
 }
 </script>
@@ -110,7 +148,7 @@ function handleOpenSettings() {
           />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.vision-witness') }}: {{ isLiveActive ? 'ON' : 'OFF' }}
+          {{ t('tamagotchi.stage.controls-island.live-api') }}: {{ isLiveActive ? 'ON' : 'OFF' }}
         </template>
       </ControlButtonTooltip>
 
@@ -154,7 +192,7 @@ function handleOpenSettings() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" @click="liveSessionStore.toggleOutputMode()">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="handleToggleOutputMode">
           <div
             :class="[
               outputMode === 'gemini' ? 'i-solar:soundwave-bold text-sky-400' : 'i-solar:soundwave-outline text-violet-400',
@@ -178,7 +216,7 @@ function handleOpenSettings() {
 
       <!-- Row 3: System Cluster (Functional items marked amber) -->
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" @click="proactivityStore.toggleRespectSchedule()">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="handleToggleRespectSchedule">
           <div
             :class="[
               isRespectScheduleEnabled ? 'i-solar:clock-circle-bold text-amber-400' : 'i-solar:clock-circle-outline text-emerald-400',
@@ -192,7 +230,7 @@ function handleOpenSettings() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip>
-        <ControlButton :button-style="adjustStyleClasses.button" @click="isGroundingEnabled = !isGroundingEnabled">
+        <ControlButton :button-style="adjustStyleClasses.button" @click="handleToggleGrounding">
           <div
             :class="[
               isGroundingEnabled ? 'i-solar:globus-bold text-emerald-400' : 'i-solar:globus-outline text-amber-400',
@@ -206,11 +244,25 @@ function handleOpenSettings() {
       </ControlButtonTooltip>
 
       <ControlButtonTooltip side="right">
-        <ControlButton :button-style="adjustStyleClasses.button" @click="handleOpenSettings">
-          <div i-solar:settings-minimalistic-outline :class="adjustStyleClasses.icon" text="amber-400" />
+        <ControlButton
+          :button-style="[
+            adjustStyleClasses.button,
+            !isLiveActive ? 'opacity-30' : '',
+          ].join(' ')"
+          @click="handleVisionToggle"
+        >
+          <div
+            :class="[
+              isWitnessEnabled ? 'i-solar:eye-scan-bold-duotone text-amber-500 animate-pulse' : 'i-solar:eye-scan-outline text-neutral-400',
+              adjustStyleClasses.icon,
+            ]"
+          />
         </ControlButton>
         <template #tooltip>
-          {{ t('tamagotchi.stage.controls-island.open-settings') }}
+          {{ t('tamagotchi.stage.controls-island.vision-witness') }}: {{ isWitnessEnabled ? 'ON' : 'OFF' }}
+          <template v-if="!isLiveActive">
+            (Requires Live API: ON)
+          </template>
         </template>
       </ControlButtonTooltip>
     </div>

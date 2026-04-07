@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FieldCheckbox, FieldInput, FieldTextArea, Select } from '@proj-airi/ui'
+import { watch } from 'vue'
 
 defineProps<{
   providerOptions: { value: string, label: string }[]
@@ -16,6 +17,30 @@ const generationTemperature = defineModel<number | undefined>('generationTempera
 const generationTopP = defineModel<number | undefined>('generationTopP', { required: true })
 const generationContextWidth = defineModel<number | undefined>('generationContextWidth', { required: true })
 const generationAdvancedJson = defineModel<string>('generationAdvancedJson', { required: true })
+
+function updateGlobalContextMap() {
+  if (!generationContextWidth.value || !generationProvider.value || !generationModel.value)
+    return
+
+  try {
+    const rawMap = localStorage.getItem('airi:context-width-map')
+    const map = rawMap ? JSON.parse(rawMap) : {}
+
+    if (!map[generationProvider.value]) {
+      map[generationProvider.value] = {}
+    }
+
+    map[generationProvider.value][generationModel.value] = generationContextWidth.value
+    localStorage.setItem('airi:context-width-map', JSON.stringify(map))
+  }
+  catch (err) {
+    console.error('[CardCreationTabGeneration] Failed to update global context map:', err)
+  }
+}
+
+watch([generationContextWidth, generationProvider, generationModel], () => {
+  updateGlobalContextMap()
+})
 </script>
 
 <template>

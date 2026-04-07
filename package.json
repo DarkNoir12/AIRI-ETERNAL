@@ -100,10 +100,10 @@
     "docs/**",
     "apps/**"
   ],
-  "simple-git-hooks": {
-    "pre-commit": "pnpm nano-staged"
-  },
   "nano-staged": {
     "*": "moeru-lint --fix"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm nano-staged"
   }
 }

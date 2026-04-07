@@ -38,14 +38,14 @@ const generateHeadless = defineInvoke(context, artistryGenerateHeadless)
 const addWidget = defineInvoke(context, widgetsAdd)
 
 const imageJournalParams = z.object({
-  action: z.enum(['create', 'set_as_background']).describe('Choose one: create or set_as_background.'),
-  prompt: z.string().optional().describe('Text description used to generate the image (required for create).'),
-  title: z.string().optional().describe('Short label for the journal entry (optional for create).'),
-  query: z.string().optional().describe('Title or ID to fuzzy match for setting background (required for set_as_background).'),
-  set_as_background: z.boolean().optional().describe('If true, also sets the newly created image as the active background (only for create).'),
+  action: z.enum(['create', 'apply']).describe('Choose "create" to generate a new image, or "apply" to use an existing one.'),
+  prompt: z.string().optional().describe('Description for the image (required for "create").'),
+  title: z.string().optional().describe('Label for the entry (optional).'),
+  query: z.string().optional().describe('Search term for existing images (required for "apply").'),
+  mode: z.enum(['inline', 'widget', 'bg']).optional().default('inline').describe('Display mode: "inline" (in chat), "widget" (overlay), or "bg" (environment).'),
 })
 
-async function executeCreateImageJournalEntry(params: { prompt?: string, title?: string, set_as_background?: boolean }) {
+async function executeCreateImageJournalEntry(params: { prompt?: string, title?: string, mode?: 'inline' | 'widget' | 'bg' }) {
   if (!params.prompt?.trim())
     throw new Error('prompt is required for image_journal.create')
 
@@ -54,17 +54,17 @@ async function executeCreateImageJournalEntry(params: { prompt?: string, title?:
   const activeCard = cardStore.activeCard
   const globalArtistryConfig = getArtistryConfig()
 
-  // Prioritize active card artistry config if available
   const cardArtistry = activeCard?.extensions?.airi?.artistry
   const artistryConfig = {
     provider: cardArtistry?.provider || globalArtistryConfig.provider,
     model: cardArtistry?.model || globalArtistryConfig.model,
     promptPrefix: cardArtistry?.promptPrefix || globalArtistryConfig.promptPrefix,
     options: cardArtistry?.options || globalArtistryConfig.options,
-    Globals: globalArtistryConfig.Globals, // Globals should probably remain global or merged
+    Globals: globalArtistryConfig.Globals,
   }
 
   const title = params.title || `Generation ${new Date().toLocaleString()}`
+  const mode = params.mode || 'inline'
 
   try {
     const artistryResult = await generateHeadless({
@@ -75,62 +75,49 @@ async function executeCreateImageJournalEntry(params: { prompt?: string, title?:
       globals: JSON.parse(JSON.stringify(artistryConfig.Globals || {})),
     })
 
-    if (artistryResult.error) {
-      console.error('[ImageJournalTool] Headless generation failed:', artistryResult.error)
-      throw new Error(`Failed to generate image: ${artistryResult.error}`)
+    if (artistryResult.error || (!artistryResult.base64 && !artistryResult.imageUrl)) {
+      throw new Error(`Failed to generate image: ${artistryResult.error || 'No output received'}`)
     }
-
-    if (!artistryResult.base64 && !artistryResult.imageUrl)
-      throw new Error('Failed to generate image: No output received.')
 
     let blob: Blob
     if (artistryResult.base64) {
-      // Handle both Data URL and raw base64
       let data = artistryResult.base64
-      let contentType = 'image/png' // Default fallback
-
+      let contentType = 'image/png'
       if (typeof data === 'string' && data.includes(',')) {
         const parts = data.split(',')
-        const header = parts[0]
+        contentType = parts[0].split(':')[1]?.split(';')[0] || contentType
         data = parts[1]
-
-        // Extract content type if available
-        if (header.includes(':') && header.includes(';')) {
-          contentType = header.split(':')[1]?.split(';')[0] || contentType
-        }
       }
-
-      try {
-        const byteCharacters = atob(data)
-        const byteNumbers = new Array(byteCharacters.length)
-        for (let j = 0; j < byteCharacters.length; j++) {
-          byteNumbers[j] = byteCharacters.charCodeAt(j)
-        }
-        const byteArray = new Uint8Array(byteNumbers)
-        blob = new Blob([byteArray], { type: contentType })
-      }
-      catch (e) {
-        console.error('[ImageJournalTool] Failed to decode base64:', e)
-        throw new Error('Failed to decode generated image data.')
-      }
+      const byteCharacters = atob(data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let j = 0; j < byteCharacters.length; j++)
+        byteNumbers[j] = byteCharacters.charCodeAt(j)
+      blob = new Blob([new Uint8Array(byteNumbers)], { type: contentType })
     }
     else {
-      // Fallback to fetch if base64 is missing for some reason
       const response = await fetch(artistryResult.imageUrl!)
       blob = await response.blob()
     }
 
-    const entryId = await backgroundStore.addBackground(
-      'journal',
-      blob,
-      title,
-      params.prompt,
-      cardStore.activeCardId,
-      undefined,
-    )
+    const entryId = await backgroundStore.addBackground('journal', blob, title, params.prompt, cardStore.activeCardId)
 
-    // Optionally spawn a widget to show the result (best effort)
-    if (!params.set_as_background) {
+    // Handle Application Logic based on Mode
+    if (mode === 'bg') {
+      const cardId = cardStore.activeCardId
+      if (cardId) {
+        const card = cardStore.cards.get(cardId)
+        if (card) {
+          const extension = JSON.parse(JSON.stringify(card.extensions || {}))
+          if (!extension.airi)
+            extension.airi = {}
+          if (!extension.airi.modules)
+            extension.airi.modules = {}
+          extension.airi.modules.activeBackgroundId = entryId
+          cardStore.updateCard(cardId, { ...card, extensions: extension })
+        }
+      }
+    }
+    else if (mode === 'widget') {
       try {
         await addWidget({
           componentName: 'artistry',
@@ -147,66 +134,43 @@ async function executeCreateImageJournalEntry(params: { prompt?: string, title?:
         })
       }
       catch (e) {
-        console.warn('[ImageJournalTool] Failed to spawn result widget', e)
+        console.warn('[ImageJournalTool] Failed to spawn Result widget', e)
       }
     }
 
-    // If set_as_background is true, also apply as background
-    if (params.set_as_background) {
-      try {
-        const cardId = cardStore.activeCardId
-        if (cardId) {
-          const card = cardStore.cards.get(cardId)
-          if (card) {
-            const extension = JSON.parse(JSON.stringify(card.extensions || {}))
-            if (!extension.airi)
-              extension.airi = {}
-            if (!extension.airi.modules)
-              extension.airi.modules = {}
-            extension.airi.modules.activeBackgroundId = entryId
-
-            cardStore.updateCard(cardId, { ...card, extensions: extension })
-          }
-        }
-
-        return `Image saved as "${title}" (ID: ${entryId}) and set as background.`
-      }
-      catch (bgErr) {
-        console.warn('[ImageJournalTool] Image saved but failed to set as background', bgErr)
-        return `Image saved as "${title}" (ID: ${entryId}), but failed to set as background.`
-      }
-    }
-
-    return `Image saved as "${title}" (ID: ${entryId}).`
+    // Return structured result for UI rendering
+    return JSON.stringify({
+      message: `Image created in ${mode} mode${mode === 'bg' ? ' and set as background' : ''}.`,
+      entryId,
+      imageUrl: artistryResult.imageUrl || artistryResult.base64,
+      title,
+      prompt: params.prompt,
+      mode,
+    })
   }
   catch (e) {
     console.error('[ImageJournalTool] Failed to create entry', e)
-    const errorMsg = e instanceof Error ? e.message : String(e)
-    return `Failed to generate image. Error: ${errorMsg}`
+    return `Error: ${e instanceof Error ? e.message : String(e)}`
   }
 }
 
 async function executeSetAsBackground(params: { query?: string }) {
   if (!params.query?.trim())
-    return 'Error: query is required for image_journal.set_as_background. Provide a title or ID to search for.'
+    return 'Error: query is required for image_journal.apply. Provide a title or ID to search for.'
 
   const backgroundStore = useBackgroundStore()
   const cardStore = useAiriCardStore()
   const cardId = cardStore.activeCardId
-
   const query = params.query.toLowerCase().trim()
 
   const entries = Array.from(backgroundStore.entries.values())
     .filter(e => e.characterId === null || e.characterId === cardId)
 
-  // Search character's journal store first, then scene store
   let entry = entries.find(e => e.type === 'journal' && (e.id === query || e.id.toLowerCase().includes(query)))
-  if (!entry) {
+  if (!entry)
     entry = entries.find(e => e.type === 'journal' && e.title.toLowerCase().includes(query))
-  }
-  if (!entry) {
+  if (!entry)
     entry = entries.find(e => e.type !== 'journal' && e.title.toLowerCase().includes(query))
-  }
 
   if (entry) {
     try {
@@ -219,42 +183,32 @@ async function executeSetAsBackground(params: { query?: string }) {
           if (!extension.airi.modules)
             extension.airi.modules = {}
           extension.airi.modules.activeBackgroundId = entry.id
-
           cardStore.updateCard(cardId, { ...card, extensions: extension })
         }
       }
-
-      return `Successfully set background to entry "${entry.title}".`
+      return `Background set to "${entry.title}".`
     }
     catch (e) {
-      console.error('[ImageJournalTool] Failed to set background', e)
-      return `Found entry "${entry.title}" but failed to apply it as background: ${e instanceof Error ? e.message : String(e)}`
+      return `Error applying "${entry.title}": ${e instanceof Error ? e.message : String(e)}`
     }
   }
 
-  // List available entries to help the LLM retry
   const available = entries.filter(e => e.type === 'journal').map(e => e.title).slice(0, 10)
-  const hint = available.length > 0
-    ? ` Available journal entries: ${available.map(t => `"${t}"`).join(', ')}.`
-    : ' The journal is currently empty for this character.'
-
-  return `Could not find any background matching "${params.query}".${hint}`
+  return `No match for "${params.query}".${available.length > 0 ? ` Try: ${available.join(', ')}` : ''}`
 }
 
 async function executeImageJournalAction(params: any) {
   if (params.action === 'create')
     return await executeCreateImageJournalEntry(params)
-
-  if (params.action === 'set_as_background')
+  if (params.action === 'apply' || params.action === 'set_as_background')
     return await executeSetAsBackground(params)
-
-  return 'No image journal action performed.'
+  return 'No action performed.'
 }
 
 const tools: Promise<Tool>[] = [
   tool({
     name: 'image_journal',
-    description: 'Create or manage AI-generated images for the active character. Use "create" to generate an image and add it to the journal (optionally setting it as background). Use "set_as_background" with a query to apply an existing image as the active background.',
+    description: 'Manage AI-generated images. Use "create" with a "mode" (inline, widget, bg) to generate and display images. Use "apply" to switch to an existing image from the journal.',
     execute: params => executeImageJournalAction(params),
     parameters: imageJournalParams,
   }),

@@ -114,7 +114,7 @@ onMounted(async () => {
       // Load the initial model
       if (metadata.capabilities.loadModel) {
         await metadata.capabilities.loadModel(config, {
-          onProgress: async (_progress) => {},
+          onProgress: async (_progress: any) => {},
         })
       }
 
@@ -142,7 +142,7 @@ watch(model, async (newValue) => {
       if (validationResult.valid && metadata.capabilities.loadModel) {
         // Load the model using the capability with progress tracking
         await metadata.capabilities.loadModel(config, {
-          onProgress: async (_progress) => {},
+          onProgress: async (_progress: any) => {},
         })
 
         // Then reload voices

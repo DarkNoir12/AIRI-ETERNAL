@@ -65,6 +65,20 @@ async function processContent() {
   }
 }
 
+function handleLinkClick(e: MouseEvent) {
+  const target = e.target as HTMLElement
+  const anchor = target.closest('a')
+  if (!anchor) return
+
+  const href = anchor.getAttribute('href')
+  if (href && (href.startsWith('http') || href.startsWith('mailto:'))) {
+    e.preventDefault()
+    if (window.confirm(`Open external resource?\n\nThis will take you to:\n${href}`)) {
+      window.open(href, '_blank')
+    }
+  }
+}
+
 // Process content when it changes
 watch(() => props.content, processContent, { immediate: true })
 
@@ -78,63 +92,80 @@ onMounted(() => {
     :class="props.class"
     class="markdown-content"
     v-html="processedContent"
+    @click="handleLinkClick"
   />
 </template>
 
 <style scoped>
-.markdown-content :deep(pre) {
-  overflow-x: auto;
-  max-width: 100%;
-  border-radius: 6px;
-  padding: 1rem;
-  margin: 0.5rem 0;
+
+.markdown-content :deep(h1) {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(to right, #38bdf8, #a78bfa, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.025em;
 }
 
-.markdown-content :deep(code) {
-  font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
-  font-size: 0.875em;
+.markdown-content :deep(h2) {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.markdown-content :deep(pre code) {
-  display: block;
-  width: fit-content;
-  min-width: 100%;
+.markdown-content :deep(h3) {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-/* Ensure horizontal scrolling for wide code blocks */
-.markdown-content :deep(pre.shiki) {
-  overflow-x: auto;
-  white-space: pre;
+.markdown-content :deep(p) {
+  margin-bottom: 1.25rem;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.markdown-content :deep(.shiki) {
-  border-radius: 6px;
-  padding: 1rem;
-  margin: 0.5rem 0;
+.markdown-content :deep(ul), .markdown-content :deep(ol) {
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-/* Fallback styles for non-shiki code blocks */
-.markdown-content :deep(pre:not(.shiki)) {
-  background: #f6f8fa;
-  border: 1px solid #d0d7de;
+.markdown-content :deep(li) {
+  margin-bottom: 0.5rem;
 }
 
-.dark .markdown-content :deep(pre:not(.shiki)) {
-  background: #161b22;
-  border: 1px solid #30363d;
+.markdown-content :deep(blockquote) {
+  margin: 1.5rem 0;
+  padding: 1rem 1.5rem;
+  border-left: 4px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.05);
+  border-radius: 4px 12px 12px 4px;
 }
 
-/* Force Shiki multi-theme output to follow our dark mode */
+.markdown-content :deep(blockquote p) {
+  margin-bottom: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+}
+
+.markdown-content :deep(pre), .markdown-content :deep(.shiki) {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .dark .markdown-content :deep(.shiki) {
-  background: var(--shiki-dark-bg, #0d1117) !important;
-  color: var(--shiki-dark, #e6edf3) !important;
-}
-
-.dark .markdown-content :deep(.shiki span[style*="--shiki-dark"]) {
-  color: var(--shiki-dark, inherit) !important;
-}
-
-.dark .markdown-content :deep(.shiki span[style*="--shiki-dark-background"]) {
-  background-color: var(--shiki-dark-background, var(--shiki-dark-bg, transparent)) !important;
+  background: rgba(0, 0, 0, 0.3) !important;
 }
 </style>

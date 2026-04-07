@@ -23,7 +23,7 @@ import { useBroadcastChannel } from '@vueuse/core'
 // import { embed } from '@xsai/embed'
 import { generateSpeech } from '@xsai/generate-speech'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useSpecialTokenQueue } from '../../composables/queues'
 import { categorizeResponse } from '../../composables/response-categoriser'
@@ -95,7 +95,13 @@ const viewUpdateCleanups: Array<() => void> = []
 type CaptionChannelEvent
   = | { type: 'caption-speaker', text: string }
     | { type: 'caption-assistant', text: string }
+// NOTICE: do NOT add 'caption-speaker' or user speech to captions. This is intentionally AI-only.
 const { post: postCaption } = useBroadcastChannel<CaptionChannelEvent, CaptionChannelEvent>({ name: 'airi-caption-overlay' })
+
+// NOTICE: Secondary broadcast channel to listen for turn-resets (user messages)
+// This is a hardware-level fix because the 'airi-caption-overlay' empty string reset was failing.
+const { data: sessionUpdate } = useBroadcastChannel<any, any>({ name: 'airi-chat-stream' })
+
 const assistantCaption = ref('')
 
 type PresentEvent
@@ -142,7 +148,7 @@ function handleResizeStateChange(event: Event) {
   isWindowResizing.value = !!customEvent.detail?.active
 }
 
-const { currentMotion, availableExpressions: live2dExpressions, expressionData: live2dExpressionData, activeExpressions: live2dActiveExpressions, modelParameters: live2dModelParameters } = storeToRefs(live2dStore)
+const { currentMotion } = storeToRefs(live2dStore)
 
 const temporaryVrma = ref<string | null>(null)
 let temporaryVrmaTimeout: ReturnType<typeof setTimeout> | null = null
@@ -242,53 +248,20 @@ const emotionsQueue = createQueue<EmotionPayload>({
       }
       else if (stageModelRenderer.value === 'live2d') {
         const emotionName = ctx.data.name
+        const intensity = ctx.data.intensity
         // eslint-disable-next-line no-console
-        console.log('[Stage] Live2D emotion processing:', { name: emotionName, intensity: ctx.data.intensity })
+        console.log('[Stage] Live2D emotion processing:', { name: emotionName, intensity })
 
-        // Case-insensitive match against available Live2D expressions
-        const matchedExp = live2dExpressions.value.find(
-          e => e.name.toLowerCase() === emotionName.toLowerCase(),
-        )
-
-        if (matchedExp) {
-          // eslint-disable-next-line no-console
-          console.log('[Stage] Live2D expression matched:', matchedExp.name, matchedExp.fileName)
-
-          // Apply the expression parameters
-          const expEntry = live2dExpressionData.value.find((e: any) => e.fileName === matchedExp.fileName)
-          if (expEntry?.data?.Parameters) {
-            // Store original values so we can restore them
-            const originalValues: Record<string, number> = {}
-            for (const param of expEntry.data.Parameters) {
-              const id = param.Id || param.id
-              const value = param.Value ?? param.value
-              if (id !== undefined && value !== undefined) {
-                originalValues[id] = live2dModelParameters.value[id] ?? 0
-                live2dModelParameters.value[id] = value
-              }
-            }
-            // Mark as active
-            live2dActiveExpressions.value = { ...live2dActiveExpressions.value, [matchedExp.fileName]: 1 }
-
-            // Auto-reset after 2 seconds (like VRM)
-            setTimeout(() => {
-              for (const [id, origValue] of Object.entries(originalValues)) {
-                live2dModelParameters.value[id] = origValue
-              }
-              live2dActiveExpressions.value = { ...live2dActiveExpressions.value, [matchedExp.fileName]: 0 }
-              // eslint-disable-next-line no-console
-              console.log('[Stage] Live2D expression auto-reset:', matchedExp.name)
-            }, 2000)
-          }
-        }
-        else {
-          // Fallback: try motion mapping
+        // Delegate to store (handles mappings, name-matched fallbacks, and robust resets)
+        const triggered = live2dStore.triggerEmotion(emotionName, intensity)
+        if (!triggered) {
+          // Final fallback: try motion mapping
           const motionGroup = (EMOTION_EmotionMotionName_value as any)[emotionName]
           if (motionGroup) {
             currentMotion.value = { group: motionGroup }
           }
           else {
-            console.warn('[Stage] No Live2D expression or motion found for:', emotionName)
+            console.warn('[Stage] No Live2D explicit mapping, name match, or motion found for:', emotionName)
           }
         }
       }
@@ -777,24 +750,20 @@ const speechPipeline = createSpeechPipeline<AudioBuffer>({
     if (!model || !voice)
       return null
 
+    const transformedText = speechStore.transformTextForSpeech(request.text, activeSpeechProvider.value)
+
+    if (!transformedText.trim() && !request.special)
+      return null
+
     const input = ssmlEnabled.value && speechStore.supportsSSML
-      ? speechStore.generateSSML(request.text, voice, { ...providerConfig, pitch: pitch.value })
-      : sanitizeForTts(request.text)
+      ? speechStore.generateSSML(transformedText, voice, { ...providerConfig, pitch: pitch.value })
+      : transformedText
 
     // Guard against empty or whitespace-only input after sanitization
     if (!input || !input.trim()) {
       console.log('[TTS Debug] Skipping empty/whitespace-only input')
       return null
     }
-
-    // DEBUG: Log the full API request payload
-    console.log('[TTS Debug] Full API payload to Chatterbox:', JSON.stringify({
-      model,
-      voice: voice.id,
-      responseFormat: 'wav',
-      input,
-      inputPreview: input.slice(0, 200),
-    }, null, 2))
 
     try {
       const speechOptions: Record<string, unknown> = {
@@ -918,6 +887,19 @@ function ensureSpeechIntent() {
 
   return currentChatIntent
 }
+
+// Hardware-level turn reset: clear everything when a new user message enters the session
+// This is the absolute truth for turn boundaries and prevents 'blob' accumulation.
+chatHookCleanups.push(watch(sessionUpdate, (event) => {
+  if (event?.type === 'session-updated' && event.message?.role === 'user') {
+    console.log('[Stage] New user turn detected (via session-updated), resetting caption accumulator.')
+    assistantCaption.value = ''
+    try {
+      postCaption({ type: 'caption-assistant', text: '' })
+    }
+    catch {}
+  }
+}))
 
 chatHookCleanups.push(onBeforeMessageComposed(async () => {
   // NOTICE: chat and proactivity share the same speech lane. Stopping playback alone is not

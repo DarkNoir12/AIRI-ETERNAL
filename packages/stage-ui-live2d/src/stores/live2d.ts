@@ -39,6 +39,8 @@ export const defaultModelParameters = {
 export const useLive2d = defineStore('live2d', () => {
   const { post, data } = useBroadcastChannel<BroadcastChannelEvents, BroadcastChannelEvents>({ name: 'airi-stores-stage-ui-live2d' })
   const shouldUpdateViewHooks = ref(new Set<(reason?: string) => void>())
+  const activeEmotionTimers = ref<Record<string, any>>({})
+  const activeEmotionResets = ref<Record<string, () => void>>({})
 
   const onShouldUpdateView = (hook: (reason?: string) => void) => {
     shouldUpdateViewHooks.value.add(hook)
@@ -109,5 +111,76 @@ export const useLive2d = defineStore('live2d', () => {
     onShouldUpdateView,
     shouldUpdateView,
     resetState,
+
+    /**
+     * Trigger an emotion based on mapping or fallback.
+     * Returns true if a mapping was found and triggered.
+     */
+    triggerEmotion(emotionKey: string, intensity: number = 1) {
+      // 1. Find all fileNames mapped to this emotionKey (explicit mapping)
+      let targetFileNames = Object.entries(emotionMappings.value)
+        .filter(([_, mappedEmotion]) => mappedEmotion === emotionKey)
+        .map(([fileName, _]) => fileName)
+
+      // 2. Fallback: Case-insensitive match against available expressions if no explicit mapping
+      if (targetFileNames.length === 0) {
+        const matched = availableExpressions.value.find(
+          e => e.name.toLowerCase() === emotionKey.toLowerCase(),
+        )
+        if (matched) {
+          targetFileNames = [matched.fileName]
+        }
+      }
+
+      if (targetFileNames.length === 0) {
+        return false
+      }
+
+      for (const fileName of targetFileNames) {
+        // FLUSH: If there's an active reset for this fileName, execute it now and clear timer
+        if (activeEmotionTimers.value[fileName]) {
+          clearTimeout(activeEmotionTimers.value[fileName])
+          activeEmotionResets.value[fileName]?.()
+          delete activeEmotionTimers.value[fileName]
+          delete activeEmotionResets.value[fileName]
+        }
+
+        const matchedExp = availableExpressions.value.find(e => e.fileName === fileName)
+        if (!matchedExp)
+          continue
+
+        const expEntry = expressionData.value.find((e: any) => e.fileName === fileName)
+        if (expEntry?.data?.Parameters) {
+          // Store original values for reset (capture stable state after flush)
+          const originalValues: Record<string, number> = {}
+          for (const param of expEntry.data.Parameters) {
+            const id = param.Id || param.id
+            const value = (param.Value ?? param.value) * intensity
+            if (id !== undefined && value !== undefined) {
+              originalValues[id] = modelParameters.value[id] ?? 0
+              modelParameters.value[id] = value
+            }
+          }
+
+          // Mark as active
+          activeExpressions.value = { ...activeExpressions.value, [fileName]: 1 }
+
+          // Define explicit reset logic
+          const reset = () => {
+            for (const [id, origValue] of Object.entries(originalValues)) {
+              modelParameters.value[id] = origValue
+            }
+            activeExpressions.value = { ...activeExpressions.value, [fileName]: 0 }
+            delete activeEmotionTimers.value[fileName]
+            delete activeEmotionResets.value[fileName]
+          }
+
+          activeEmotionResets.value[fileName] = reset
+          activeEmotionTimers.value[fileName] = setTimeout(reset, 2000)
+        }
+      }
+
+      return true
+    },
   }
 })

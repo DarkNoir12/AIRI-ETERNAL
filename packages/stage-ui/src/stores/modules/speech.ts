@@ -42,6 +42,13 @@ export const useSpeechStore = defineStore('speech', () => {
   const selectedLanguage = useLocalStorageManualReset<string>('settings/speech/language', 'en-US')
   const modelSearchQuery = refManualReset<string>('')
 
+  // Universal Speech Transformer State
+  const transformerEnabled = useLocalStorageManualReset<boolean>('settings/speech/transformer-enabled', true)
+  const stripNarrative = useLocalStorageManualReset<boolean>('settings/speech/strip-narrative', true)
+  const stripEmojis = useLocalStorageManualReset<boolean>('settings/speech/strip-emojis', true)
+  const stripSymbols = useLocalStorageManualReset<boolean>('settings/speech/strip-symbols', true)
+  const tildeReplacement = useLocalStorageManualReset<string>('settings/speech/tilde-replacement', 'nyan')
+
   // Computed properties
   const availableSpeechProvidersMetadata = computed(() => allAudioSpeechProvidersMetadata.value)
 
@@ -76,12 +83,27 @@ export const useSpeechStore = defineStore('speech', () => {
   })
 
   const supportsSSML = computed(() => {
-    // Currently only ElevenLabs and some other providers support SSML
-    // only part voices are support SSML in cosyvoice-v2 which is provided by alibaba
+    // Check provider metadata first
+    const metadata = providersStore.getProviderMetadata(activeSpeechProvider.value)
+    if (metadata?.capabilities.supportsSSML !== undefined) {
+      return metadata.capabilities.supportsSSML
+    }
+
+    // Legacy fallback/overrides
     if (activeSpeechProvider.value === 'alibaba-cloud-model-studio' && activeSpeechModel.value === 'cosyvoice-v2') {
       return true
     }
     return ['elevenlabs', 'microsoft-speech', 'azure-speech'].includes(activeSpeechProvider.value)
+  })
+
+  const supportsPitch = computed(() => {
+    const metadata = providersStore.getProviderMetadata(activeSpeechProvider.value)
+    if (metadata?.capabilities.supportsPitch !== undefined) {
+      return metadata.capabilities.supportsPitch
+    }
+    // Default to true for backward compatibility with unspecified providers if needed,
+    // but per requirements we want to be explicit.
+    return false
   })
 
   async function loadVoicesForProvider(provider: string) {
@@ -213,6 +235,57 @@ export const useSpeechStore = defineStore('speech', () => {
   watch(availableVoices, updateActiveVoice, { deep: true })
 
   /**
+   * Transforms text before sending to TTS provider
+   */
+  function transformTextForSpeech(text: string, providerId: string): string {
+    if (!transformerEnabled.value || providerId === 'chatterbox') {
+      return text
+    }
+
+    let transformed = text
+
+    // 1. Strip Narrative (actions in asterisks, brackets, or parentheses)
+    // We use non-greedy matching to catch discrete blocks: *pats*, [thinking], (whispers), <acting>
+    if (stripNarrative.value) {
+      transformed = transformed.replace(/\*.*?\*|\[.*?\]|\(.*?\)|<.*?>/g, '')
+
+      // Clean up orphaned narrative markers that didn't have a pair but might trigger "star" or "bracket" sounds
+      transformed = transformed.replace(/[*[\]()<>\\]/g, '')
+    }
+
+    // 2. Strip Emojis
+    if (stripEmojis.value) {
+      // Broad emoji regex covering most of the unicode emoji blocks
+      transformed = transformed.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+      // Also catch any ZWJ sequences or skin tone modifiers if they survived the block regex
+      transformed = transformed.replace(/\u200D/g, '')
+    }
+
+    // 3. Strip Symbols & Kaomoji (Extreme Cleaning)
+    if (stripSymbols.value) {
+      // Strips anything that isn't a Letter, Number (any language), or standard sentence punctuation
+      // We keep standard punctuation . , ! ? ; : " ' - and spaces
+      transformed = transformed.replace(/[^\p{L}\p{N}\s.,!?;:"'-]/gu, '')
+    }
+
+    // 4. Tilde substitution
+    if (tildeReplacement.value !== undefined) {
+      // We use a temporary marker for tildes if we did symbol stripping so they don't get eaten
+      // Actually, if we do tilde replacement LAST, it works better.
+      const replacement = tildeReplacement.value.trim()
+      if (replacement) {
+        transformed = transformed.replace(/~/g, ` ${replacement} `)
+      }
+      else {
+        transformed = transformed.replace(/~/g, '')
+      }
+    }
+
+    // Final cleanup: remove multiple spaces, leading/trailing whitespace
+    return transformed.replace(/\s+/g, ' ').trim()
+  }
+
+  /**
    * Generate speech using the specified provider and settings
    *
    * @param provider The speech provider instance
@@ -229,11 +302,18 @@ export const useSpeechStore = defineStore('speech', () => {
     voice: string,
     providerConfig: Record<string, any> = {},
   ): Promise<ArrayBuffer> {
+    const transformedInput = transformTextForSpeech(input, activeSpeechProvider.value)
+
+    // Bail if transformer emptied the text
+    if (!transformedInput.trim()) {
+      return new ArrayBuffer(0)
+    }
+
     const response = await generateSpeech({
       ...provider.speech(model, {
         ...providerConfig,
       }),
-      input,
+      input: transformedInput,
       voice,
     })
 
@@ -315,6 +395,12 @@ export const useSpeechStore = defineStore('speech', () => {
     ssmlEnabled.reset()
     selectedLanguage.reset()
     modelSearchQuery.reset()
+
+    transformerEnabled.reset()
+    stripNarrative.reset()
+    stripEmojis.reset()
+    stripSymbols.reset()
+    tildeReplacement.reset()
     availableVoices.reset()
     speechProviderError.reset()
     isLoadingSpeechProviderVoices.reset()
@@ -336,9 +422,17 @@ export const useSpeechStore = defineStore('speech', () => {
     availableVoices,
     modelSearchQuery,
 
+    // Transformer state
+    transformerEnabled,
+    stripNarrative,
+    stripEmojis,
+    stripSymbols,
+    tildeReplacement,
+
     // Computed
     availableSpeechProvidersMetadata,
     supportsSSML,
+    supportsPitch,
     supportsModelListing,
     providerModels,
     isLoadingActiveProviderModels,
@@ -350,6 +444,7 @@ export const useSpeechStore = defineStore('speech', () => {
     loadVoicesForProvider,
     getVoicesForProvider,
     generateSSML,
+    transformTextForSpeech,
     resetState,
   }
 })

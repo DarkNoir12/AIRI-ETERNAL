@@ -1,3 +1,7 @@
+---
+title: AIRI Interaction Pipelines
+description: Documentation of the primary surfaces for LLM ingestion and interaction.
+---
 # AIRI Interaction Pipelines
 
 Documentation of the three primary surfaces for LLM ingestion and interaction, plus the downstream speech/runtime pieces that make assistant output audible on stage.

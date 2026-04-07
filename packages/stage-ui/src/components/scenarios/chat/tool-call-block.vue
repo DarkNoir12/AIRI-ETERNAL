@@ -2,6 +2,7 @@
 import { Collapsible } from '@proj-airi/ui'
 import { computed } from 'vue'
 
+import { useJournalPreviewStore } from '../../../stores/journal-preview'
 import { MarkdownRenderer } from '../../markdown'
 
 const props = defineProps<{
@@ -10,6 +11,9 @@ const props = defineProps<{
   state?: 'executing' | 'done' | 'error'
   result?: any
 }>()
+
+const journalPreviewStore = useJournalPreviewStore()
+const { openImagePreview } = journalPreviewStore
 
 interface TextJournalArgs {
   action?: string
@@ -21,7 +25,7 @@ interface ImageJournalArgs {
   action?: string
   prompt?: string
   title?: string
-  set_as_background?: boolean
+  mode?: 'inline' | 'widget' | 'bg'
 }
 
 const parsedArgs = computed<TextJournalArgs | null>(() => {
@@ -61,8 +65,28 @@ const imageJournalMarkdown = computed(() => {
   const args = parsedArgs.value as ImageJournalArgs
   const title = args?.title?.trim() || 'Untitled Image'
   const prompt = args?.prompt?.trim() || ''
-  const setBg = args?.set_as_background ? '\n\n> Setting as background...' : ''
-  return `### ${title}\n\n*${prompt}*${setBg}`
+  const mode = args?.mode || 'inline'
+
+  let footer = ''
+  if (mode === 'bg')
+    footer = '\n\n> **Scene Shift**: Setting this as the active background...'
+  else if (mode === 'widget')
+    footer = '\n\n> **Canvas Created**: Spawning an artistry widget for you...'
+  else
+    footer = '\n\n> **Sharing**: Sending a quick sketch to our chat history...'
+
+  return `### ${title}\n\n*${prompt}*${footer}`
+})
+
+const imageJournalResult = computed(() => {
+  if (props.toolName !== 'image_journal' || !props.result)
+    return null
+  try {
+    return typeof props.result === 'string' ? JSON.parse(props.result) : props.result
+  }
+  catch {
+    return null
+  }
 })
 
 const formattedArgs = computed(() => {
@@ -129,12 +153,28 @@ const formattedArgs = computed(() => {
       </template>
       <template v-else-if="isImageJournalCreate">
         <div class="mb-2 flex items-center gap-2">
-          <div class="i-solar:camera-bold-duotone text-base text-violet-500" />
-          <div class="rounded-full bg-violet-500/12 px-2.5 py-1 text-xs text-violet-700 dark:text-violet-300">
-            Generating image
+          <div :class="[(parsedArgs as ImageJournalArgs)?.mode === 'bg' ? 'i-solar:gallery-wide-bold-duotone text-emerald-500' : 'i-solar:camera-bold-duotone text-violet-500']" class="text-base" />
+          <div
+            class="rounded-full px-2.5 py-1 text-xs"
+            :class="[
+              (parsedArgs as ImageJournalArgs)?.mode === 'bg'
+                ? 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300'
+                : 'bg-violet-500/12 text-violet-700 dark:text-violet-300',
+            ]"
+          >
+            {{ (parsedArgs as ImageJournalArgs)?.mode === 'bg' ? 'Updating Scene' : 'Generating image' }}
           </div>
         </div>
         <MarkdownRenderer :content="imageJournalMarkdown" />
+
+        <!-- Result Rendering (for inline mode) -->
+        <div v-if="imageJournalResult?.imageUrl" class="mt-4 overflow-hidden border border-primary-500/20 rounded-xl shadow-lg">
+          <img
+            :src="imageJournalResult.imageUrl"
+            class="w-full cursor-pointer object-contain transition-all active:scale-[0.98] hover:ring-2 hover:ring-primary-500/50"
+            @click="openImagePreview({ title: (parsedArgs as ImageJournalArgs)?.title || 'Generated Image', url: imageJournalResult.imageUrl })"
+          >
+        </div>
       </template>
       <div v-else class="whitespace-pre-wrap break-words font-mono">
         {{ formattedArgs }}

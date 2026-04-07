@@ -7,18 +7,18 @@ import {
   CharacterContextDialog,
   ChatHistory,
   ChatMemoryPopover,
-  MarkdownRenderer,
+  JournalPreviewModal,
 } from '@proj-airi/stage-ui/components'
 import { useBackgroundStore } from '@proj-airi/stage-ui/stores/background'
 import { useChatOrchestratorStore } from '@proj-airi/stage-ui/stores/chat'
 import { useChatMaintenanceStore } from '@proj-airi/stage-ui/stores/chat/maintenance'
 import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-store'
 import { useChatStreamStore } from '@proj-airi/stage-ui/stores/chat/stream-store'
+import { useJournalPreviewStore } from '@proj-airi/stage-ui/stores/journal-preview'
 import { useShortTermMemoryStore } from '@proj-airi/stage-ui/stores/memory-short-term'
 import { useTextJournalStore } from '@proj-airi/stage-ui/stores/memory-text-journal'
 import { buildSystemPrompt, useAiriCardStore } from '@proj-airi/stage-ui/stores/modules/airi-card'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
-import { useProactivityStore } from '@proj-airi/stage-ui/stores/proactivity'
 import { useProvidersStore } from '@proj-airi/stage-ui/stores/providers'
 import { useSettingsChat } from '@proj-airi/stage-ui/stores/settings'
 import { BasicTextarea } from '@proj-airi/ui'
@@ -40,7 +40,6 @@ const chatStream = useChatStreamStore()
 const textJournalStore = useTextJournalStore()
 const backgroundStore = useBackgroundStore()
 const airiCardStore = useAiriCardStore()
-const proactivityStore = useProactivityStore()
 
 const { activeCard } = storeToRefs(airiCardStore)
 const shortTermMemory = useShortTermMemoryStore()
@@ -57,6 +56,9 @@ const { activeModel, activeProvider } = storeToRefs(useConsciousnessStore())
 const settingsChat = useSettingsChat()
 const isComposing = ref(false)
 const CHAT_WINDOW_TITLE = 'AIRI - Chat Window'
+
+const journalPreviewStore = useJournalPreviewStore()
+const { openTextPreview, openImagePreview, closePreview } = journalPreviewStore
 
 // --- Journal Preview Data ---
 const latestTextEntries = computed(() => {
@@ -98,27 +100,6 @@ const latestImageEntries = computed(() => {
     return []
   return backgroundStore.journalEntries.slice(0, 3)
 })
-
-// --- Inline Preview Modal ---
-const previewModal = ref<{
-  type: 'text' | 'image'
-  title: string
-  content: string // text content or image URL
-} | null>(null)
-
-function openTextPreview(entry: { title: string, content: string }) {
-  previewModal.value = { type: 'text', title: entry.title, content: entry.content }
-}
-
-function openImagePreview(entry: { title: string, url: string | null }) {
-  if (!entry.url)
-    return
-  previewModal.value = { type: 'image', title: entry.title, content: entry.url }
-}
-
-function closePreview() {
-  previewModal.value = null
-}
 
 // --- Date Formatting ---
 function formatDate(timestamp: number): string {
@@ -191,13 +172,7 @@ async function handleSend() {
     return
   }
 
-  let textToSend = messageInput.value
-  if (activeCard.value?.extensions?.airi?.groundingEnabled) {
-    const sensorData = proactivityStore.sensorPayload
-    if (sensorData) {
-      textToSend = `[Grounding Context]\n${sensorData}\n\n---\nUser Says:\n${textToSend}`
-    }
-  }
+  const textToSend = messageInput.value
 
   const attachmentsToSend = attachments.value.map(att => ({ ...att }))
 
@@ -310,11 +285,32 @@ const sessionTokenCount = computed(() => {
 
 const formattedTokenCount = computed(() => formatTokenCount(sessionTokenCount.value))
 
-const contextWidth = computed(() => activeCard.value?.extensions?.airi?.generation?.known?.contextWidth)
+const globalContextWidth = computed(() => {
+  if (activeCard.value?.extensions?.airi?.generation?.known?.contextWidth)
+    return undefined
+
+  if (!activeProvider.value || !activeModel.value)
+    return undefined
+
+  try {
+    const rawMap = localStorage.getItem('airi:context-width-map')
+    if (!rawMap)
+      return undefined
+
+    const map = JSON.parse(rawMap)
+    return map[activeProvider.value]?.[activeModel.value]
+  }
+  catch {
+    return undefined
+  }
+})
+
+const effectiveContextWidth = computed(() => activeCard.value?.extensions?.airi?.generation?.known?.contextWidth || globalContextWidth.value)
+
 const contextPercentage = computed(() => {
-  if (!contextWidth.value)
+  if (!effectiveContextWidth.value)
     return 0
-  return (sessionTokenCount.value / contextWidth.value) * 100
+  return (sessionTokenCount.value / effectiveContextWidth.value) * 100
 })
 
 onMounted(() => {
@@ -375,7 +371,7 @@ watch(messageInput, () => {
         v-for="entry in latestImageEntries"
         :key="entry.id"
         :class="[
-          'relative h-14 w-14 shrink-0 cursor-pointer of-hidden rounded-lg',
+          'group relative h-14 w-14 shrink-0 cursor-pointer of-hidden rounded-lg',
           'border border-primary-200/30 transition-all hover:border-primary-500',
           'dark:border-primary-800/30 dark:hover:border-primary-400',
         ]"
@@ -385,6 +381,18 @@ watch(messageInput, () => {
         <div :class="['absolute inset-0 flex items-end p-1', 'bg-gradient-to-t from-black/60 to-transparent']">
           <span class="truncate text-[8px] text-white font-medium">{{ entry.title }}</span>
         </div>
+
+        <!-- Save Button (Top Right, Hover Only) -->
+        <button
+          :class="[
+            'absolute right-1 top-1 z-10 p-1 rounded-md bg-black/40 text-white backdrop-blur-sm',
+            'opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/60',
+          ]"
+          title="Save to computer"
+          @click.stop="journalPreviewStore.downloadImage(entry.url || '', entry.title)"
+        >
+          <div class="i-solar:download-minimalistic-bold-duotone text-[10px]" />
+        </button>
       </div>
     </div>
 
@@ -399,9 +407,9 @@ watch(messageInput, () => {
 
     <div class="flex items-center justify-end gap-2 py-1">
       <div
-        v-if="contextWidth"
+        v-if="effectiveContextWidth"
         class="flex cursor-help items-center gap-1.5 px-2 py-1"
-        :title="`Context: ${formattedTokenCount} / ${formatTokenCount(contextWidth)} (${contextPercentage.toFixed(1)}%)`"
+        :title="`${globalContextWidth ? '[Inherited] ' : ''}Context: ${formattedTokenCount} / ${formatTokenCount(effectiveContextWidth)} (${contextPercentage.toFixed(1)}%)`"
       >
         <div class="i-solar:graph-bold-duotone text-[10px] text-neutral-400 dark:text-neutral-500" />
         <span class="text-[10px] text-neutral-400 font-bold leading-none tracking-tight uppercase dark:text-neutral-500">{{ formattedTokenCount }}</span>
@@ -564,50 +572,15 @@ watch(messageInput, () => {
       @attach="handleFilePaste"
     />
 
-    <!-- Inline Preview Modal -->
+    <!-- Context Dialog -->
+    <CharacterContextDialog
+      v-model="showContext"
+      :character-name="characterName"
+      :system-prompt="effectiveSystemPrompt"
+    />
+
+    <!-- Trash Safety Confirmation Dialog -->
     <Teleport to="body">
-      <Transition name="modal-fade">
-        <div
-          v-if="previewModal"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          @click.self="closePreview"
-        >
-          <div
-            :class="[
-              'relative mx-4 max-h-[80vh] max-w-md w-full overflow-hidden rounded-2xl',
-              'bg-white shadow-2xl dark:bg-neutral-900',
-              'animate-scale-in',
-            ]"
-          >
-            <!-- Header -->
-            <div :class="['flex items-center justify-between border-b border-neutral-200/50 px-4 py-3', 'dark:border-neutral-700/50']">
-              <div :class="['flex items-center gap-2 text-sm font-bold', 'text-neutral-800 dark:text-neutral-100']">
-                <div :class="previewModal.type === 'text' ? 'i-solar:notebook-bold-duotone' : 'i-solar:gallery-bold-duotone'" />
-                <span class="truncate">{{ previewModal.title }}</span>
-              </div>
-              <button
-                :class="['rounded-full p-1 text-neutral-400 transition-colors', 'hover:bg-neutral-100 hover:text-neutral-600', 'dark:hover:bg-neutral-800 dark:hover:text-neutral-200']"
-                @click="closePreview"
-              >
-                <div i-solar:close-circle-bold-duotone class="text-lg" />
-              </button>
-            </div>
-
-            <!-- Content -->
-            <div v-if="previewModal.type === 'text'" class="max-h-[60vh] overflow-y-auto px-4 py-3">
-              <MarkdownRenderer
-                :content="previewModal.content"
-                class="max-w-none prose prose-sm dark:prose-invert"
-              />
-            </div>
-            <div v-else class="flex items-center justify-center p-2">
-              <img :src="previewModal.content" class="max-h-[60vh] w-auto rounded-lg object-contain">
-            </div>
-          </div>
-        </div>
-      </Transition>
-
-      <!-- Trash Safety Confirmation Dialog -->
       <Transition name="modal-fade">
         <div
           v-if="trashConfirmOpen"
@@ -668,12 +641,9 @@ watch(messageInput, () => {
         </div>
       </Transition>
     </Teleport>
-    <!-- Context Dialog -->
-    <CharacterContextDialog
-      v-model="showContext"
-      :character-name="characterName"
-      :system-prompt="effectiveSystemPrompt"
-    />
+
+    <!-- Shared Preview Modal -->
+    <JournalPreviewModal />
   </div>
 </template>
 

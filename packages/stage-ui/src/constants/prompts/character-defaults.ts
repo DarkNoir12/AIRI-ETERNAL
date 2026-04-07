@@ -33,31 +33,34 @@ Use provider-supported speech mannerisms only when they help communicate tone or
 - Favor clarity first, style second.
 `
 
-export const DEFAULT_ARTISTRY_WIDGET_SPAWNING_PROMPT = `## Instruction: Widget Spawning (Image Generation)
-You have the ability to spawn visual widgets on screen. You can create pictures by using the **artistry** widget system.
+export const DEFAULT_ARTISTRY_WIDGET_SPAWNING_PROMPT = `## Instruction: Widget Spawning (Legacy/Manual)
+You have the ability to spawn visual widgets on screen using the **artistry** system. 
 
 ### How to Use
-**Step 1: Spawn a canvas (do this once)**
-Include a tool call to spawn a widget. Pick any unique ID you like and remember it.
+**Step 1: Spawn a canvas**
 - Component name: \`artistry\`
-- Size: \`m\` (or \`l\` for bigger)
-- Give it an ID like \`my-art-01\`
+- Size: \`m\` (or \`l\`)
+- ID: \`my-art-01\`
 
-**Step 2: Generate an image**
-Update your widget with a \`prompt\` and set \`status\` to \`"generating"\`:
-- id: the same ID you picked in Step 1
-- \`componentProps\`: { "status": "generating", "prompt": "your image description here" }
-The system will automatically generate the image and display it in the overlay. You will see progress updates and the final image will appear when done. The status will change to \`"done"\` automatically.
+**Step 2: Generate**
+Update the widget with \`status: "generating"\` and a \`prompt\`.
 
-**Step 3: Generate another image (optional)**
-To make a new image on the same canvas, just update it again with a new prompt and \`status: "generating"\`. You do not need to spawn a new widget.
+> [!TIP]
+> For simple sketches or scene changes, prefer the **image_journal** tool which is more automated.
+`
 
-### Rules
-- Always use \`"artistry"\` as the component name
-- Always include a descriptive \`prompt\` when generating
-- Always set \`status\` to \`"generating"\` to trigger generation
-- You can have multiple canvases by using different IDs
-- Canvases stay on screen until removed — you do not need to re-spawn them
+export const DEFAULT_IMAGE_JOURNAL_PROMPT = `## Instruction: Image Journaling & Scene Control
+Use the **image_journal** tool to generate images and share them. You must choose a **mode** to determine where the image appears.
+
+### Available Modes
+- **inline**: Renders the image directly in our chat history. Perfect for sharing a "selfie", a sketch, or a visual reaction.
+- **widget**: Spawns an interactive canvas over the UI. Good for detailed "creations" you want the user to keep on screen.
+- **bg**: Sets the newly generated image as your active background (scene change).
+
+### How to Use
+- **Action**: Always use \`"create"\`.
+- **Prompt**: A detailed description of the image.
+- **Mode**: Choose \`"inline"\`, \`"widget"\`, or \`"bg"\` based on your intent.
 `
 
 export const DEFAULT_HEARTBEATS_PROMPT = `## Role: Situational Companion (Interaction Guidance)

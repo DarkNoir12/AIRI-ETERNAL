@@ -44,6 +44,12 @@ const {
   speechProviderError,
   ssmlEnabled,
   availableVoices,
+  transformerEnabled,
+  stripNarrative,
+  stripEmojis,
+  stripSymbols,
+  tildeReplacement,
+  supportsPitch,
 } = storeToRefs(speechStore)
 
 const { trackProviderClick } = useAnalytics()
@@ -169,8 +175,8 @@ async function generateTestSpeech() {
     const input = useSSML.value
       ? ssmlText.value
       : ssmlEnabled.value && speechStore.supportsSSML
-        ? speechStore.generateSSML(testText.value, voice, { ...providerConfig, pitch: pitch.value })
-        : testText.value
+        ? speechStore.generateSSML(speechStore.transformTextForSpeech(testText.value, activeSpeechProvider.value), voice, { ...providerConfig, pitch: pitch.value })
+        : speechStore.transformTextForSpeech(testText.value, activeSpeechProvider.value)
 
     const response = await generateSpeech({
       ...provider.speech(model, providerConfig),
@@ -517,6 +523,7 @@ function handleDeleteProvider(providerId: string) {
           <!-- Voice parameters -->
           <div flex="~ col gap-4">
             <FieldRange
+              v-if="supportsPitch"
               v-model="pitch"
               label="Pitch"
               description="Tune the pitch of the voice"
@@ -525,10 +532,59 @@ function handleDeleteProvider(providerId: string) {
             />
             <!-- SSML Support -->
             <FieldCheckbox
+              v-if="speechStore.supportsSSML"
               v-model="ssmlEnabled"
               label="Enable SSML"
               description="Enable Speech Synthesis Markup Language for more control over speech output"
             />
+          </div>
+
+          <!-- Universal Speech Transformer Section -->
+          <div class="mt-4 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+            <div class="mb-4 flex items-center justify-between">
+              <div>
+                <h3 class="text-base text-neutral-500 font-semibold dark:text-neutral-400">
+                  Universal Speech Transformer
+                </h3>
+                <p class="text-xs text-neutral-400 dark:text-neutral-500">
+                  Clean and transform text before synthesis
+                </p>
+              </div>
+              <FieldCheckbox
+                v-model="transformerEnabled"
+                hide-description
+              />
+            </div>
+
+            <div v-if="transformerEnabled" class="grid grid-cols-1 gap-4 rounded-lg bg-neutral-50 p-3 md:grid-cols-2 dark:bg-neutral-900/50">
+              <FieldCheckbox
+                v-model="stripNarrative"
+                label="Strip Narrative"
+                description="Remove *actions*, [notes], and (comments)"
+                class="origin-top-left scale-90"
+              />
+              <FieldCheckbox
+                v-model="stripEmojis"
+                label="Strip Emojis"
+                description="Remove emojis from spoken text"
+                class="origin-top-left scale-90"
+              />
+              <FieldCheckbox
+                v-model="stripSymbols"
+                label="Strip Symbols & Kaomoji"
+                description="Remove complex symbols and orphaned asterisks"
+                class="origin-top-left scale-90"
+              />
+              <div class="col-span-full mt-2">
+                <FieldInput
+                  v-model="tildeReplacement"
+                  label="Tilde (~) Replacement"
+                  description="What should '~' vocalize as? (e.g. 'nyan'). Leave blank to strip."
+                  placeholder="e.g. nyan"
+                  class="origin-top-left scale-90"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Manual voice input when no voices are available or for OpenAI Compatible -->

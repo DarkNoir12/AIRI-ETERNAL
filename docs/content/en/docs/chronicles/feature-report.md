@@ -11,7 +11,8 @@ Focuses on immersion, transparency, and reducing the "black box" nature of AI in
 - **Unified Journaling Feed**: A horizontal Interaction Area above the chat input that displays a **real-time carousel** of the latest 2 text journals and 3 image journals — visible at a glance without opening extra panels.
 - **Persona-Driven Auto-Titles**: Automated short-term memory blocks are assigned **character-consistent titles** (e.g., *"My thoughts after 108 messages together~"*) instead of static IDs.
 - **Context Limit Transparency**: A visual **Context Meter** (progress bar) and **Token Counter** (e.g., `46.7K`) that transition from Green → Yellow → Red as the character's memory limit is approached.
-- **Atomic Session Rebuilds**: A context-aware "Rebuild" logic that semantically **compacts long-running conversations** into a clean state while preserving the last 3 days of continuity.
+- **Context-Width Inheritance**: Automatic global default mapping (via `localStorage`) that links `providerId` and `modelName` to a user-defined `contextWidth`, ensuring characters inherit stable token limits even if not explicitly configured.
+- **Atomic Session Rebuilds**: A context-aware \"Rebuild\" logic that semantically **compacts long-running conversations** into a clean state while preserving the last 3 days of continuity.
 - **Configurable Send Key**: User-selectable chat submission hotkey (e.g., Enter vs. Ctrl+Enter) via General Settings.
 
 ---
@@ -38,6 +39,7 @@ A structured pipeline that maps AI dialogue tokens into real-time VRM/Live2D exp
 - **Dynamic Name Resolution**: Expression names not in the hardcoded map are resolved via **case-insensitive search** of the VRM's `expressionMap`, allowing any model's custom expressions to work without code changes.
 - **VRMA-Aware ACT Tokens**: ACT tokens can trigger full-body **VRMA animations** (e.g., `<|ACT:{"animation":"crab_dance"}|>`), not just facial expressions. A priority system ensures VRMA takes precedence over blendshape matches.
 - **Smooth Transitions**: All emotion changes use a lerp-based blending system — when one emotion activates, all others fade to zero simultaneously over a configurable `blendDuration`.
+- **Live2D Emotion Parity**: Extended the ACT pipeline to Live2D models, including a **"Stable Baseline Manager"** that flushes pending resets on new triggers, ensuring the model never gets stuck in an emotional state during rapid interaction.
 
 ---
 
@@ -88,6 +90,8 @@ A complete redesign of the image generation pipeline, focusing on performance an
 - **Interactive Gallery Widget**: A premium "Flip Card" display with **front-face** image preview, **back-face** generation metadata (Prompt, Remix ID, Render Time), and one-click **"Set as Background"**.
 - **NanoBanana Provider Support**: Added **NanoBanana** as another first-class artistry backend alongside Replicate and ComfyUI, widening the generation and mutation toolset available to AIRI.
 - **"Bring Your Own Workflow" (BYOW)**: Users can upload any `workflow_api.json` from ComfyUI and visually map specific nodes (prompts, seeds, LoRA weights) to be **controllable by the AI**.
+- **Global & Per-Character Artistry Control**: Added a "None" provider state to the global settings and per-character switches. This allows users to fully disable image generation module-wide or for specific individuals.
+- **Dynamic Prompt Stripping**: Automatically removes image-generation instructions and tool definitions from the system prompt builder whenever Artistry is disabled, preventing AI roleplay confusion.
 - **Workflow Templates & Presets**: Save and name complex node graphs as reusable templates. Different AI characters can be assigned **unique generation "personalities"** and prompt prefixes.
 - **Bidirectional `{{PROMPT}}` / `{{IMAGE}}` Placeholders**: Artistry workflows can now reuse prompt text and source images through explicit placeholders, enabling cleaner remix and image-conditioned generation flows across provider backends.
 - **Automated Image Handoff**: Generated art is instantly archived into the character-scoped **Image Journal**, ensuring no creation is lost across sessions.
@@ -114,10 +118,11 @@ Custom provider integrations not present in the upstream project.
     - **Capability-Driven Helpers**: Provider capabilities (`supportsSpeechTags`, `availableMannerisms`) are queried at runtime to power context-aware helper UI in the Acting tab.
     - **Semantic Speech Pipeline**: End-to-end flow from ACT token parsing → provider-side text preprocessing → mannerism transformation → TTS synthesis.
 - **App (Local) Speech & Transcription**: Direct in-app, privacy-first implementation of **Whisper** (transcription) and **Kokoro** (speech synthesis) via `xsai-transformers`. Runs fully locally in the Electron main process with WebGPU acceleration support, requiring zero external dependencies or API keys.
+- **Qwen Portal Provider**: Added a first-class **Qwen Portal** integration with dedicated OAuth plumbing through the unified provider registry.
+- **OpenRouter (Easy Mode)**: Integrated **OpenRouter** as the primary backend for the "Sense Portal" Easy Mode, providing a streamlined, high-performance LLM experience with minimal configuration.
 - **Deepgram STT (Nova-2/Nova-3)**: Native integration for high-speed transcription with a secure **main-process JWT-based CORS bypass** for the Electron environment.
 - **Amazon AWS Polly**: Native high-quality neural speech synthesis integration using `aws4fetch` for secure V4 signing. Supports both **Neural** and **Standard** engines with dynamic voice discovery across all AWS regions.
 - **DeepSeek / GLM-4 Streaming**: Added streaming support for `reasoning-delta` events and hardened the categorizer against **malformed tag typos** to prevent prompt stalls.
-- **Qwen Portal Provider**: Added a first-class **Qwen Portal** integration with dedicated OAuth plumbing through the unified provider registry.
 - **Gemini Live Streaming Pipeline**: Optimized the native Google Gemini Live API for production-grade performance:
     - **Native Audio Playback Queue**: Pre-buffers audio chunks in the main process for gapless, zero-latency streaming.
     - **Custom AI Voices**: Standardized support for Gemini-native voices like **Algenib** and **Fenrir**.
@@ -140,7 +145,9 @@ Enables the character to perceive and react to the user's real-world desktop env
 ## 11. Desktop Stage (Control Island & UI)
 The floating interaction hub for the desktop experience.
 
-- **Glassmorphic Control Island**: A floating, draggable UI component using `backdrop-blur-xl` and semi-transparent backgrounds, following an iOS-style **"island" pattern**.
+- **Glassmorphic Control Island**: A floating, draggable UI component using `backdrop-blur-xl` and semi-transparent backgrounds, following an iOS-style **\"island\" pattern**.
+- **Control Island Mutual Exclusion**: Main and Gemini/Module islands now auto-collapse each other, ensuring the desktop always remains clean and only one interaction hub is active at a time.
+- **Gemini Control Island UX Refinements**: New button interaction patterns (Toggle/Action buttons auto-hide the island; Cycle buttons remain persistent) to match the premium \"Main\" island experience.
 - **Emotion Picker Sub-Menu**: Direct access to **8 emotion triggers** (Happy, Sad, Angry, Surprised, Neutral, Think, Cool, Random) from the Control Island drawer.
 - **Fade-on-Hover Intelligence**: A specialized **"Eye" mode** that makes the UI nearly invisible when the mouse hovers over the model area, ensuring the character's performance is never obscured.
 - **Integrated Profile Switcher**: A dedicated sub-menu within the Control Island that replaces the main view, featuring a scrollable list of character profiles with deep-links to Gallery and Management settings. Ensures the UI remains usable at any window size.
@@ -205,7 +212,7 @@ Internal hardening to ensure the app remains a stable, performant "Daily Driver.
 A redesigned first-run experience that reduces setup friction through automation and intuitive terminology.
 
 - **The Sense Pivot**: Complete terminology shift from technical acronyms (LLM, TTS, STT) to human-centered terms (**Consciousness, Speech, Hearing**).
-- **Sense Portal (Easy Mode)**: A zero-config setup path that uses **Qwen Portal OAuth** (Device Flow) for instant LLM access and **Deepgram** for high-speed voice services.
+- **Sense Portal (Easy Mode)**: A zero-config setup path that uses **OpenRouter** for instant LLM access and **Deepgram** for high-speed voice services.
 - **Automated Provider Configuration**: Successfully completing the Easy Mode flow automatically configures all internal stores (Consciousness, Speech, Hearing) with optimal default models (e.g., `aura-2`, `nova-3`).
 - **Advanced Mode**: Retains granular control for power users who prefer custom OpenAI, Anthropic, or local (Ollama/LM Studio) configurations.
 - **Onboarding Orchestrator**: A modular, multi-step dialog system that handles branching setup paths and character initialization in a single unified flow.
@@ -224,3 +231,11 @@ Features from pending upstream PRs that have been squatted, integrated, and main
 | #1026 | **xAI Grok Voice Providers** — Adds Grok TTS/STT as speech providers | — | [PR](https://github.com/moeru-ai/airi/pull/1026) |
 | #1336 | **Chat Connection Guard** — Explicitly wait for LLM/Mind connection status before chat | — | [PR](https://github.com/moeru-ai/airi/pull/1336) |
 | #1065 | **Manual Model Entry** — Allows manual model string entry if auto-discovery fails | — | [PR](https://github.com/moeru-ai/airi/pull/1065) |
+---
+## 16. Live2D Customization & Parity
+Standardizing the Live2D experience to match the premium VRM feature set.
+19:
+20: - **Standardized 3-Panel Architecture**: The Live2D settings surface has been completely reorganized into the core **Character Customizations**, **Scene**, and **Advanced** panels, providing a unified UX across all model types.
+21: - **Live2D Expression Mapping**: Implementation of a **"Hold-to-Map"** interaction. Users can long-press any expression in the grid to bind it to a standard ACT emotion token (Happy, Sad, Angry, etc.).
+22: - **Compact UI Optimization**: Integrated a specialized **compact mode** for the tabbed navigation and shortened terminology (e.g., \"Head & Face\" → \"Face\") to ensure 100% visibility in the narrow side-panel without horizontal clipping.
+23: - **AiriCard Integration**: All Live2D customization data—including expressions, motions, and emotion mappings—is persisted and exported within the character's `AiriCard`, ensuring total portability.
