@@ -83,8 +83,15 @@ export const useConsciousnessStore = defineStore('consciousness', () => {
   }
 
   // Watch for provider changes and load models
-  watch(activeProvider, async (newProvider) => {
+  watch(activeProvider, async (newProvider, _oldProvider) => {
     if (newProvider) {
+      // NOTICE: When switching providers, reset the model selection.
+      // The previous model ID likely belongs to a different provider
+      // (e.g., an OpenRouter :free model being sent to Groq → 404).
+      // The model listing watch below only fires for providers with
+      // listModels capability, which many OpenAI-compatible providers lack.
+      if (activeModel.value)
+        resetModelSelection()
       await loadModelsForProvider(newProvider)
     }
   }, { immediate: true })
