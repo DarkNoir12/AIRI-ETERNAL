@@ -1,7 +1,7 @@
 # AIRI-ETERNAL — Fork Context
 
 > **This is the instructional context for `DarkNoir12/AIRI-ETERNAL`, a fork of `dasilva333/airi` (itself a fork of `moeru-ai/airi`).**
-> Last updated: 2026-04-07
+> Last updated: 2026-04-07 22:47
 
 ---
 
@@ -93,15 +93,28 @@ From `dasilva333/airi` (33 commits, merged 2026-04-07):
 
 ## Known Issues & TODOs
 
-### Post-Merge TODOs
-1. **Add OmniVoice to `transformTextForSpeech()` bypass** — upstream's transformer skips `chatterbox`; add `omnivoice` to avoid double-processing.
-2. **Pre-existing upstream error** — `apps/stage-web/src/pages/devtools/model-driver-mediapipe.vue:251` — type mismatch in `vrmPoseApplier.applyPoseDirectionsToVrm`. Unrelated to our fork; upstream needs to fix it.
-3. **Verify OmniVoice still works** — test TTS generation with both Default Voice and Jen Frankie after merge.
+### ✅ Resolved
+1. **Cross-provider model leak** — consciousness store now resets model when provider changes (fixes `nousresearch/...:free` being sent to Groq → 404).
+2. **Double-speech bug** — removed duplicate `useChatSpeechBridge()` from `chat.vue`. Speech is now single-owned by main window's `Stage.vue` (WidgetStage).
+3. **Tool schema 400 on Groq/strict providers** — `text_journal` and `image_journal` tool params are now all required (Groq requires ALL properties in `required` array).
+4. **Rate limit UX** — added `retryWithBackoff()` with exponential backoff (1.5s → 3s → 6s) and user-friendly error messages instead of raw JSON dumps.
+5. **System/developer message 400** — added `systemMessageCompatibility` auto-detection. Models like `gemma-3-12b-it` that don't support system role get system messages merged into first user message automatically.
+6. **Stray files cleaned up** — `upstream_providers.ts` (corrupted), `sync-report-2026-04-07_10-32.md`, `tmp_server_runtime.ts`, timestamped config files all removed.
 
-### Things That May Be Broken (unclear if needed)
-- `apps/stage-tamagotchi/electron.vite.config.1775501041216.mjs` — a generated timestamped config file that was committed. Should probably be cleaned up / gitignored.
-- Various `.env` files committed to `apps/server/`, `packages/stage-ui/`, `services/*/` — should be in `.gitignore`.
-- `tmp_server_runtime.ts` — temp file at repo root.
+### ⚠️ Pre-existing upstream issues (not our bug)
+1. **`stage-web` typecheck error** — `apps/stage-web/src/pages/devtools/model-driver-mediapipe.vue:251` — `@pixiv/three-vrm` version mismatch (`3.5.0` vs `3.5.1`). Doesn't affect tamagotchi.
+2. **8 pre-existing test failures** — Windows path separators (3), reasoning categoriser bugs (4), plugin path resolution (1). Confirmed identical on upstream `dasilva333/airi`.
+3. **4 empty test suites** — `stage-ui-live2d` `.vue` files can't be parsed by vitest, missing `@lemonneko/crop-empty-pixels` package. Upstream config issue.
+
+### 🔧 Post-Merge TODOs
+1. **Add OmniVoice to `transformTextForSpeech()` bypass** — upstream's transformer skips `chatterbox`; add `omnivoice` to avoid double-processing.
+2. **Verify OmniVoice TTS** — test with both Default Voice and Jen Frankie after all fixes.
+3. **Consider adding `num_ctx` to error patterns** — some providers may still send it unexpectedly if baseUrl detection fails.
+
+### 📝 Lint Status
+- 30 warnings (all pre-existing upstream: unused vars, control char regexes, empty stub files, `new Array(n)` style)
+- 1 error was `upstream_providers.ts` (corrupted stray file) — **DELETED**
+- None of the warnings affect runtime behavior
 
 ---
 
