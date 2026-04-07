@@ -726,21 +726,28 @@ export const useChatOrchestratorStore = defineStore('chat-orchestrator', () => {
     catch (error: any) {
       console.error('Error sending message:', { sessionId, generation, error })
 
+      // Try to get a user-friendly error message from the LLM layer
       let errorMessage = 'An unknown error occurred.'
-      if (error && typeof error === 'object') {
-        errorMessage = error.message || 'An object error occurred.'
-
-        // Handle XSAIError or similar with response/data info
-        try {
-          const detail = error.response || error.data || error.body
-          if (detail) {
-            errorMessage += `\n\n**Response**: ${JSON.stringify(detail, null, 2)}`
-          }
-        }
-        catch {}
+      try {
+        const { buildUserFacingErrorMessage } = await import('./llm')
+        errorMessage = buildUserFacingErrorMessage(error)
       }
-      else {
-        errorMessage = String(error)
+      catch {
+        // Fallback to raw message
+        if (error && typeof error === 'object') {
+          errorMessage = error.message || 'An object error occurred.'
+          // Handle XSAIError or similar — extract just the core message, not the full response dump
+          try {
+            const detail = error.response || error.data || error.body
+            if (detail && typeof detail === 'object' && detail.message) {
+              errorMessage = detail.message
+            }
+          }
+          catch {}
+        }
+        else {
+          errorMessage = String(error)
+        }
       }
 
       // Display in UI

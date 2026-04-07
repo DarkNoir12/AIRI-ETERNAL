@@ -159,6 +159,25 @@ const SYSTEM_MESSAGE_ERROR_PATTERNS: RegExp[] = [
   /invalid.*role.*system/i, // Strict validators
 ]
 
+// NOTICE: Patterns that indicate a rate limit (HTTP 429).
+const RATE_LIMIT_ERROR_PATTERNS: RegExp[] = [
+  /temporarily rate-limited/i,
+  /rate.?limit/i,
+  /too many requests/i,
+  /429/,
+]
+
+// NOTICE: Patterns that indicate a provider-side error (not a local bug).
+// These get user-friendly messages instead of raw error dumps.
+const PROVIDER_ERROR_PATTERNS: RegExp[] = [
+  /provider returned error/i,
+  /upstream/i,
+  /service unavailable/i,
+  /bad gateway/i,
+  /502/,
+  /503/,
+]
+
 export function isToolRelatedError(err: unknown): boolean {
   const msg = String(err)
   return TOOLS_RELATED_ERROR_PATTERNS.some(p => p.test(msg))
@@ -167,6 +186,95 @@ export function isToolRelatedError(err: unknown): boolean {
 export function isSystemMessageRelatedError(err: unknown): boolean {
   const msg = String(err)
   return SYSTEM_MESSAGE_ERROR_PATTERNS.some(p => p.test(msg))
+}
+
+export function isRateLimitError(err: unknown): boolean {
+  const msg = String(err)
+  return RATE_LIMIT_ERROR_PATTERNS.some(p => p.test(msg))
+}
+
+/** Extracts the Retry-After header value (in seconds) from an error message, or returns a default. */
+function extractRetryAfter(err: unknown): number {
+  const msg = String(err)
+  // Look for "retry_after": N in JSON error bodies
+  const retryMatch = msg.match(/["']retry[_-]?after["']\s*:\s*(\d+)/)
+  if (retryMatch)
+    return Number.parseInt(retryMatch[1], 10)
+  // Look for "Please retry shortly" or similar — use 5s default for rate limits
+  if (/retry shortly/i.test(msg))
+    return 5
+  return 0 // caller will use exponential backoff
+}
+
+/** Builds a user-friendly error message from a provider error. */
+function buildUserFacingErrorMessage(err: unknown): string {
+  const msg = String(err)
+
+  // Rate limit — tell the user to wait
+  if (isRateLimitError(err)) {
+    // Try to extract the model name from the error
+    const modelMatch = msg.match(/([\w-]+\/[\w.-]+(?::[\w.-]+)?)/)
+    const modelName = modelMatch ? modelMatch[1] : 'this model'
+    const retrySec = extractRetryAfter(err)
+    if (retrySec > 0) {
+      return `⚠️ Rate limited: ${modelName} is temporarily rate-limited by the provider. Please retry in ~${retrySec}s or switch to a different model/provider.`
+    }
+    return `⚠️ Rate limited: ${modelName} has hit its free-tier rate limit. Please wait a moment and try again, or switch to a different model.`
+  }
+
+  // Provider-side error — be honest but not alarming
+  if (PROVIDER_ERROR_PATTERNS.some(p => p.test(msg))) {
+    const modelMatch = msg.match(/([\w-]+\/[\w.-]+(?::[\w.-]+)?)/)
+    const modelName = modelMatch ? modelMatch[1] : 'the model'
+    return `⚠️ Provider error for ${modelName}. The upstream service returned an error. Check your API key and try again.`
+  }
+
+  // Fallback — just the core message, not the full JSON dump
+  try {
+    // Try to extract just the message field from JSON
+    const jsonMatch = msg.match(/"message"\s*:\s*"([^"]+)"/)
+    if (jsonMatch)
+      return jsonMatch[1]
+  }
+  catch { /* ignore */ }
+
+  // Last resort: truncate to first 200 chars
+  return msg.length > 200 ? `${msg.slice(0, 200)}...` : msg
+}
+
+/** Retries a function with exponential backoff. Returns [result, retryCount] or throws. */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  options: { maxAttempts?: number, baseDelayMs?: number, maxDelayMs?: number, isRetryable?: (err: unknown) => boolean } = {},
+): Promise<{ result: T, attempts: number }> {
+  const maxAttempts = options.maxAttempts ?? 3
+  const baseDelayMs = options.baseDelayMs ?? 1000
+  const maxDelayMs = options.maxDelayMs ?? 30000
+  const isRetryable = options.isRetryable ?? isRateLimitError
+
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return { result: await fn(), attempts: attempt }
+    }
+    catch (err) {
+      lastError = err
+      if (!isRetryable(err) || attempt >= maxAttempts)
+        throw err
+
+      const retryAfter = extractRetryAfter(err)
+      const delayMs = retryAfter > 0
+        ? retryAfter * 1000
+        : Math.min(baseDelayMs * 2 ** (attempt - 1) + Math.random() * 500, maxDelayMs)
+
+      console.log(`[llm] Rate-limited, retrying in ${Math.round(delayMs)}ms (attempt ${attempt}/${maxAttempts})`)
+      await new Promise(r => setTimeout(r, delayMs))
+    }
+  }
+
+  // Should never reach here, but TypeScript needs it
+  throw lastError
 }
 
 async function streamFrom(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
@@ -232,7 +340,7 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
       }
     }
 
-    try {
+    const doStream = () => {
       const result = streamText({
         ...chatConfig,
         ...requestOverrides,
@@ -263,10 +371,22 @@ async function streamFrom(model: string, chatProvider: ChatProvider, messages: M
         }
       }).catch(err => console.error('Stream totalUsage error:', err))
     }
+
+    try {
+      doStream()
+    }
     catch (err) {
       rejectOnce(err)
     }
   })
+}
+
+/** Wrapper around streamFrom that adds automatic rate-limit retry. */
+async function streamWithRetry(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
+  return await retryWithBackoff(
+    () => streamFrom(model, chatProvider, messages, options),
+    { maxAttempts: 3, baseDelayMs: 1500, maxDelayMs: 15000 },
+  )
 }
 
 async function generateFrom(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
@@ -386,7 +506,7 @@ export const useLLM = defineStore('llm', () => {
   async function stream(model: string, chatProvider: ChatProvider, messages: Message[], options?: StreamOptions) {
     const key = `${chatProvider.chat(model).baseURL}-${model}`
     try {
-      await streamFrom(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value, systemMessageCompatibility: systemMessageCompatibility.value })
+      await streamWithRetry(model, chatProvider, messages, { ...options, toolsCompatibility: toolsCompatibility.value, systemMessageCompatibility: systemMessageCompatibility.value })
     }
     catch (err) {
       if (isToolRelatedError(err)) {
@@ -445,3 +565,7 @@ export const useLLM = defineStore('llm', () => {
     discoverToolsCompatibility,
   }
 })
+
+// Re-export error utilities for use in chat.ts error display
+// (Already declared with `export function` above — this is for documentation purposes)
+export { buildUserFacingErrorMessage }
