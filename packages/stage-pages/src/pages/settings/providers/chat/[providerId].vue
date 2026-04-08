@@ -60,7 +60,22 @@ const {
 
 function goToModelSelection() {
   activeProvider.value = providerId
-  router.push('/settings/modules/consciousness')
+  // NOTICE: Route to the correct module settings based on provider category.
+  // This component is shared across chat, vision, speech, and transcription providers.
+  const category = providerMetadata.value?.category
+  if (category === 'vision') {
+    router.push('/settings/modules/vision')
+  }
+  else if (category === 'speech') {
+    router.push(`/settings/providers/speech/${providerId}`)
+  }
+  else if (category === 'transcription') {
+    router.push('/settings/modules/hearing')
+  }
+  else {
+    // Default: chat/consciousness
+    router.push('/settings/modules/consciousness')
+  }
 }
 </script>
 

@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../OmniVoice"
+		},
+		{
+			"path": "../../Users/Eternal/AppData/Roaming/@proj-airi"
+		}
+	],
+	"settings": {
+		"rust-analyzer.cargo.extraEnv": {
+			"MACOSX_DEPLOYMENT_TARGET": "10.13"
+		},
+		"rust-analyzer.cargo.targetDir": "target/rust-analyzer",
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"typescript.preferences.includePackageJsonAutoImports": "off",
+		"rust-analyzer.checkOnSave": true,
+		"rust-analyzer.cachePriming.enable": false
+	}
+}
