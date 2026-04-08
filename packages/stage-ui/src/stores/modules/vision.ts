@@ -194,6 +194,28 @@ export const useVisionStore = defineStore('vision', () => {
     }
   }, { immediate: true })
 
+  // NOTICE: When switching vision providers, reset the model selection.
+  // The previous model ID likely belongs to a different provider
+  // (e.g., an OpenRouter :free model being sent to a different vision API → 404).
+  watch(activeProvider, async (newProvider, oldProvider) => {
+    if (newProvider && oldProvider !== undefined && oldProvider !== newProvider) {
+      if (activeModel.value)
+        resetModelSelection()
+      await loadModelsForProvider(newProvider)
+    }
+  })
+
+  // NOTICE: When switching vision providers, reset the model selection.
+  // The previous model ID likely belongs to a different provider
+  // (e.g., an OpenRouter :free model being sent to a different vision API → 404).
+  watch(activeProvider, async (newProvider, oldProvider) => {
+    if (newProvider && oldProvider !== undefined && oldProvider !== newProvider) {
+      if (activeModel.value)
+        resetModelSelection()
+      await loadModelsForProvider(newProvider)
+    }
+  })
+
   return {
     // State
     configured,
