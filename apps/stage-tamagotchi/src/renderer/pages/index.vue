@@ -88,6 +88,14 @@ const { activeProvider: activeChatProvider, activeModel: activeChatModel } = sto
 
 watch([activeChatProvider, activeChatModel], async () => {
   if (activeChatProvider.value && activeChatModel.value) {
+    // NOTICE: Skip discovery if model doesn't belong to current provider.
+    // When switching providers, activeModel may briefly hold a stale model ID
+    // from the previous provider. Discovering compatibility with mismatched
+    // provider/model causes 400/404 errors.
+    const providerModels = consciousnessStore.providerModels
+    if (providerModels.length > 0 && !providerModels.find(m => m.id === activeChatModel.value)) {
+      return
+    }
     console.log('[Main Page] Discovering tools compatibility for:', activeChatModel.value)
     const provider = await providersStore.getProviderInstance<ChatProvider>(activeChatProvider.value)
     if (provider) {
